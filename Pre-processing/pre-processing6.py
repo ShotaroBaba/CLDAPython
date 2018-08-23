@@ -399,9 +399,7 @@ class LDA(object):
                 print("Rank: {}, Word: {}, Probability: {}".format(self.word_ranking[i][j][1], self.word_ranking[i][j][2],
                                                                   self.word_ranking[i][j][3]))
             
-test_data = read_test_files()
-vect = generate_vector()
-vectorise_data, feature_names = vectorize(vect, test_data)        
+
 
 #Retrieve all P(e|c) values
 def retrieve_p_e_c(feature_names):
@@ -423,54 +421,6 @@ def retrieve_p_e_c(feature_names):
         return responses
     else:
         print('File exist... stop the program...')
-
-
-p_e_c = retrieve_p_e_c(feature_names)
-l = [list(i.keys()) for i in list(p_e_c.values())]
-concept_sets = sorted(list(set(itertools.chain.from_iterable(l))))
-
-
-#p_e_c_array[0])
-
-p_e_c_array= np.zeros(shape=(len(feature_names), len(concept_sets)))
-
-
-#Retrieve all possible concepts from the string
-
-#ce_responces = retrieve_p_c_e(R8_training_tf_feature_names)
-#len(concept_sets)
-#
-#concept_sets[3]
-#
-#
-#
-#
-#p_e_c['0']['1-digit activity code']
-
-#Insert the numbers corresponding to the arrays
-for i in p_e_c.keys():
-    for j in p_e_c[i].keys():
-        p_e_c_array[feature_names.index(i)][concept_sets.index(j)] = p_e_c[i][j]
-
-#for topic, word_idx in enumerate(np.argsort(t.phi_set[0])):
-#    print(topic)
-#    print(word_idx)
-    
-t = LDA(2)
-
-#t._initialize(R8_training_tf_matrix)
-#R8_training_tf_feature_names[-5:-1]
-
-t.run(vectorise_data, 30)            
-           # np.argsor
-t.set_the_rankings(feature_names)
-
-#t.word_ranking
-#t.word_ranking
-t.show_doc_topic_ranking()
-t.show_word_topic_ranking()
-
-
 
 #t.phi_set
 #t.theta_set        
@@ -676,6 +626,57 @@ class CLDA(object):
                 print("Rank: {}, Word: {}".format(self.word_ranking[i][j][1], self.word_ranking[i][j][2]))
 
 
+def main():
+    test_data = read_test_files()
+    vect = generate_vector()
+    vectorise_data, feature_names = vectorize(vect, test_data)        
+    
+    
+    
+    p_e_c = retrieve_p_e_c(feature_names)
+    l = [list(i.keys()) for i in list(p_e_c.values())]
+    concept_sets = sorted(list(set(itertools.chain.from_iterable(l))))
+    
+    
+    #p_e_c_array[0])
+    
+    p_e_c_array= np.zeros(shape=(len(feature_names), len(concept_sets)))
+    
+    
+    #Retrieve all possible concepts from the string
+    
+    #ce_responces = retrieve_p_c_e(R8_training_tf_feature_names)
+    #len(concept_sets)
+    #
+    #concept_sets[3]
+    #
+    #
+    #
+    #
+    #p_e_c['0']['1-digit activity code']
+    
+    #Insert the numbers corresponding to the arrays
+    for i in p_e_c.keys():
+        for j in p_e_c[i].keys():
+            p_e_c_array[feature_names.index(i)][concept_sets.index(j)] = p_e_c[i][j]
+    
+    #for topic, word_idx in enumerate(np.argsort(t.phi_set[0])):
+    #    print(topic)
+    #    print(word_idx)
+        
+    t = LDA(2)
+    
+    #t._initialize(R8_training_tf_matrix)
+    #R8_training_tf_feature_names[-5:-1]
+    
+    t.run(vectorise_data, 30)            
+               # np.argsor
+    t.set_the_rankings(feature_names)
+    
+    #t.word_ranking
+    #t.word_ranking
+    t.show_doc_topic_ranking()
+    t.show_word_topic_ranking()
 
 
 
