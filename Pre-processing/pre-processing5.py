@@ -910,73 +910,199 @@ t.theta_set
 #        for i in:
 #            np.argsort()
     
-if __name__ == "__main__":
-    import os
-    import shutil
 
-    N_TOPICS = 10
-    DOCUMENT_LENGTH = 100
-    FOLDER = "topicimg"
 
-    def vertical_topic(width, topic_index, document_length):
+class CLDA(object):
+
+    def __init__(self, n_topics,alpha=0.1, beta=0.1):
         """
-        Generate a topic whose words form a vertical bar.
+        n_topics: number of topics
+        
         """
-        m = np.zeros((width, width))
-        m[:, topic_index] = int(document_length / width)
-        return m.flatten()
-
-    def horizontal_topic(width, topic_index, document_length):
+        self.n_topics = n_topics
+        self.alpha = alpha
+        self.beta = beta
+    
+    def sample_index(self,p):
         """
-        Generate a topic whose words form a horizontal bar.
+        Sample from the Multinomial distribution and return the sample index.
         """
-        m = np.zeros((width, width))
-        m[topic_index, :] = int(document_length / width)
-        return m.flatten()
-
-    def save_document_image(filename, doc, zoom=2):
+        return np.random.multinomial(1,p).argmax()
+    
+    def word_indices(self, vec):
         """
-        Save document as an image.
-        doc must be a square matrix
+        Turn a document vector of size vocab_size to a sequence
+        of word indices. The word indices are between 0 and
+        vocab_size-1. The sequence length is equal to the document length.
         """
-        height, width = doc.shape
-        zoom = np.ones((width*zoom, width*zoom))
-        # imsave scales pixels between 0 and 255 automatically
-        sp.misc.imsave(filename, np.kron(doc, zoom))
+        for idx in vec.nonzero()[0]:
+            for i in range(int(vec[idx])):
+                yield idx
+    
+    def _initialize(self, matrix):
+        
+        #For test purpose only!
+        n_docs, vocab_size = matrix.shape
+        matrix = matrix.toarray().copy()
+        # number of times document m and topic z co-occur
+        self.nmz = np.zeros((n_docs, self.n_topics)) #C_D_T Count document topic
+        # number of times topic z and word w co-occur
+        self.nzw = np.zeros((self.n_topics, vocab_size)) #Topic size * word size
+        self.nm = np.zeros(n_docs) # Number of documents
+        self.nz = np.zeros(self.n_topics) #Number of topic
+        self.topics = {} #Topics dictionary
 
-    def gen_word_distribution(n_topics, document_length):
+        for m in range(n_docs):
+            print(m)
+            # i is a number between 0 and doc_length-1
+            # w is a number between 0 and vocab_size-1
+            for i, w in enumerate(self.word_indices(matrix[m, :])):
+                
+                # choose an arbitrary topic as first topic for word i
+                z = np.random.randint(self.n_topics) #Randomise the topics
+                self.nmz[m,z] += 1 #Distribute the count of topic doucment
+                self.nm[m] += 1 #Count the number of occurrences
+                self.nzw[z,w] += 1 #Counts the number of topic word distribution
+                self.nz[z] += 1 #Distribute the counts of the number of topics
+                self.topics[(m,i)] = z #Memorise the correspondence between topics and the entities
+
+    def _conditional_distribution(self, m, w): #Maybe the computation valuables
         """
-        Generate a word distribution for each of the n_topics.
+        Conditional distribution (vector of size n_topics).
         """
-        width = n_topics / 2
-        vocab_size = width ** 2
-        m = np.zeros((n_topics, vocab_size))
+        vocab_size = self.nzw.shape[1]
+        left = (self.nzw[:,w] + self.beta) / \
+               (self.nz + self.beta * vocab_size) #Corresponding to the left hand side of the equation 
+        right = (self.nmz[m,:] + self.alpha) / \
+                (self.nm[m] + self.alpha * self.n_topics) #Corresponding to the right hand side of the equation
+        #We might need to have the section "Word_Concept: like"
+        # p_e_c = some expression
+        p_z = left * right #* P(e|c)
+        # normalize to obtain probabilities
+        p_z /= np.sum(p_z)
+        return p_z
 
-        for k in range(width):
-            m[k,:] = vertical_topic(width, k, document_length)
-
-        for k in range(width):
-            m[k+width,:] = horizontal_topic(width, k, document_length)
-
-        m /= m.sum(axis=1)[:, np.newaxis] # turn counts into probabilities
-
-        return m
-
-    def gen_document(word_dist, n_topics, vocab_size, length=DOCUMENT_LENGTH, alpha=0.1):
+    def loglikelihood(self):
         """
-        Generate a document:
-            1) Sample topic proportions from the Dirichlet distribution.
-            2) Sample a topic index from the Multinomial with the topic
-               proportions from 1).
-            3) Sample a word from the Multinomial corresponding to the topic
-               index from 2).
-            4) Go to 2) if need another word.
+        Compute the likelihood that the model generated the data.
         """
-        theta = np.random.mtrand.dirichlet([alpha] * n_topics)
-        v = np.zeros(vocab_size)
-        for n in range(length):
-            z = sample_index(theta)
-            w = sample_index(word_dist[z,:])
-            v[w] += 1
-        return v
+        vocab_size = self.nzw.shape[1] #Vocabulary size
+        n_docs = self.nmz.shape[0] #Document size
+        lik = 0 #The calculation of likelihood
 
+        for z in range(self.n_topics):
+            lik += log_multi_beta(self.nzw[z,:]+self.beta)
+            lik -= log_multi_beta(self.beta, vocab_size)
+
+        for m in range(n_docs):
+            lik += log_multi_beta(self.nmz[m,:]+self.alpha)
+            lik -= log_multi_beta(self.alpha, self.n_topics)
+
+        return lik
+
+    def phi(self):
+        """
+        Compute phi = p(w|z).
+        """
+        #Not necessary values for the calculation
+        #V = self.nzw.shape[1]
+        num = self.nzw + self.beta #Calculate the counts of the number, the beta is the adjust ment value for the calcluation
+        num /= np.sum(num, axis=1)[:, np.newaxis] #Summation of all value and then, but weight should be calculated in this case....
+        return num
+    
+    def theta(self):
+        
+#        T = self.nmz.shape[0]
+        num = self.nmz + self.alpha #Cal
+        num /= np.sum(num, axis=1)[:, np.newaxis] 
+        
+        return num
+    
+    def run(self, matrix, maxiter=30):
+        """
+        Run the Gibbs sampler.
+        """
+        #Gibbs sampling program
+        self.phi_set = [] #Storing all results Initialisation of all different models
+        self.theta_set = [] #Storing all document_topic relation results & initalisation of all other models
+        n_docs, vocab_size = matrix.shape
+        self._initialize(matrix)
+        matrix = matrix.toarray().copy()
+        for it in range(maxiter):
+            print(it)
+            for m in range(n_docs):
+                
+                for i, w in enumerate(self.word_indices(matrix[m, :])):
+                    
+                    z = self.topics[(m,i)] #The entities of topics, the value c needs to be included in here
+                    self.nmz[m,z] -= 1#Removing the indices 
+                    self.nm[m] -= 1 #Removign the indices
+                    self.nzw[z,w] -= 1 #Removing the indices
+                    self.nz[z] -= 1 #Removing the indices
+
+                    p_z = self._conditional_distribution(m, w) #Put the categorical probability on it
+                    z = self.sample_index(p_z)
+
+                    self.nmz[m,z] += 1 #Randomly adding the indices based on the calculated probabilities
+                    self.nm[m] += 1 #Adding the entity based on the percentage
+                    self.nzw[z,w] += 1 #Addign the entity for 
+                    self.nz[z] += 1 #Count the number of the occureences
+                    self.topics[(m,i)] = z #Re=assignm the topic
+
+            # FIXME: burn-in and lag!
+            print("iteration: {}".format(it))
+            print("phi: {}".format(self.phi()))
+            print("Theta: {}".format(self.theta()))
+            
+            self.phi_set.append(self.phi())
+            self.theta_set.append(self.theta())
+        
+        self.maxiter = maxiter
+        
+    
+    #Testing the programs for displaying the data
+    #Testing
+    
+    def set_the_rankings(self, feature_names, doc_names, categories):
+        
+        self.word_ranking = []
+        self.doc_ranking = []
+        
+#        if(not (self.phi_set in locals() or self.phi.set in globals())):
+#            print("The calculation of phi or theta is not done yet!")
+        
+        for i in range(self.maxiter):
+            
+            #Calcualte the topic_word distribution
+            temp = np.argsort(self.phi_set[i])
+            #Calculate the topic_document distribuiton
+            temp2 = np.argsort(self.theta_set[i].T)
+            
+            #Create the leaderships 
+            self.word_ranking = [[[topic, ranking, feature_names[idx]] for ranking, idx in enumerate(word_idx)]
+                                    for topic, word_idx in enumerate(temp)]
+            
+            self.doc_ranking = [[[topic, ranking, doc_names[doc_idx], categories[doc_idx]] for ranking, doc_idx in enumerate(docs_idx)]
+                        for topic, docs_idx in enumerate(temp2)]
+    
+    def show_doc_topic_ranking(self, rank=10):
+#        if(not (self.doc_ranking in locals() or self.doc_ranking in globals())):
+#            print("The calculation of phi or theta is not done yet!")
+        for i in range(self.nzw.shape[0]):
+            print("#############################")
+            print("Topic {} ranking: ".format(i))
+            for j in range(rank):
+                 print("Rank: {}, Document: {}, Category: {}".format(self.doc_ranking[i][j][1], self.doc_ranking[i][j][2],
+                                                                     self.doc_ranking[i][j][3]))
+        
+        
+    def show_word_topic_ranking(self, rank=10):
+#        if(not (self.word_ranking in locals() or self.word_ranking in globals())):
+#            print("The calculation of phi or theta is not done yet!")
+        
+        for i in range(self.nzw.shape[0]):
+            print("#############################")
+            print("Topic {} ranking: ".format(i))
+            for j in range(rank):
+                print("Rank: {}, Word: {}".format(self.word_ranking[i][j][1], self.word_ranking[i][j][2]))
+            
