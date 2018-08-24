@@ -481,7 +481,7 @@ def main():
             p_e_c_array[feature_names.index(i)][concept_sets.index(j)] = p_e_c[i][j]
 
     #For testing purpos
-    concept_array[0] = p_e_c_array
+    concept_array = p_e_c_array
     def word_indices(vec):
         """
         Turn a document vector of size vocab_size to a sequence
@@ -575,7 +575,6 @@ def main():
                 left = (nzc[:,c] + beta) / (nz + beta * concept_size)  #Corresponding to the left hand side of the equation 
                 right = (nmz[m,:] + alpha) / (nm[m] + alpha * n_topics)
                 p_z_stack[c] = left * right * concept_array[w][c]
-                p_z_stack[c] /= np.sum(p_z_stack[c])
             
             
             return (p_z_stack/np.sum(p_z_stack)).reshape((nzc.shape[0] * nzc.shape[1],))
