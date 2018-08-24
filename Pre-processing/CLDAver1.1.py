@@ -10,7 +10,7 @@ import numpy as np
 import os
 import csv
 import pickle
-import request
+import requests
 import itertools
 
 
@@ -160,6 +160,10 @@ def read_test_files():
     test_path = "../../R8-Dataset/Dataset/ForTest"
     for dirpath, dirs, files in os.walk(test_path):
         training_path.extend(files)
+    
+    #Remove the files other than xml files
+    training_path = [x for x in training_path if x.endswith('xml')]
+    #Remove the path where the 
     #Extract only last directory name
 #    for_test_purpose_data = {}
 #    training_data_list = []
@@ -271,7 +275,10 @@ class LDA(object):
         # p_e_c = some expression
         p_z = left * right #* P(e|c)
         # normalize to obtain probabilities
+        
         p_z /= np.sum(p_z)
+        
+        self.probability = p_z
         return p_z
 
 #    def loglikelihood(self):
@@ -405,22 +412,27 @@ class LDA(object):
 def retrieve_p_e_c(feature_names):
     responses  = {}
     j = 0
-    if(not os.path.isfile("../../R8-Dataset/pec_prob_top.pkl")):
-        K = 20 #Retrieve as much as it could
+    if(not os.path.isfile("../../R8-Dataset/Dataset/ForTest/pec_prob_top.pkl")):
+        
+        #Retrieve the tenth rankings of the words
+        K = 10 #Retrieve as much as it could
         for i in feature_names:
             print('Now processing ' + str(j) + " word...")
             j += 1
             #Replace space to + to tolerate the phrases with space
             req_str = 'https://concept.research.microsoft.com/api/Concept/ScoreByTypi?instance=' \
             + i.replace(' ', '+') + '&topK=' + str(K)
-            response = request.get(req_str)
+            response = requests.get(req_str)
             
+            #Retrieve the response from json file
             responses[i] = response.json()  
-        with open("../../R8-Dataset/pec_prob_top.pkl", "wb") as f:
-            pickle.dump([responses], f)
+        with open("../../R8-Dataset/Dataset/ForTest/pec_prob_top.pkl", "wb") as f:
+            pickle.dump(responses, f)
         return responses
     else:
-        print('File exist... stop the program...')
+        with open("../../R8-Dataset/Dataset/ForTest/pec_prob_top.pkl", "rb") as f:
+            return pickle.load(f)
+        print('File exist... load the feature...')
 
 #t.phi_set
 #t.theta_set        
@@ -430,6 +442,326 @@ def retrieve_p_e_c(feature_names):
 #            np.argsort()
     
 
+#Now still testing my codes in the
+#
+
+def main():
+    test_data = read_test_files()
+    vect = generate_vector()
+    vectorise_data, feature_names = vectorize(vect, test_data)        
+    
+#    print(feature_names)
+    
+    
+    p_e_c = retrieve_p_e_c(feature_names)
+    l = [list(i.keys()) for i in list(p_e_c.values())]
+    concept_sets = sorted(list(set(itertools.chain.from_iterable(l))))
+    
+#    concept_sets[len(concept_sets)-1]
+    
+    #Put the atom concept if there are no concepts in the words
+    
+    
+    #Adding atomic elements
+    for i in feature_names:
+        #if there are no concepts in the words, then...
+        if p_e_c[i] == {}:
+            
+            #Append the words with no related concpets
+            #as the atomic concepts
+            concept_sets.append(i)
+   
+    #A number of test occurs for generating the good results
+    concept_sets = sorted(concept_sets)
+    p_e_c_array= np.zeros(shape=(len(feature_names), len(concept_sets)))
+    concept_sets[0]
+    #Make it redundant
+    for i in p_e_c.keys():
+        for j in p_e_c[i].keys():
+            p_e_c_array[feature_names.index(i)][concept_sets.index(j)] = p_e_c[i][j]
+
+    #For testing purpos
+    concept_array[0] = p_e_c_array
+    def word_indices(vec):
+        """
+        Turn a document vector of size vocab_size to a sequence
+        of word indices. The word indices are between 0 and
+        vocab_size-1. The sequence length is equal to the document length.
+        """
+        for idx in vec.nonzero()[0]:
+            for i in range(int(vec[idx])):
+                yield idx      
+    
+    def _initialize(matrix, concept_array, feature_names):
+        
+        alpha = 0.1
+        beta = 0.1
+        n_topics = 3
+        #Take the matrix shapes from 
+        matrix = vectorise_data
+        
+        concept_array = concept_array
+        
+        n_docs, vocab_size = matrix.shape
+        
+        n_concepts = p_e_c_array.shape[1]
+        
+        matrix = matrix.toarray().copy()
+        # number of times document m and topic z co-occur
+        nmz = np.zeros((n_docs, n_topics)) #C_D_T Count document topic
+        # number of times topic z and word w co-occur
+        nzc = np.zeros((n_topics, n_concepts)) #Topic size * word size
+        nm = np.zeros(n_docs) # Number of documents
+        nz = np.zeros(n_topics) #Number of topic
+        topics_and_concepts = {} #Topics dictionary
+    
+        for m in range(n_docs):
+            print(m)
+            # i is a number between 0 and doc_length-1
+            # w is a number between 0 and vocab_size-1
+            #Count the 
+            for i, w in enumerate(word_indices(matrix[m, :])):
+                #Randomly put 
+                # choose an arbitrary topic as first topic for word i
+                if np.count_nonzero(concept_array[w,:]) != 0:
+                    z = np.random.randint(n_topics) #Randomise the topics
+                    c = np.random.randint(n_concepts) #Randomly distribute the concepts ver topics 
+                    nmz[m,z] += 1 #Distribute the count of topic doucment
+                    nm[m] += 1 #Count the number of occurrences
+                    nzc[z,c] += 1 #Counts the number of topic concept distribution
+                    nz[z] += 1 #Distribute the counts of the number of topics
+                    topics_and_concepts[(m,i)] = (z,c) # P(zd_i, c_d_i) where d is the document location and i is the instance location in the document
+                else:
+                    z = np.random.randint(n_topics) #Randomise the topics
+                    c = concept_sets.index(feature_names[w]) #Randomly distribute the concepts ver topics 
+                    nmz[m,z] += 1 #Distribute the count of topic doucment
+                    nm[m] += 1 #Count the number of occurrences
+                    nzc[z,c] += 1 #Counts the number of topic concept distribution
+                    nz[z] += 1 #Distribute the counts of the number of topics
+                    topics_and_concepts[(m,i)] = (z,c) # P(zd_i, c_d_i) where d is the document location and i is the instance location in the document
+                #Memorise the correspondence between topics and the entities
+                                 #Should be put j in somewhere else...
+        
+        return nmz,nm,nzc,nz,topics_and_concepts
+    
+    def _sample_index(p_z, nzc):
+        """
+        Sample from the Multinomial distribution and return the sample index.
+        """
+        
+        choice = np.random.multinomial(1,p_z).argmax() #Making the choice throught the 2-dimensional probability array
+        concept = int(choice/nzc.shape[0]) #Extract concept array
+        topic = choice % nzc.shape[0] #Extract topic index 
+        
+        #Return topic and concet index
+        return topic, concept
+    
+#     np.array(([2,3,4],[7,6,5]))/np.sum(np.array(([2,3,4],[7,6,5])))
+#    np.reshape(, (6, ))
+#    np.array(([2,3,4],[7,6,5])).T.reshape((6,))
+#    np.array(([2,3,4],[7,6,5])).T.reshape((6,))    
+    def _conditional_distribution(m, w, nmz,nm,nzc,nz, alpha, beta, concept_array): #Maybe the computation valuables
+        """
+        Conditional distribution (vector of size n_topics).
+        """
+        concept_size = nzc.shape[1]
+        n_topics = nzc.shape[0]
+        p_z_stack = np.zeros((nzc.shape[1], nzc.shape[0]))
+        concept_array.shape
+        #Count non-zero value in the 
+        if np.count_nonzero(concept_array[w,:]) != 0:
+            #Calculate only the 
+            for c in range(nzc.shape[1]):
+                left = (nzc[:,c] + beta) / (nz + beta * concept_size)  #Corresponding to the left hand side of the equation 
+                right = (nmz[m,:] + alpha) / (nm[m] + alpha * n_topics)
+                p_z_stack[c] = left * right * concept_array[w][c]
+                p_z_stack[c] /= np.sum(p_z_stack[c])
+            
+            
+            return (p_z_stack/np.sum(p_z_stack)).reshape((nzc.shape[0] * nzc.shape[1],))
+        #Calculate the atomic topic distribution calculaiton
+        #if there are no positive number in the concept array
+        #Calculate the 
+        else:
+            #Retrieve the atomic index from the documents 
+            atomic_index = concept_sets.index(feature_names[w])
+            left = (nzc[:,atomic_index] + beta) / (nz + beta * concept_size)
+            right = (nmz[m,:] + alpha) / (nm[m] + alpha * n_topics)
+            p_z_stack[atomic_index] = left * right
+            #Normalise p_z value
+            
+            return (p_z_stack/np.sum(p_z_stack)).reshape((nzc.shape[0] * nzc.shape[1],))
+#        #We might need to have the section "Word_Concept: like"
+#        # p_e_c = some expression
+#        p_z = left * right #* P(e|c)
+#        # normalize to obtain probabilities
+#        p_z /= np.sum(p_z)
+#        return p_z
+    
+    
+    #np.array(([1,2], [3,4],[5,6])).T.T 
+    #z_c shape is something like this: (topic_num, concept_num)
+    def run(matrix, concept_array, alpha, beta, feature_names,maxiter=30):
+        """
+        Run the Gibbs sampler.
+        """
+        
+        alpha = 0.1
+        beta = 0.1
+        #Gibbs sampling program
+        phi_set = [] #Storing all results Initialisation of all different models
+        theta_set = [] #Storing all document_topic relation results & initalisation of all other models
+        n_docs, vocab_size = matrix.shape
+        nmz,nm,nzc,nz,topics_and_concepts = _initialize(vectorise_data, concept_array, feature_names)
+#        matrix = matrix.toarray().copy()
+        for it in range(maxiter):
+            print(it)
+            for m in range(n_docs):
+                for i, w in enumerate(word_indices(matrix[m, :])):
+                    
+                    z,c = topics_and_concepts[(m,i)] #Extract the topics and concepts from the doucment 
+                    nmz[m,z] -= 1#Removing the indices 
+                    nm[m] -= 1 #Removign the indices
+                    nzc[z,c] -= 1 #Removing the indices
+                    nz[z] -= 1 #Removing the indices
+                    
+                    #Calculate the probabilities of both topic and concepts
+                    p_z = _conditional_distribution(m, w, nmz,nm,nzc,nz, alpha, beta, concept_array) #Put the categorical probability on it
+                    #If there are topics, then it returns the random topics based on the 
+                    #calculated probabilities, otherwise it returns the atomic bomb
+                    z,c = _sample_index(p_z, nzc) #Re-distribute concept and topic 
+
+                    nmz[m,z] += 1 #Randomly adding the indices based on the calculated probabilities
+                    nm[m] += 1 #Adding the entity based on the percentage
+                    nzc[z,c] += 1 #Addign the entity for 
+                    nz[z] += 1 #Count the number of the occureences
+                    topics_and_concepts[(m,i)] = z,c #Re-assign the concepts and topics
+
+            # FIXME: burn-in and lag!
+            print("iteration: {}".format(it))
+            print("phi: {}".format(phi(nzc, beta)))
+            print("Theta: {}".format(theta(nmz, alpha)))
+            
+            phi_set.append(phi())
+            theta_set.append(theta())
+        
+    
+    def phi(nzc, beta):
+        """
+        Compute phi = p(w|z).
+        """
+        #Not necessary values for the calculation
+        #V = nzw.shape[1]
+        num = nzc + beta #Calculate the counts of the number, the beta is the adjust ment value for the calcluation
+        num /= np.sum(num, axis=1)[:, np.newaxis] #Summation of all value and then, but weight should be calculated in this case....
+        return num
+    
+    def theta(nmz, alpha):
+        
+#        T = nmz.shape[0]
+        num = nmz + alpha #Cal
+        num /= np.sum(num, axis=1)[:, np.newaxis]
+        
+        return num
+    
+        
+    #p_e_c_array[0])
+    
+    
+    
+    
+    
+    
+    #Retrieve all possible concepts from the string
+    
+    #ce_responces = retrieve_p_c_e(R8_training_tf_feature_names)
+    #len(concept_sets)
+    #
+    #concept_sets[3]
+    #
+    #
+    #
+    #
+    #p_e_c['0']['1-digit activity code']
+    
+    #Insert the numbers corresponding to the arrays
+    
+    
+    #for topic, word_idx in enumerate(np.argsort(t.phi_set[0])):
+    #    print(topic)
+    #    print(word_idx)
+        
+    t = LDA(2)
+    
+    #t._initialize(R8_training_tf_matrix)
+    #R8_training_tf_feature_names[-5:-1]
+    
+    t.run(vectorise_data, 30)            
+               # np.argsor
+    t.set_the_rankings(feature_names)
+    
+    #t.word_ranking
+    #t.word_ranking
+    t.show_doc_topic_ranking()
+    t.show_word_topic_ranking()
+
+
+main()
+
+
+#
+#def read_R8_files(path):
+#    
+#    #Setting the training path for reading xml files
+#    RCV1_training_path = path
+#    path = RCV1_training_path
+#    #RCV1_training_path = "../../R8-Dataset/Dataset/R8/Training"
+#    #RCV1_training_path = "../../R8-Dataset/Dataset/R8/Testing"
+#    #RCV1_test_path = "../../R8-Dataset/Dataset/R8/Testing"
+#    #os.path.dirname(RCV1_training_path)
+#    
+#    training_path = []
+#    
+#    for dirpath, dirs, files in os.walk(RCV1_training_path):
+#        training_path.append(dirpath)
+#    
+#    
+#    #Remove the directory itself so that there are no troubles
+#    training_path.remove(RCV1_training_path)
+#    
+#    training_text_data = pd.DataFrame([], columns=['Topic', 'File', 'IsTopic', 'Text'])
+#    
+#    #Extract only last directory name
+##    training_text_data = {}
+##    training_data_list = []
+#    for path_to_file in training_path:
+#        path_string = os.path.basename(os.path.normpath(path_to_file))        
+#        #training_data_list.append(path_string)
+#        #Initialise the list of the strings
+#        #training_text_data[path_string] = {}
+#        print("Now reading...")
+#        print(path_string)
+#        #Initialise 
+##        for file in generate_files(path):
+#            #print("Now reading...")
+#            #print(open(file, "r").read())
+#        df = pd.read_csv("../../R8-Dataset/Dataset/R8/Topic/" + path_string + ".txt", 
+#                              sep = '\s+',  names = ['Topic', 'File', 'IsTopic'])
+#        df['Text'] = None
+#        df = df[df.IsTopic == 1]
+#        df['Text'] = df.File.apply(lambda row: return_text(path, path_string, row))
+#        training_text_data.info()
+#        training_text_data = training_text_data.append(df)
+#        len(training_text_data)
+#
+#    training_text_data.to_csv("../../R8-Dataset/" +
+#                              os.path.basename(os.path.normpath(RCV1_training_path))+ ".csv",
+#                              index=False, encoding='utf-8',
+#                              quoting=csv.QUOTE_ALL)
+#
+#    
+#    return training_text_data
+
 
 class CLDA(object):
 
@@ -438,14 +770,20 @@ class CLDA(object):
         n_topics: number of topics
         
         """
+        #The number of topics
         self.n_topics = n_topics
+        
+        #Alpha value
         self.alpha = alpha
+        
+        #Beta value
         self.beta = beta
     
     def sample_index(self,p):
         """
         Sample from the Multinomial distribution and return the sample index.
         """
+        
         return np.random.multinomial(1,p).argmax()
     
     def word_indices(self, vec):
@@ -458,9 +796,9 @@ class CLDA(object):
             for i in range(int(vec[idx])):
                 yield idx
     
-    def _initialize(self, matrix):
+    def _initialize(self, matrix, concept_array):
         
-        #For test purpose only!
+        #Take the matrix shapes from 
         n_docs, vocab_size = matrix.shape
         matrix = matrix.toarray().copy()
         # number of times document m and topic z co-occur
@@ -625,112 +963,7 @@ class CLDA(object):
             for j in range(rank):
                 print("Rank: {}, Word: {}".format(self.word_ranking[i][j][1], self.word_ranking[i][j][2]))
 
-
-def main():
-    test_data = read_test_files()
-    vect = generate_vector()
-    vectorise_data, feature_names = vectorize(vect, test_data)        
-    
-    
-    
-    p_e_c = retrieve_p_e_c(feature_names)
-    l = [list(i.keys()) for i in list(p_e_c.values())]
-    concept_sets = sorted(list(set(itertools.chain.from_iterable(l))))
-    
-    
-    #p_e_c_array[0])
-    
-    p_e_c_array= np.zeros(shape=(len(feature_names), len(concept_sets)))
-    
-    
-    #Retrieve all possible concepts from the string
-    
-    #ce_responces = retrieve_p_c_e(R8_training_tf_feature_names)
-    #len(concept_sets)
-    #
-    #concept_sets[3]
-    #
-    #
-    #
-    #
-    #p_e_c['0']['1-digit activity code']
-    
-    #Insert the numbers corresponding to the arrays
-    for i in p_e_c.keys():
-        for j in p_e_c[i].keys():
-            p_e_c_array[feature_names.index(i)][concept_sets.index(j)] = p_e_c[i][j]
-    
-    #for topic, word_idx in enumerate(np.argsort(t.phi_set[0])):
-    #    print(topic)
-    #    print(word_idx)
-        
-    t = LDA(2)
-    
-    #t._initialize(R8_training_tf_matrix)
-    #R8_training_tf_feature_names[-5:-1]
-    
-    t.run(vectorise_data, 30)            
-               # np.argsor
-    t.set_the_rankings(feature_names)
-    
-    #t.word_ranking
-    #t.word_ranking
-    t.show_doc_topic_ranking()
-    t.show_word_topic_ranking()
-
-
-
-
-
-#
-#def read_R8_files(path):
-#    
-#    #Setting the training path for reading xml files
-#    RCV1_training_path = path
-#    path = RCV1_training_path
-#    #RCV1_training_path = "../../R8-Dataset/Dataset/R8/Training"
-#    #RCV1_training_path = "../../R8-Dataset/Dataset/R8/Testing"
-#    #RCV1_test_path = "../../R8-Dataset/Dataset/R8/Testing"
-#    #os.path.dirname(RCV1_training_path)
-#    
-#    training_path = []
-#    
-#    for dirpath, dirs, files in os.walk(RCV1_training_path):
-#        training_path.append(dirpath)
-#    
-#    
-#    #Remove the directory itself so that there are no troubles
-#    training_path.remove(RCV1_training_path)
-#    
-#    training_text_data = pd.DataFrame([], columns=['Topic', 'File', 'IsTopic', 'Text'])
-#    
-#    #Extract only last directory name
-##    training_text_data = {}
-##    training_data_list = []
-#    for path_to_file in training_path:
-#        path_string = os.path.basename(os.path.normpath(path_to_file))        
-#        #training_data_list.append(path_string)
-#        #Initialise the list of the strings
-#        #training_text_data[path_string] = {}
-#        print("Now reading...")
-#        print(path_string)
-#        #Initialise 
-##        for file in generate_files(path):
-#            #print("Now reading...")
-#            #print(open(file, "r").read())
-#        df = pd.read_csv("../../R8-Dataset/Dataset/R8/Topic/" + path_string + ".txt", 
-#                              sep = '\s+',  names = ['Topic', 'File', 'IsTopic'])
-#        df['Text'] = None
-#        df = df[df.IsTopic == 1]
-#        df['Text'] = df.File.apply(lambda row: return_text(path, path_string, row))
-#        training_text_data.info()
-#        training_text_data = training_text_data.append(df)
-#        len(training_text_data)
-#
-#    training_text_data.to_csv("../../R8-Dataset/" +
-#                              os.path.basename(os.path.normpath(RCV1_training_path))+ ".csv",
-#                              index=False, encoding='utf-8',
-#                              quoting=csv.QUOTE_ALL)
-#
-#    
-#    return training_text_data
+"""
+Currently, testing the CLDA python implementation
+in here.
+"""
