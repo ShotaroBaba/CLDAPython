@@ -12,6 +12,10 @@ import csv
 import pickle
 import requests
 import itertools
+import requests
+import grequests
+from multiprocessing import Pool
+
 
 
 import nltk
@@ -248,14 +252,45 @@ def retrieve_p_e_c(feature_names):
 
 #Now still testing my codes in the
 #
+def retrieve_data(feature_name):
+        K = 10
+        print('Now processing ' + str(feature_name) + " word...")
+
+        #Replace space to + to tolerate the phrases with space
+        req_str = 'https://concept.research.microsoft.com/api/Concept/ScoreByTypi?instance=' \
+        + feature_name.replace(' ', '+') + '&topK=' + str(K)
+        response = requests.get(req_str)
+        
+        #Retrieve the response from json file
+        return response.json()
+#
+
+
 
 def main():
     test_data = read_test_files()
     vect = generate_vector()
     vectorise_data, feature_names = vectorize(vect, test_data)        
-    
+    feature_names[0:10]
 #    print(feature_names)
-    
+#    K = 20
+#    res_strs = ['https://concept.research.microsoft.com/api/Concept/ScoreByTypi?instance=' +x.replace(' ', '+') + '&topK=' + str(K) for x in feature_names]
+#    
+#    responses = (grequests.get(u) for u in res_strs)
+#    
+#    for i in len(responses):
+#        if i != None:
+#            print(i)
+#    p = {}
+#    res_strs[-20:-1]
+#    reqs = grequests.map(responses)
+#    for i, response in enumerate(reqs):
+#        
+#        if response != None:
+#            p[feature_names[i]] = response.content
+#        else:
+#            p[feature_names[i]] = {}
+#    print(p.values())
     
     p_e_c = retrieve_p_e_c(feature_names)
     l = [list(i.keys()) for i in list(p_e_c.values())]
@@ -280,20 +315,21 @@ def main():
     p_e_c_array= np.zeros(shape=(len(feature_names), len(concept_names)))
 
     #Make it redundant
+    #Structure of array
+    #p_e_c_array[word][concept]
     for i in p_e_c.keys():
         for j in p_e_c[i].keys():
             p_e_c_array[feature_names.index(i)][concept_names.index(j)] = p_e_c[i][j]
 
     #For testing purpos
-    concept_array = p_e_c_array
     
-    t = CLDA(vectorise_data, p_e_c_array, feature_names, concept_names, 2, 20)
+    t = CLDA(vectorise_data, p_e_c_array, feature_names, concept_names, 2, 18)
     
     t.run()
     
     t.set_the_rankings()
-    t.show_concept_topic_ranking()
-    t.show_doc_topic_ranking()
+    t.show_concept_topic_ranking(8)
+    t.show_doc_topic_ranking(8)
     
 class CLDA(object):
     
@@ -468,14 +504,21 @@ class CLDA(object):
                     self.nzc[z,c] += 1 #Addign the entity for 
                     self.nz[z] += 1 #Count the number of the topic occurrences
                     self.topics_and_concepts[(m,i)] = z,c #Re-assign the concepts and topics
-            print("Iteration: {}".format(it))
-            print("Phi: {}".format(self.phi()))
-            print("Theta: {}".format(self.theta()))
             
-            self.phi_set.append(self.phi())
-            self.theta_set.append(self.theta())
+            #Print the time of the iteration                    
+            print("Iteration: {}".format(it))
+            #Print phi value(s)
+            print("Phi: {}".format(self.phi()))
+            #Print the document probability value
+            print("Doc_prob: {}".format(self.doc_prob()))
+            #Print theta value
+            print("Theta: {}".format(self.theta()))
         
-    
+        #Storing newest phi value for the calculation
+        self.phi_set.append(self.phi())
+        self.theta_set.append(self.doc_prob())
+        
+    #Calculate phi value
     def phi(self):
 
         #Not necessary values for the calculation
@@ -484,7 +527,8 @@ class CLDA(object):
         num /= np.sum(num, axis=1)[:, np.newaxis] #Summation of all value and then, but weight should be calculated in this case....
         return num
     
-    def theta(self):
+    #Calculate document probability
+    def doc_prob(self):
         
 #        T = nmz.shape[0]
         num = self.nmz + self.alpha #Cal
@@ -492,6 +536,14 @@ class CLDA(object):
         
         return num
     
+    #Calculate theta
+    def theta(self):
+        num = self.nmz.sum(axis = 0) + self.alpha
+        num /= np.sum(num)
+        
+        return num
+        
+        
     def set_the_rankings(self):
         
         self.concept_ranking = []
@@ -501,59 +553,56 @@ class CLDA(object):
 #            print("The calculation of phi or theta is not done yet!")
         
         #Calcualte the topic_word distribution
-        temp = np.argsort(-(self.phi_set[self.maxiter -1]))
+        temp = np.argsort(-(self.phi_set[0]))
         #Calculate the topic_document distribuiton
-        temp2 = np.argsort(-(self.theta_set[self.maxiter -1].T))
+        temp2 = np.argsort(-(self.theta_set[0].T))
         
         #Create the leaderships 
-        self.concept_ranking = [[[topic, ranking, self.concept_names[idx], self.phi_set[self.maxiter -1][topic][idx]] for ranking, idx in enumerate(concept_idx)]
+        self.concept_ranking = [[[topic, ranking, self.concept_names[idx], self.phi_set[0][topic][idx]] for ranking, idx in enumerate(concept_idx)]
                                 for topic, concept_idx in enumerate(temp)]
         
-        self.doc_ranking = [[[topic, ranking, doc_idx, self.theta_set[self.maxiter -1].T[topic][doc_idx]] for ranking, doc_idx in enumerate(docs_idx)]
+        self.doc_ranking = [[[topic, ranking, doc_idx, self.theta_set[0].T[topic][doc_idx]] for ranking, doc_idx in enumerate(docs_idx)]
                     for topic, docs_idx in enumerate(temp2)]
     
     def show_doc_topic_ranking(self, rank=10):
 #        if(not (self.doc_ranking in locals() or self.doc_ranking in globals())):
 #            print("The calculation of phi or theta is not done yet!")
+        print('\n')
+        print("*********************************")
+        print("Theta value: ")
+        print("*********************************")
+        print(self.theta())
+        print('\n')
+        
         for i in range(self.nzc.shape[0]):
             print("#############################")
-            print("Topic {} ranking: ".format(i))
+            print("Topic {} doc prob ranking: ".format(i))
             for j in range(rank):
-                 print("Rank: {}, Doc_idx: {}, Phi value: {}".format(self.doc_ranking[i][j][1], self.doc_ranking[i][j][2], self.doc_ranking[i][j][3]))
+                 print("Rank: {}, Doc_idx: {}, doc_prob value: {}".format(self.doc_ranking[i][j][1], self.doc_ranking[i][j][2], self.doc_ranking[i][j][3]))
         
         
     def show_concept_topic_ranking(self, rank=10):
 #        if(not (self.word_ranking in locals() or self.word_ranking in globals())):
 #            print("The calculation of phi or theta is not done yet!")
+        print('\n')
+        print("*********************************")
+        print("Phi value: ")
+        print("*********************************")
+        print(self.phi())
+        print('\n')          
         
         for i in range(self.nzc.shape[0]):
             print("#############################")
-            print("Topic {} ranking: ".format(i))
+                    
+            print("Topic {} concpet prob ranking: ".format(i))
             for j in range(rank):
-                print("Rank: {}, concept: {}, Theta value: {}".format(self.concept_ranking[i][j][1], self.concept_ranking[i][j][2], self.concept_ranking[i][j][3]))
+                print("Rank: {}, concept: {}, word_prob value: {}".format(self.concept_ranking[i][j][1], self.concept_ranking[i][j][2], self.concept_ranking[i][j][3]))
         
-#    "Rank: {}, Doc_idx: {}, Phi value: {}".format(t.doc_ranking[0][0][1], t.doc_ranking[0][0][2], t.doc_ranking[0][0][3])
-#    t.show_doc_topic_ranking()
-#    temp = np.argsort(-(t.phi_set[t.maxiter - 1]))
-#    
-#    temp2 = np.argsort(-(t.theta_set[t.maxiter - 1].T))
-#    
-#    concept_ranking = [[[topic, ranking, t.concept_names[idx], t.phi_set[t.maxiter -1][topic][idx]] for ranking, idx in enumerate(concept_idx)]
-#                                for topic, concept_idx in enumerate(temp)][1][0:10]
-##    
-##    concept_ranking[]
-#    
-#    doc_ranking[10][1] =  [[[topic, ranking, doc_idx, t.theta_set[t.maxiter -1].T[topic][doc_idx]] for ranking, doc_idx in enumerate(docs_idx)]
-#                    for topic, docs_idx in enumerate(temp2)]
-    
-main()
+
+#
+if __name__ == "__main__":
+    main()
 
 
 
 
-
-
-"""
-Currently, testing the CLDA python implementation
-in here.
-"""

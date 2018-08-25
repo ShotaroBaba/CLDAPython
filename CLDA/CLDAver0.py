@@ -886,11 +886,14 @@ class LDA(object):
         
     
 feature_names = R8_training_tf_feature_names
-t = LDA(8)
+t = LDA(4)
 
 
 #t._initialize(R8_training_tf_matrix)
 #R8_training_tf_feature_names[-5:-1]
+
+t.nmz.sum(axis=0).sum()
+
 
 t.run(R8_training_tf_matrix, 10)            
            # np.argsor
