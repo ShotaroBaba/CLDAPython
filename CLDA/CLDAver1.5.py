@@ -202,24 +202,6 @@ def read_test_files():
     return for_test_purpose_data
 
 
-#Create the test vectors 
-
-
-
-
-
-
-    
-
-#            yield idx
-
-
-            
-
-
-#Retrieve all P(e|c) values
-#Make sure that the feature values are sorted!
-    
 #Retrieve the data simultaneously
 def retrieve_p_e_c(feature_names):
 #    responses  = {}
@@ -330,44 +312,50 @@ def main():
     #A number of test occurs for generating the good results
     concept_names = sorted(concept_names)
 #    p_e_c_array= np.zeros(shape=(len(feature_names), len(concept_names)))
-
-    #Make it redundant
-    #Structure of array
-    #p_e_c_array[word][concept]
-#    for i in p_e_c.keys():
-#        for j in p_e_c[i].keys():
-#            p_e_c_array[feature_names.index(i)][concept_names.index(j)] = p_e_c[i][j]
-#    file_list =test_data['File']
-    #Topic 1
+#    file_list = test_data['File']
+    
+    t = CLDA(vectorise_data, p_e_c, feature_names, concept_names, 2, 30)
+    
+#    #topic 1
 #    file_list[183]
 #    file_list[152]
+#    file_list[43]
+#    file_list[40]
+#    file_list[94]
+#    file_list[57]
+#    
+#    #topic 0
+#    file_list[130]
+#    file_list[193]
+#    file_list[0]
+#    file_list[10]
+#    file_list[181]
+#    file_list[104]
 #    file_list[4]
-#    file_list[65]
-#    file_list[184]
-##    
-#    #Topic 2
-#    file_list[79]
-#    file_list[80]
-#    file_list[5]
-#    file_list[61]
-#    file_list[196]
-    #For testing purpos
-    
-    t = CLDA(vectorise_data, p_e_c, feature_names, concept_names, 2, 20)
-    
-    
     t.run()
-#    c = LDA(2)
+    
 #    
 #    
-#    c.run(vectorise_data, 5)
-#    t.set_the_rankings()
-#    c.set_the_rankings()
+    
+    t.set_the_rankings()
+    t.show_doc_topic_ranking(10)
+    t.show_concept_topic_ranking(10)
+    
+    c = LDA(2)
+    c.run(vectorise_data, 20)
+    c.set_the_rankings(feature_names)
+    c.show_word_topic_ranking(10)
+    c.show_doc_topic_ranking(10)
 #    c.show_concept_topic_ranking(5)
 #    c.show_doc_topic_ranking(6)
 #    t.show_doc_topic_ranking(10)
 #    t.show_concept_topic_ranking(10)
-
+#    t.concept_names[0:3].index(feature_names[1])
+    
+#    [[[t.concept_names.index(y),
+#       t.concept_dict[x][y]]
+#        for y in t.concept_dict[x].keys()] if t.concept_dict[x] != {} else [[t.concept_names.index(x), 1.0]] for x in t.feature_names]
+#    
 class CLDA(object):
     
     def word_indices(self, vec):
@@ -416,6 +404,14 @@ class CLDA(object):
         n_docs, vocab_size = self.matrix.shape
         
         n_concepts = len(self.concept_names)
+
+        #Relationships between concepts and words
+        #Can be used for optimising the processes
+        #Make it [[]] for consistency for calculation
+        self.concept_word_relationship = [[[self.concept_names.index(y),
+                                            self.concept_dict[x][y]]
+                                            for y in self.concept_dict[x].keys()] if self.concept_dict[x] != {} else [[self.concept_names.index(x),
+                                                                   1.0]] for x in self.feature_names]
         
         self.matrix = self.matrix.toarray().copy()
         # number of times document m and topic z co-occur
@@ -479,32 +475,21 @@ class CLDA(object):
         self.p_z_stack = p_z_stack#For testing purpose
         #Count non-zero value in the 
         #Meaning that the words is the atomic concept
-        if self.concept_dict[self.feature_names[w]] != {}:
             #Calculate only the 
-            for c in [self.concept_names.index(c_w) for c_w in self.concept_dict[self.feature_names[w]].keys()]:
-                left = (self.nzc[:,c] + self.beta) / (self.nz + self.beta * concept_size)  #Corresponding to the left hand side of the equation 
-                right = (self.nmz[m,:] + self.alpha) / (self.nm[m] + self.alpha * n_topics)
+        for c in self.concept_word_relationship[w]:
+            left = (self.nzc[:,c[0]] + self.beta) / (self.nz + self.beta * concept_size)  #Corresponding to the left hand side of the equation 
+            right = (self.nmz[m,:] + self.alpha) / (self.nm[m] + self.alpha * n_topics)
+            p_z_stack[c[0]] = left * right * c[1] 
 #                try:
-                    #Make it float just in case
-                p_z_stack[c] = left * right * self.concept_dict[self.feature_names[w]][self.concept_names[c]]
+
 #                #If there are no values.. then,
 #                except:
 #                    p_z_stack[c] = left * right * 0.0
             #Normalize the values of p_z_stack
             #Reshaping the probability string 
-            return (p_z_stack/np.sum(p_z_stack)).reshape((self.nzc.shape[0] * self.nzc.shape[1],))
+        return (p_z_stack/np.sum(p_z_stack)).reshape((self.nzc.shape[0] * self.nzc.shape[1],))
         #Calculate the atomic topic distribution calculaiton
         #if there are no positive number in the concept array
-        #Calculate the 
-        else:
-            #Retrieve the atomic index from the documents 
-            atomic_index = self.concept_names.index(self.feature_names[w])
-            left = (self.nzc[:,atomic_index] + self.beta) / (self.nz + self.beta * concept_size)
-            right = (self.nmz[m,:] + self.alpha) / (self.nm[m] + self.alpha * n_topics)
-            p_z_stack[atomic_index] = left * right
-            #Normalise p_z value
-            
-            return (p_z_stack/np.sum(p_z_stack)).reshape((self.nzc.shape[0] * self.nzc.shape[1],))
 #        #We might need to have the section "Word_Concept: like"
 #        # p_e_c = some expression
 #        p_z = left * right #* P(e|c)
@@ -647,8 +632,7 @@ class CLDA(object):
             for j in range(rank):
                 print("Rank: {}, concept: {}, concept_prob value: {}".format(self.concept_ranking[i][j][1], self.concept_ranking[i][j][2], self.concept_ranking[i][j][3]))
 
-#Done for comparison
-#Little                 
+#Done for comparison           
 class LDA(object):
 
     def __init__(self, n_topics,alpha=0.1, beta=0.1):
@@ -808,7 +792,7 @@ class LDA(object):
     #Testing the programs for displaying the data
     #Testing
     
-    def set_the_rankings(self, feature_names, doc_names, categories):
+    def set_the_rankings(self, feature_names):
         
         self.word_ranking = []
         self.doc_ranking = []
@@ -827,7 +811,7 @@ class LDA(object):
             self.word_ranking = [[[topic, ranking, feature_names[idx]] for ranking, idx in enumerate(word_idx)]
                                     for topic, word_idx in enumerate(temp)]
             
-            self.doc_ranking = [[[topic, ranking, doc_names[doc_idx], categories[doc_idx]] for ranking, doc_idx in enumerate(docs_idx)]
+            self.doc_ranking = [[[topic, ranking, doc_idx] for ranking, doc_idx in enumerate(docs_idx)]
                         for topic, docs_idx in enumerate(temp2)]
     
     def show_doc_topic_ranking(self, rank=10):
@@ -837,8 +821,7 @@ class LDA(object):
             print("#############################")
             print("Topic {} ranking: ".format(i))
             for j in range(rank):
-                 print("Rank: {}, Document: {}, Category: {}".format(self.doc_ranking[i][j][1], self.doc_ranking[i][j][2],
-                                                                     self.doc_ranking[i][j][3]))
+                 print("Rank: {}, Document: {}".format(self.doc_ranking[i][j][1], self.doc_ranking[i][j][2]))
         
         
     def show_word_topic_ranking(self, rank=10):
@@ -856,6 +839,7 @@ class LDA(object):
 
 #
 if __name__ == "__main__":
+#    pass
     main()
 
 
