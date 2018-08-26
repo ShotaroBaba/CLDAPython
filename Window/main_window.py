@@ -2,7 +2,7 @@
 """
 Created on Fri Aug 24 21:45:47 2018
 
-@author: n9648852
+@author: Shotaro Baba
 """
 #Reading all necessary packages
 
@@ -16,7 +16,6 @@ from tkinter.filedialog import askdirectory
 import csv
 import pickle
 import numpy as np
-import requests
 import itertools
 
 import nltk
@@ -24,6 +23,10 @@ from nltk import wordpunct_tokenize, WordNetLemmatizer, sent_tokenize, pos_tag
 from nltk.corpus import stopwords, wordnet
 from string import punctuation
 from sklearn.feature_extraction.text import CountVectorizer
+
+import asyncio
+import concurrent.futures
+import requests
 
 lemmatizer = WordNetLemmatizer()
 dataset_dir = "../../CLDA_data_training"
@@ -550,7 +553,30 @@ class Application():
         rem_len = -len('_f.pkl')
         #Check whether the concept file(s) exist(s)
         files_tmp = [x[:rem_len] for x in files_tmp if x.endswith('_f.pkl')]
-        "ssss"[3:4]
+#        "ssss"[3:4]
+        
+        #Define the methods for generating functions
+        #Retrieve the concept data asynchonically
+        #to retrieve the data simultaneously
+        async def retrieve_word_concept_data(feature_names, K = 20):
+            with concurrent.futures.ThreadPoolExecutor(max_workers=220) as executor:
+                collection_of_results = []
+                loop = asyncio.get_event_loop()
+                futures = [
+                    loop.run_in_executor(
+                        executor, 
+                        requests.get, 
+                        'https://concept.research.microsoft.com/api/Concept/ScoreByTypi?instance=' +
+                        i.replace(' ', '+') + 
+                        '&topK=' + str(K)
+                    )
+                    for i in feature_names
+                ]
+                for response in await asyncio.gather(*futures):
+                    collection_of_results.append(response.json())
+                
+                return collection_of_results
+        
         for file_string in files_tmp:
             #Check whether the test subject exists or no
             if any(file_string in substring for substring in self.concept_list):
@@ -563,7 +589,10 @@ class Application():
                 feature_names = None                    
                 with open(dataset_dir + '/' + file_string + '_f.pkl', "rb") as f:
                      _, feature_names = pickle.load(f)
-                     
+                
+                
+                #Sort the feature names just in case...
+                feature_names = sorted(feature_names)
                 '''
                 #Retrieve the tenth rankings of the words
                 
@@ -571,24 +600,21 @@ class Application():
                 #Researcher can find the characteristics of
                 #all values!
                 '''
-                    
-     
+                loop = asyncio.get_event_loop()
+                future = asyncio.ensure_future(retrieve_word_concept_data(feature_names))
+                results = loop.run_until_complete(future)
                 
-#                K = 10 #Retrieve as much as it could
-#                for i in feature_names:
-#                    print('Now processing ' + str(j) + " word...")
-#                    j += 1
-#                    #Replace space to + to tolerate the phrases with space
-#                    req_str = 'https://concept.research.microsoft.com/api/Concept/ScoreByTypi?instance=' \
-#                    + i.replace(' ', '+') + '&topK=' + str(K)
-#                    response = requests.get(req_str)
-#                    
-#                    #Retrieve the response from json file
-#                    p_e_c[i] = response.json()  
-#                with open("../../R8-Dataset/Dataset/ForTest/pec_prob_top.pkl", "wb") as f:
-#                    pickle.dump(p_e_c, f)
-                    
+                #temporary
+                for idx, i  in enumerate(feature_names):
+                #    print(i)
+                #    print(idx)
+                    p_e_c[i] = results[int(idx)]
+                
+#                print(p_e_c)
+#                temp = {}
+#                type(temp) == dict
                 #List up the concept names
+                
                 l = [list(i.keys()) for i in list(p_e_c.values())]
                 concept_names = sorted(list(set(itertools.chain.from_iterable(l))))
                 
@@ -604,7 +630,8 @@ class Application():
                         #Append the words with no related concpets
                         #as the atomic concepts
                         concept_names.append(i)
-                   
+#                    else:
+                        
                 #Sorting the concept_names after adding feature names
                 concept_names = sorted(concept_names)
                 p_e_c_array= np.zeros(shape=(len(feature_names), len(concept_names)))
@@ -616,7 +643,7 @@ class Application():
                     for j in p_e_c[i].keys():
                         p_e_c_array[feature_names.index(i)][concept_names.index(j)] = p_e_c[i][j]       
                 
-                with open(dataset_dir + '/' + file_string +  '_c.pkl', "wb"):
+                with open(dataset_dir + '/' + file_string +  '_c.pkl', "wb") as f:
                     pickle.dump([p_e_c_array, concept_names], f)
                     
                 self.concept_list.append(file_string +  '_c.pkl')
@@ -627,15 +654,7 @@ class Application():
 #        for i in self.feature_list:
 #            
 #            
-#            
-#        
-#        
-#        for i in self.topic_list:
-#            pass
-#            
-#        vect = generate_vector()
-#        vectorise_data, feature_names = vectorize(vect, test_data)    
-#        pass
+
     
     
 def main():

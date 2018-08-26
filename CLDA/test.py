@@ -13,7 +13,7 @@ import pickle
 import requests
 import itertools
 import requests
-import grequests
+#import grequests
 from multiprocessing import Pool
 
 
@@ -118,7 +118,7 @@ def cab_tokenizer(document):
 #Define the function here
 #Generate vector for creating the data
 def generate_vector():
-    return CountVectorizer(tokenizer=cab_tokenizer, ngram_range=[1,2],
+    return CountVectorizer(tokenizer=cab_tokenizer, ngram_range=[1,1],
                            min_df=0.02, max_df=0.98)
 
 #Generate count vectorizer
@@ -270,11 +270,11 @@ test_data = read_test_files()
 vect = generate_vector()
 vectorise_data, feature_names = vectorize(vect, test_data)     
 res_strs = ['https://concept.research.microsoft.com/api/Concept/ScoreByTypi?instance=' + x.replace(' ', '+') + '&topK=' + str(K) for x in feature_names]
-res = requests.get(res_strs[66]).content
+res = requests.get(res_strs[-3]).content
 
 #res.content
-async def time_attack(feature_names, K = 20):
-    with concurrent.futures.ThreadPoolExecutor(max_workers=200) as executor:
+async def retrieve_word_concept_data(feature_names, K = 20):
+    with concurrent.futures.ThreadPoolExecutor(max_workers=220) as executor:
         collection_of_results = []
         loop = asyncio.get_event_loop()
         futures = [
@@ -291,11 +291,15 @@ async def time_attack(feature_names, K = 20):
         return collection_of_results
 
 loop = asyncio.get_event_loop()
-future = asyncio.ensure_future(time_attack(feature_names))
+future = asyncio.ensure_future(retrieve_word_concept_data(feature_names))
 results = loop.run_until_complete(future)
 
-temporary = []
-for i in results:
-    
-    temporary.append(i.content)
+#temporary
+temporary = {}
+for idx, i  in enumerate(feature_names):
+#    print(i)
+#    print(idx)
+    temporary[i] = results[int(idx)].content.decode('utf-8') 
 
+temporary['year']
+list(temporary)[-3]
