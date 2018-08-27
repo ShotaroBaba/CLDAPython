@@ -6,13 +6,13 @@
 import pandas as pd
 import numpy as np
 import os
-import csv
+
 import pickle
 import requests
 import itertools
-import requests
 
-from multiprocessing import Pool
+
+
 
 
 import asyncio
@@ -31,15 +31,7 @@ nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
 nltk.download('wordnet')
 import xml.etree.ElementTree as ET
-#from pyspark.mllib.fpm import FPGrowth
-#
-#import pyspark
 
-# importing some libraries
-
-#from pyspark.sql import SQLContext
-
-# stuff we'll need for text processing
 
 
 
@@ -47,26 +39,15 @@ import xml.etree.ElementTree as ET
 # initialize constants
 lemmatizer = WordNetLemmatizer()
 
-#Set the random state number
-
-rand = 11
+#rand = 11
 
 """Preparation for the pre-processing"""
 
 #Setting stop words 
 def define_sw():
     
-#    stop_word_path = "../../R8-Dataset/Dataset/R8/stopwords.txt"
-
-#    with open(stop_word_path, "r") as f:
-#        stop_words = f.read().splitlines()
-    
-    return set(stopwords.words('english'))# + stop_words)
-
-#def create_lda(tf_matrix, params):
-#    return LatentDirichletAllocation(n_components=params['lda_topics'], max_iter=params['iterations'],
-#                                     learning_method='online', learning_offset=10,
-#                                     random_state=0).fit(tf_matrix)
+    #Use default english stopword     
+    return set(stopwords.words('english'))
 
 
 #Defining the lemmatizer
@@ -120,7 +101,9 @@ def generate_vector():
     return CountVectorizer(tokenizer=cab_tokenizer, ngram_range=[1,1],
                            min_df=0.02, max_df=0.98)
 
-#Generate count vectorizer
+#Generate document word count vector
+#This vector shows how many number of each word is in
+#in each document.
 def vectorize(tf_vectorizer, df):
     #Generate_vector
     #df = df.reindex(columns=['text'])  # reindex on tweet
@@ -154,44 +137,38 @@ def return_text(path, path_string, x):
     return result
 
 #Read all files in the training dataset
-
-
 #Read the test files for the test purpose
 def read_test_files(test_path):
+    #Construct pandas dataframe
     for_test_purpose_data = pd.DataFrame([], columns=['File', 'Text'])
     training_path = []
     
+    #Retrieving the file paths
     for dirpath, dirs, files in os.walk(test_path):
         training_path.extend(files)
     
     #Remove the files other than xml files
     training_path = [x for x in training_path if x.endswith('xml')]
-    #Remove the path where the 
-    #Extract only last directory name
-#    for_test_purpose_data = {}
-#    training_data_list = []
+    
+    #For each file, xml turns into the text file
+    #by parsing the xml file\
     for path_to_file in training_path:
         path_string = os.path.basename(os.path.normpath(path_to_file))        
-        #training_data_list.append(path_string)
-        #Initialise the list of the strings
-        #for_test_purpose_data[path_string] = {}
-        
+
         file = test_path + '/' + path_string 
         tree = ET.parse(file)
         
-        #Turn the string into
+        #Turn the string into text file
         root = tree.getroot()
         result = ''
         for element in root.iter():
             if(element.text != None):
                 result += element.text + ' '
+        #Removing the white space from the result.
         result = result[:-1]
         
                 
-        #Initialise 
-#        for file in generate_files(path):
-            #print("Now reading...")
-            #print(open(file, "r").read())
+
 
         
         for_test_purpose_data = for_test_purpose_data.append(pd.DataFrame([(os.path.basename((path_string)), result)], 
@@ -201,10 +178,14 @@ def read_test_files(test_path):
 
 
 #Retrieve the data simultaneously
-def retrieve_p_e_c(feature_names):
+#K represents the range of ranking you want to 
+#Retrieve from the Probase database.
+def retrieve_p_e_c(feature_names, K = 20):
 #    responses  = {}
 #    j = 0
+    #Asynchronically fetch p(e|c) data from Microsoft probase
     async def retrieve_word_concept_data(feature_names, K = 20):
+            #Setting the max workers
             with concurrent.futures.ThreadPoolExecutor(max_workers=220) as executor:
                 collection_of_results = []
                 loop = asyncio.get_event_loop()
@@ -218,11 +199,12 @@ def retrieve_p_e_c(feature_names):
                     )
                     for i in feature_names
                 ]
+                #Wait the response from the tasks until the tasks has finished
                 for response in await asyncio.gather(*futures):
                     collection_of_results.append(response.json())
                 
                 return collection_of_results
-
+    #Retrieve the 
     loop = asyncio.get_event_loop()
     future = asyncio.ensure_future(retrieve_word_concept_data(feature_names))
     results = loop.run_until_complete(future)    
@@ -237,13 +219,6 @@ def retrieve_p_e_c(feature_names):
     
     return p_e_c
 
-#t.phi_set
-#t.theta_set        
-#    def show_all_the_results(self,feature_names, maxiter=30):
-#        
-#        for i in:
-#            np.argsort()
-    
 
 #Now still testing my codes in the
 #
@@ -267,7 +242,7 @@ def main():
     test_path = "../../R8-Dataset/Dataset/ForTest"
     test_data = read_test_files(test_path)
     vect = generate_vector()
-    vectorise_data, feature_names = vectorize(vect, test_data)        
+    vectorised_data, feature_names = vectorize(vect, test_data)        
 
     p_e_c = retrieve_p_e_c(feature_names)
     l = [list(i.keys()) for i in list(p_e_c.values())]
@@ -277,7 +252,7 @@ def main():
     
     #Put the atom concept if there are no concepts in the words
     
-
+    file_lists = test_data['File']
     #Adding atomic elements
     for i in feature_names:
         #if there are no concepts in the words, then...
@@ -289,51 +264,21 @@ def main():
     
     #A number of test occurs for generating the good results
     concept_names = sorted(concept_names)
-#    p_e_c_array= np.zeros(shape=(len(feature_names), len(concept_names)))
-#    file_list = test_data['File']
+
     
-    t = CLDA(vectorise_data, p_e_c, feature_names, concept_names, 2, 10)
+    #Create CLDA object
+    t = CLDA(vectorised_data, p_e_c, feature_names, concept_names, file_lists, 4, 12)
     
-#    #topic 1
-#    file_list[183]
-#    file_list[152]
-#    file_list[43]
-#    file_list[40]
-#    file_list[94]
-#    file_list[57]
-#    
-#    #topic 0
-#    file_list[130]
-#    file_list[193]
-#    file_list[0]
-#    file_list[10]
-#    file_list[181]
-#    file_list[104]
-#    file_list[4]
+    #Run the methods of CLDA to calculate the topic-document, topic-concept probabilities.
     t.run()
     
-#    
-#    
-    
+ 
+    #Show all rankings
     t.set_the_rankings()
     t.show_doc_topic_ranking(10)
     t.show_concept_topic_ranking(10)
     t.show_concept_word_ranking(10)
-#    c = LDA(2)
-#    c.run(vectorise_data, 20)
-#    c.set_the_rankings(feature_names)
-#    c.show_word_topic_ranking(10)
-#    c.show_doc_topic_ranking(10)
-#    c.show_concept_topic_ranking(5)
-#    c.show_doc_topic_ranking(6)
-#    t.show_doc_topic_ranking(10)
-#    t.show_concept_topic_ranking(10)
-#    t.concept_names[0:3].index(feature_names[1])
-    
-#    [[[t.concept_names.index(y),
-#       t.concept_dict[x][y]]
-#        for y in t.concept_dict[x].keys()] if t.concept_dict[x] != {} else [[t.concept_names.index(x), 1.0]] for x in t.feature_names]
-#    
+
 class CLDA(object):
     
     def word_indices(self, vec):
@@ -342,7 +287,8 @@ class CLDA(object):
             for i in range(int(vec[idx])):
                 yield idx      
     
-    def __init__(self, matrix, concept_dict, feature_names, concept_names, n_topics = 3, maxiter = 15, alpha = 0.1, beta = 0.1):
+    #Initialise the objects in a CLDA instance
+    def __init__(self, matrix, concept_dict, feature_names, concept_names, file_lists, n_topics = 3, maxiter = 15, alpha = 0.1, beta = 0.1):
 
         #Assign the matrix object
         self.matrix = matrix
@@ -362,17 +308,20 @@ class CLDA(object):
         #Alpha value
         self.alpha = alpha
         
+        #File list
+        self.file_lists = file_lists
+        
+        
         #Beta value
         self.beta = beta
         
-        #max iteration value
+        #Max gibb's sampling iteration value
         self.maxiter = maxiter
         
         #Relationship between word and concept
         self.word_concept = {}
         
     
-#    def _initialize(self, matrix, concept_array, feature_names, concept_names, n_topics = 3, alpha = 0.1, beta = 0.1):
     def _initialize(self):  
      
         #Take the matrix shapes from 
@@ -395,8 +344,8 @@ class CLDA(object):
         self.nmz = np.zeros((n_docs, self.n_topics)) #C_D_T Count document topic
         # number of times topic z and word w co-occur
         self.nzc = np.zeros((self.n_topics, n_concepts)) #Topic size * word size
-        self.nm = np.zeros(n_docs) # Number of documents
-        self.nz = np.zeros(self.n_topics) #Number of topic
+        self.nm = np.zeros(n_docs) # The number of documents
+        self.nz = np.zeros(self.n_topics) #The number of each topic
         self.topics_and_concepts = {} #Topics and concepts
     
         for m in range(n_docs):
@@ -412,7 +361,7 @@ class CLDA(object):
                 #if the given feature concept probability is zero... then
                 if self.concept_dict[self.feature_names[w]] != {}:
                     z = np.random.randint(self.n_topics) #Randomise the topics
-                    c = np.random.randint(n_concepts) #Randomly distribute the concepts ver topics 
+                    c = np.random.randint(n_concepts) #Randomly distribute the concepts per topics 
                     self.nmz[m,z] += 1 #Distribute the count of topic doucment
                     self.nm[m] += 1 #Count the number of occurrences
                     self.nzc[z,c] += 1 #Counts the number of topic concept distribution
@@ -421,7 +370,7 @@ class CLDA(object):
                     self.word_concept[(m,i)] = w #Storing the information about the word
                 else:
                     z = np.random.randint(self.n_topics) #Randomise the topics
-                    c = self.concept_names.index(self.feature_names[w]) #Randomly distribute the concepts ver topics 
+                    c = self.concept_names.index(self.feature_names[w]) #Randomly distribute the concepts per topics 
                     self.nmz[m,z] += 1 #Distribute the count of topic doucment
                     self.nm[m] += 1 #Count the number of occurrences
                     self.nzc[z,c] += 1 #Counts the number of topic concept distribution
@@ -429,11 +378,7 @@ class CLDA(object):
                     self.topics_and_concepts[(m,i)] = (z,c)
                     self.word_concept[(m,i)] = w #Storing the information about the word
                     
-                    # P(zd_i, c_d_i) where d is the document location and i is the instance location in the document
-                #Memorise the correspondence between topics and the entities
-                                 #Should be put j in somewhere else...
-        
-#    "aaa".copy()
+
     def _sample_index(self, p_z, nzc):
 
         
@@ -455,10 +400,10 @@ class CLDA(object):
         #Count non-zero value in the 
         #Meaning that the words is the atomic concept
             #Calculate only the 
-        for c in self.concept_word_relationship[w]:
-            left = (self.nzc[:,c[0]] + self.beta) / (self.nz + self.beta * concept_size)  #Corresponding to the left hand side of the equation 
+        for concept_num, concept_prob in self.concept_word_relationship[w]:
+            left = (self.nzc[:,concept_num] + self.beta) / (self.nz + self.beta * concept_size)  #Corresponding to the left hand side of the equation 
             right = (self.nmz[m,:] + self.alpha) / (self.nm[m] + self.alpha * n_topics)
-            p_z_stack[c[0]] = left * right * c[1] 
+            p_z_stack[concept_num] = left * right * concept_prob
 
             #Normalize the values of p_z_stack
             #Reshaping the probability string 
@@ -487,18 +432,19 @@ class CLDA(object):
                 for i, w in enumerate(self.word_indices(self.matrix[m, :])):
                     
                     z,c = self.topics_and_concepts[(m,i)] #Extract the topics and concepts from the doucment 
-                    self.nmz[m,z] -= 1#Removing the indices 
-                    self.nm[m] -= 1 #Removign the indices
-                    self.nzc[z,c] -= 1 #Removing the indices
-                    self.nz[z] -= 1 #Removing the indices
+                    self.nmz[m,z] -= 1#Removing the indices from document topic distribution
+                    self.nm[m] -= 1 #Removign the indices from total indices in document
+                    self.nzc[z,c] -= 1 #Removing the indices from topic concept distribution
+                    self.nz[z] -= 1 #Removing the indices from topic distribution
                     
                     #Calculate the probabilities of both topic and concepts
                     p_z = self._conditional_distribution(m, w) #Put the categorical probability on it
                     #If there are topics, then it returns the random topics based on the 
                     #calculated probabilities, otherwise it returns the atomic bomb
                     z,c = self._sample_index(p_z, self.nzc) #Re-distribute concept and topic 
-
-                    self.nmz[m,z] += 1 #Randomly adding the indices based on the calculated probabilities
+                    
+                    #Randomly adding the indices based on the calculated probabilities
+                    self.nmz[m,z] += 1
                     self.nm[m] += 1 #Adding the entity based on the percentage
                     self.nzc[z,c] += 1 #Addign the entity for 
                     self.nz[z] += 1 #Count the number of the topic occurrences
@@ -513,7 +459,7 @@ class CLDA(object):
             #Print theta value
             print("Theta: {}".format(self.theta()))
         
-        #Storing newest phi value for the calculation
+        #Storing newest phi value and theta value for calculating word, concept and topic ranking
         self.phi_set.append(self.phi())
         self.theta_set.append(self.doc_prob())
 
@@ -544,8 +490,7 @@ class CLDA(object):
         return num
         
     #Set the word ranking as it takes too much time to
-    #Produce the results    
-    def set_the_rankings(self, word_limit = 10):
+    def set_the_rankings(self):
         
         self.concept_ranking = []
         self.doc_ranking = []
@@ -553,22 +498,23 @@ class CLDA(object):
 #        if(not (self.phi_set in locals() or self.phi.set in globals())):
 #            print("The calculation of phi or theta is not done yet!")
         
-        #Calcualte the topic_word distribution
+        #Calcualte the topic_word distribution by sorti
         temp = np.argsort(-(self.phi_set[0]))
         
         #Calculate the topic_document distribuiton
         temp2 = np.argsort(-(self.theta_set[0].T))
         
-        #Create the leaderships 
+        #Create the concept ranking
         self.concept_ranking = [[[topic, ranking, self.concept_names[idx], self.phi_set[0][topic][idx], idx] for ranking, idx in enumerate(concept_idx)]
                                 for topic, concept_idx in enumerate(temp)]
         
-        self.doc_ranking = [[[topic, ranking, doc_idx, self.theta_set[0].T[topic][doc_idx]] for ranking, doc_idx in enumerate(docs_idx)]
+        #Create the document ranking
+        self.doc_ranking = [[[topic, ranking, self.file_lists[doc_idx], self.theta_set[0].T[topic][doc_idx]] for ranking, doc_idx in enumerate(docs_idx)]
                     for topic, docs_idx in enumerate(temp2)]
-        #Temporarily store the values
         
         
         
+#Code temporarily exists for the further tests        
 #        
 #    tmp = [[(topic, ranking, t.concept_names[idx], list(set([(feature_names[t.word_concept[k]]) for k,v in t.topics_and_concepts.items() if v == (topic,idx)  ]))) for ranking, idx in enumerate(concept_idx[0:word_limit])]
 #            for topic, concept_idx in enumerate(temp)]
@@ -585,11 +531,14 @@ class CLDA(object):
     
     def show_concept_word_ranking(self, K = 10):
         
+        #Sorting the values by decending order
         temp = np.argsort(-(self.phi_set[0]))
         
+        #Setting the word ranking for each topic
         self.word_ranking = [[(topic, ranking, self.concept_names[idx], list(set([(self.feature_names[self.word_concept[k]]) for k,v in self.topics_and_concepts.items() if v == (topic,idx)  ]))) for ranking, idx in enumerate(concept_idx[0:K])]
             for topic, concept_idx in enumerate(temp)]
         
+        #Print word ranking over the concept topic
         print('\n')
         print("*********************************")
         print("Word ranking: ")
@@ -597,19 +546,17 @@ class CLDA(object):
         print('\n')
         
         for elements in self.word_ranking:
-            topic_number = elements[0][0]
-            print("Topic {} doc prob ranking: ".format(topic_number))
+            
+            #Each word ranking over topic and concept is printed
+            print("Topic {} word prob ranking: ".format(elements[0][0]))
             for element in elements: 
                 
-                ranking = element[1]
-                concept_name = element[2]
-                words = " ".join(element[3]) 
-                print("Rank: {}||concept_name: \"{}\"||words: \"{}\"".format( ranking, concept_name, words))
+                print("Rank: {}||Concept_name: \"{}\"||Word(s): \"{}\"".format( element[1], element[2], element[3]))
             
         
     def show_doc_topic_ranking(self, rank=10):
-#        if(not (self.doc_ranking in locals() or self.doc_ranking in globals())):
-#            print("The calculation of phi or theta is not done yet!")
+        
+        #Print document probabilities over topics
         print('\n')
         print("*********************************")
         print("Theta value: ")
@@ -617,16 +564,16 @@ class CLDA(object):
         print(self.theta())
         print('\n')
         
+        #Each document ranking over topic is printed 
         for i in range(self.nzc.shape[0]):
             print("#############################")
             print("Topic {} doc prob ranking: ".format(i))
             for j in range(rank):
-                 print("Rank: {}, Doc_idx: {}, doc_prob value: {}".format(self.doc_ranking[i][j][1], self.doc_ranking[i][j][2], self.doc_ranking[i][j][3]))
+                 print("Rank: {}, Doc_name: {}, Doc_prob value: {}".format(self.doc_ranking[i][j][1], self.doc_ranking[i][j][2], self.doc_ranking[i][j][3]))
         
         
     def show_concept_topic_ranking(self, rank=10):
-#        if(not (self.word_ranking in locals() or self.word_ranking in globals())):
-#            print("The calculation of phi or theta is not done yet!")
+
         print('\n')
         print("*********************************")
         print("Phi value: ")
@@ -634,38 +581,30 @@ class CLDA(object):
         print(self.phi())
         print('\n')          
         
+        #Each concept ranking over topic is printed
         for i in range(self.nzc.shape[0]):
             print("#############################")
                     
             print("Topic {} concpet prob ranking: ".format(i))
             for j in range(rank):
-                print("Rank: {}, concept: {}, concept_prob value: {}".format(self.concept_ranking[i][j][1], self.concept_ranking[i][j][2], self.concept_ranking[i][j][3]))
+                print("Rank: {}, Concept: {}, Concept_prob value: {}".format(self.concept_ranking[i][j][1], self.concept_ranking[i][j][2], self.concept_ranking[i][j][3]))
 
 #Baseline method
 #Done for comparison           
 class LDA(object):
 
     def __init__(self, n_topics,alpha=0.1, beta=0.1):
-        """
-        n_topics: number of topics
-        
-        """
+       
         self.n_topics = n_topics
         self.alpha = alpha
         self.beta = beta
     
     def sample_index(self,p):
-        """
-        Sample from the Multinomial distribution and return the sample index.
-        """
+        
         return np.random.multinomial(1,p).argmax()
     
     def word_indices(self, vec):
-        """
-        Turn a document vector of size vocab_size to a sequence
-        of word indices. The word indices are between 0 and
-        vocab_size-1. The sequence length is equal to the document length.
-        """
+       
         for idx in vec.nonzero()[0]:
             for i in range(int(vec[idx])):
                 yield idx
@@ -674,7 +613,7 @@ class LDA(object):
         
         #For test purpose only!
         n_docs, vocab_size = matrix.shape
-        matrix = matrix.toarray().copy()
+#        matrix = matrix.toarray().copy()
         # number of times document m and topic z co-occur
         self.nmz = np.zeros((n_docs, self.n_topics)) #C_D_T Count document topic
         # number of times topic z and word w co-occur
@@ -713,23 +652,7 @@ class LDA(object):
         p_z /= np.sum(p_z)
         return p_z
 
-#    def loglikelihood(self):
-#        """
-#        Compute the likelihood that the model generated the data.
-#        """
-#        vocab_size = self.nzw.shape[1] #Vocabulary size
-#        n_docs = self.nmz.shape[0] #Document size
-#        lik = 0 #The calculation of likelihood
-#
-#        for z in range(self.n_topics):
-#            lik += log_multi_beta(self.nzw[z,:]+self.beta)
-#            lik -= log_multi_beta(self.beta, vocab_size)
-#
-#        for m in range(n_docs):
-#            lik += log_multi_beta(self.nmz[m,:]+self.alpha)
-#            lik -= log_multi_beta(self.alpha, self.n_topics)
-#
-#        return lik
+
 
     def phi(self):
         """
@@ -743,8 +666,8 @@ class LDA(object):
     
     def doc_prob(self):
         
-#        T = self.nmz.shape[0]
-        num = self.nmz + self.alpha #Cal
+
+        num = self.nmz + self.alpha 
         num /= np.sum(num, axis=1)[:, np.newaxis] 
         
         return num
@@ -787,7 +710,8 @@ class LDA(object):
                     self.nz[z] += 1 #Count the number of the occureences
                     self.topics[(m,i)] = z #Re=assignm the topic
 
-            # FIXME: burn-in and lag!
+            #Retrieve the phi, theta and document topic co-occurrence probability
+            #values
             print("iteration: {}".format(it))
             print("phi: {}".format(self.phi()))
             print("Theta: {}".format(self.theta()))
@@ -826,8 +750,7 @@ class LDA(object):
     
     #Show the document ranking over topic
     def show_doc_topic_ranking(self, rank=10):
-#        if(not (self.doc_ranking in locals() or self.doc_ranking in globals())):
-#            print("The calculation of phi or theta is not done yet!")
+
         for i in range(self.nzw.shape[0]):
             print("#############################")
             print("Topic {} ranking: ".format(i))
@@ -836,8 +759,7 @@ class LDA(object):
         
     #Show the topic ranking over the words
     def show_word_topic_ranking(self, rank=10):
-#        if(not (self.word_ranking in locals() or self.word_ranking in globals())):
-#            print("The calculation of phi or theta is not done yet!")
+
         
         for i in range(self.nzw.shape[0]):
             print("#############################")
