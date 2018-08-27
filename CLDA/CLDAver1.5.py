@@ -535,7 +535,7 @@ class CLDA(object):
         temp = np.argsort(-(self.phi_set[0]))
         
         #Setting the word ranking for each topic
-        self.word_ranking = [[(topic, ranking, self.concept_names[idx], list(set([(self.feature_names[self.word_concept[k]]) for k,v in self.topics_and_concepts.items() if v == (topic,idx)  ]))) for ranking, idx in enumerate(concept_idx[0:K])]
+        self.word_ranking = [[(topic, ranking, self.concept_names[idx], list(set([(self.feature_names[self.word_concept[k]]) for k,v in self.topics_and_concepts.items() if v == (topic,idx) ]))) for ranking, idx in enumerate(concept_idx[0:K])]
             for topic, concept_idx in enumerate(temp)]
         
         #Print word ranking over the concept topic
@@ -544,9 +544,9 @@ class CLDA(object):
         print("Word ranking: ")
         print("*********************************")
         print('\n')
-        
+        print('\n')
         for elements in self.word_ranking:
-            
+            print('\n')
             #Each word ranking over topic and concept is printed
             print("Topic {} word prob ranking: ".format(elements[0][0]))
             for element in elements: 
@@ -563,9 +563,9 @@ class CLDA(object):
         print("*********************************")
         print(self.theta())
         print('\n')
-        
         #Each document ranking over topic is printed 
         for i in range(self.nzc.shape[0]):
+            print('\n')
             print("#############################")
             print("Topic {} doc prob ranking: ".format(i))
             for j in range(rank):
@@ -583,6 +583,7 @@ class CLDA(object):
         
         #Each concept ranking over topic is printed
         for i in range(self.nzc.shape[0]):
+            print('\n')
             print("#############################")
                     
             print("Topic {} concpet prob ranking: ".format(i))
