@@ -183,7 +183,7 @@ def read_test_files(test_path):
 def retrieve_p_e_c(feature_names, K = 20):
 #    responses  = {}
 #    j = 0
-    #Asynchronically fetch p(e|c) data from Microsoft probase
+    #Asynchronically fetch p(e|c) data from Microsoft Probase database
     async def retrieve_word_concept_data(feature_names, K = 20):
             #Setting the max workers
             with concurrent.futures.ThreadPoolExecutor(max_workers=220) as executor:
