@@ -6,7 +6,14 @@ Created on Fri Aug 24 21:45:47 2018
 """
 #Reading all necessary packages
 
-#Import all necessary packages.
+#Import all necessary packages.import sys
+import sys
+sys.path.append("..\/models/")
+
+import CLDA
+import gc
+#CLDA()
+from functools import partial
 import tkinter as tk
 import os
 import time
@@ -16,6 +23,8 @@ from tkinter.filedialog import askdirectory
 import csv
 import pickle
 import itertools
+
+
 
 import nltk
 from nltk import wordpunct_tokenize, WordNetLemmatizer, sent_tokenize, pos_tag
@@ -38,7 +47,7 @@ nltk.download('averaged_perceptron_tagger')
 nltk.download('wordnet')
 #Create main menu            
 #Defining the lemmatizer
-
+gc.enable()
 def define_sw():
     
     return set(stopwords.words('english'))# + stop_words)
@@ -578,17 +587,20 @@ class Application():
         self.exit_button.pack(side = tk.BOTTOM)
         self.exit_button['command'] = self.root.destroy
         
-        self.test_button = tk.Button(self.root, text = 'test')
+        self.training_button = tk.Button(self.root, text = 'training_data_creation')
         
-        self.test_button.pack(side = tk.BOTTOM)
-        self.test_button['command'] = self.asynchronous_training_topic_concept_retrieval
+        self.training_button.pack(side = tk.BOTTOM)
+        self.training_button['command'] = self.asynchronous_training_topic_concept_retrieval
        
-        self.test_button = tk.Button(self.root, text = 'test2')
+        self.test_button = tk.Button(self.root, text = 'test_data_creation')
         
         self.test_button.pack(side = tk.BOTTOM)
         self.test_button['command'] = self.asynchronous_testing_topic_concept_retrieval
         
+        self.CLDA_button = tk.Button(self.root, text = 'CLDA_model_creation')
         
+        self.CLDA_button.pack(side = tk.BOTTOM)
+        self.CLDA_button['command'] = partial(self.asynchronous_CLDA_model_generation, dataset_dir)
         '''
         #######################################
         ####End the main menu
@@ -987,7 +999,7 @@ class Application():
                 return collection_of_results
         
         file_string = os.path.splitext(os.path.basename(file_string))[0]
-        #Check whether the test subject exists or no
+        #Check whether the test subject exists or not
         if any(file_string in substring for substring in concept_list):
             #Feature already exists
             print("Feature {} already exists".format(file_string +  '_c.pkl'))
@@ -1003,7 +1015,6 @@ class Application():
             feature_names = sorted(feature_names)
             '''
             #Retrieve the tenth rankings of the words
-            
             #K needed to be adjustable so that the
             #Researcher can find the characteristics of
             #all values!
@@ -1415,7 +1426,7 @@ class Application():
         print("Feature extraction completed!!")
         
         time.sleep(2)
-        concept_list = self.concept_list
+        
         
         #Asyncio is not used for retrieving web data simultaneously
         def create_concept_word_lists(training_folders_tmp, concept_list, dataset_dir):
@@ -1424,7 +1435,8 @@ class Application():
                 concept_vec.append(self.create_concept_matrix_async(i, concept_list, dataset_dir))
             time.sleep(2)    
             return concept_vec
-    
+        
+        concept_list = self.concept_list
         concepts = create_concept_word_lists(training_folders_tmp, concept_list, dataset_dir)
         
         if None in concepts:
@@ -1537,7 +1549,7 @@ class Application():
         self.feature_list_test = sorted(self.feature_list_test)
         
         if type(features) == list:
-            for i in topics:
+            for i in features:
                 self.drop_down_list_word_vector_bar_test.insert(tk.END, i)
         
         print("Feature extraction completed!")
@@ -1566,11 +1578,71 @@ class Application():
         self.concept_list_test = sorted(self.concept_list_test)
         
         
-        if type(concepts) == list:
-            for i in topics:
+        if type(features) == list:
+            for i in features:
                 self.drop_down_concept_prob_vector_list_test.insert(tk.END, i)
         
         print("Concept graph retrieval completed!!")
+    
+    def create_CLDA_instance(self,i):
+        file_index_name = pd.read_csv(dataset_dir + '/' + i + '.csv', encoding='utf-8', sep=',', 
+                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)["File"]
+        
+        feature_matrix, feature_names = (None, None)
+        with open( dataset_dir + '/' + i + "_f.pkl", "rb") as f :   
+            feature_matrix, feature_names = pickle.load(f)
+        
+        concept_dict, concept_names = (None, None)
+        with open(dataset_dir + '/' + i + "_c.pkl", "rb") as f:
+            concept_dict, concept_names = pickle.load(f)
+#        
+        CLDA_instance = CLDA.CLDA(feature_names, concept_names, file_index_name, 5, 20)
+#        print(concept_names)
+        CLDA_instance.run(feature_matrix, concept_dict)
+
+        with open(dataset_dir + '/' + i + "_CLDA.pkl", "wb") as f:
+            pickle.dump(CLDA_instance, f)
+        
+        #Sleep just in case...
+        time.sleep(0.5)
+        #Return True if the process stops normally
+        return True
+        
+        
+    def asynchronous_CLDA_model_generation(self, dataset_dir):
+        
+        
+        files = []
+        for dirpath, dirs, files in os.walk(dataset_dir):
+            if len([x for x in files if x.endswith('.csv')]) != 0:
+                files.extend(files) 
+        
+        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
+
+        
+        async def asynchronous_CLDA_creation():
+            
+           with concurrent.futures.ThreadPoolExecutor(max_workers=30) as executor:
+            
+                loop = asyncio.get_event_loop()
+                futures = [
+                    loop.run_in_executor(
+                        executor, 
+                        self.create_CLDA_instance, 
+                        j
+                    )
+                    for j in files_list_for_modelling_CLDA
+                ]
+
+                return await asyncio.gather(*futures)
+        
+        
+        loop = asyncio.get_event_loop()
+        future = asyncio.ensure_future(asynchronous_CLDA_creation())
+        results = loop.run_until_complete(future)
+        
+        if all(results):
+            print("CLDA model creation completed!")
         
         
 def main():
