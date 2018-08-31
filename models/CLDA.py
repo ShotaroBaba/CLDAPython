@@ -10,7 +10,7 @@ import os
 #import pickle
 import requests
 import itertools
-
+import pickle
 
 
 
@@ -267,71 +267,112 @@ def main():
 
     
     #Create CLDA object
-    t = CLDA(feature_names, concept_names, file_lists, 2, 10)
+    t = CLDA(feature_names, concept_names, file_lists, 2, 5)
     
     #Run the methods of CLDA to calculate the topic-document, topic-concept probabilities.
     t.run(vectorised_data, p_e_c)
+    
     t.document_topic_concept_word
     #(m,z,c,w)
 #    sum_of_the_values = 0
 #    top = 0
-#    for w in range(len(feature_names))[0:2]:
-#        sum_of_the_values = 0
-#        #w = 0 in this case....
-#        for uniq_topic_concept in list(set([(x[0], x[1], x[2]) for x in t.document_topic_concept_word if x[3] == w])):
-#            
-#            try:
-#                print(uniq_topic_concept)
-#                print(p_e_c[w][concept_names[uniq_topic_concept[2]]])
-#                
-#            except KeyError:
-#               print("Cannot compute the value as there is no dictionary...")
-##               top = 0
-##            doc_no = list(set([x for x in t.document_topic_concept_word if (x[0], x[1], x[2]) ==(uniq_topic_concept[0], uniq_topic_concept[1], uniq_topic_concept[2])]))
-#            
-#            
-#            
-#           
-#        print(x)
+
+#    concept_names.index('dutroux')
+#    
+#    
+#    feature_names.index('dutroux')
+    #Because the frequency of word occurrences does not matter with the calculation of probability of word occurrence
+    #over topics and concepts
+    #Make topic concept word probability
+    
+#    def create_topic_concept_word_ranking(self):
+#        for w in range(len(feature_names)):
+#    #        sum_of_the_values = 0
+#            #len(concept_names)
+#            #Listing the concepts, words and documents belonging to A WORD
+#    #        w = feature_names.index('acknowledge')
+#            #List the relationship between topic word concepts and documents.
+#            list_of_words_in_concepts_topics = [x for x in lighten_document_topic_concept_word if x[3] == w]
+#            list_of_words_in_concpets_topics = sorted(list(set([(x[1], x[2], x[3]) for x in list_of_words_in_concepts_topics])))
 #        
-#    [x for x in t.document_topic_concept_word if x[3] == 0]
+#    #        test =  sorted(list(set([x[2] for x in list_of_words_in_concepts_topics])))
+#    #        for i in test:
+#    #            try:
+#    #                
+#    #                print('there are values {} {}'.format(i, concept_names[i]))
+#    #            except:
+#    #                print('no value')
+#    #        p_e_c[feature_names[w]]
+#            results=[]
+#            list_of_words_in_concpets_topics = sorted(list(set([(x[1], x[2], x[3]) for x in list_of_words_in_concepts_topics])))
+#            for set_sum in list_of_words_in_concpets_topics:
+#    #            set_summation_for_topic_concept = [x for x in lighten_document_topic_concept_word if (set_sum[1], set_sum[2]) == (x[1], x[2])]
+#                #2199 = word_type, 0 = topic, 7352 = concept
+#                
+#                #Extracting the document related to the words with topic and concept 
+#                set_summation_for_topic_concept =\
+#                [x for x in lighten_document_topic_concept_word if (set_sum[0], set_sum[1], set_sum[2]) == (x[1], x[2], x[3])]
+#    #            [x for x in lighten_document_topic_concept_word if (0, 19700, 25) == (x[1], x[2], x[3])]
+#                total = 0
+#                sum_of_value = 0
+#                value = 0
+#                try:
+#                    #Meaning that it is an atomic concept
+#                    if p_e_c[t.feature_names[w]] == {}:
+#                        value = 1.0
+#                    else:
+#                        #Calculate value for non-atomic concept values
+#                        value = p_e_c[t.feature_names[w]][t.concept_names[set_sum[1]]]
+#                except KeyError:
+#    
+#                    pass
+#                for relations in set_summation_for_topic_concept:
+#                    words_relating_tcd =\
+#                    [x for x in lighten_document_topic_concept_word if (relations[0], relations[1], relations[2]) == (x[0], x[1],x[2])]
+#    #                [x for x in lighten_document_topic_concept_word if (0, 2019, 958) == (x[1], x[2],x[3])]
+#    #                print(words_relating_tcd)
+#                    
+#                    for k in words_relating_tcd:
+#                        try:
+#                        #Meaning that it is an atomic concept
+#                            if p_e_c[feature_names[k[3]]] == {}:
+#                                sum_of_value += 1.0
+#                            else:
+#                            #Calculate value for non-atomic concept values
+#                                sum_of_value += p_e_c[feature_names[k[3]]][concept_names[k[2]]]
+#                        except KeyError:
+#                            #Skip if the value is not belong to the topic and concept, it is regarded as 
+#                            #the values t
+#    #                        sum_of_value += 
+#                            pass
+#                    try:
+#                        total += value / sum_of_value
+#                    except ZeroDivisionError:
+#                        pass
+#                total /= len(test_data)
+#                results.append((set_sum, total))
+#            total_results[w] = results
+        
+
 ##    
 #    
 #    t.topics_and_concepts
     #Show all rankings
+    concept_names.index('word')
     t.set_the_rankings()
     t.show_doc_topic_ranking(2)
     t.show_concept_topic_ranking(10)
-    t.show_concept_word_ranking(10)
-    import pickle
+#    t.show_concept_word_ranking(10)
+    t.create_topic_concept_word_ranking(p_e_c)
+   # t.show_word_concept_topic('police')
+    
+    #Store the model
     with open("result.pkl", "wb") as f:
         pickle.dump(t,f)
-        
-#    with open("result.pkl", "rb") as f:
-#        t = pickle.load(f)
-#    t.word_topic_concept
-    
-    
-#    word_prob = []
-#    (0,1)[0]   
-#    for i in range(len(t.feature_names)):
-#         corresponding_tokens = [word_loc for word_loc in iter(t.word_concept) if t.word_concept[word_loc] == i]
-#         tttt = [t.topics_and_concepts[word_loc] for word_loc in corresponding_tokens]
-#         [for i in topics]
-#            t.doc_len
-#            [t.word_concept[j] for j in iter(t.word_concept) if (j == (3,31) and j[0] == 0)]
-#    t.n_topics
-#    t.word_concept
-#    feature_names[0:30]
-#    t.document_topic_concept_word[0][1] = 3 
-#    
-    #Word topic ranking should be calculated by words and words
-    #For each document the word probability under the condition zi, ci can be calculated by 
-    #P(w|ci)/P(w1|c1) + P(w2|c1) + P(w3|c1) + P(w4|c1) ... P(wn|c1) where all Ws appear in the same
-    #document. After all probabilities are calculated P(w|ci, zi) on each document, then they are
-    #summed up and then averaged for each word....
-    #Print word ranking over the concept topic
-    
+
+
+
+
 
 class CLDA(object):
     
@@ -370,7 +411,9 @@ class CLDA(object):
         #Relationship between word and concept
         self.word_concept = {}
         
-    
+#    p_e_c[feature_names[1223]]
+#    t.concept_word_relationship[1223]
+#    total_results[1223]
     def _initialize(self, matrix, concept_dict):  
      
         #Take the matrix shapes from 
@@ -396,7 +439,7 @@ class CLDA(object):
         self.nm = np.zeros(n_docs) # The number of documents
         self.nz = np.zeros(self.n_topics) #The number of each topic
         self.topics_and_concepts = {} #Topics and concepts
-        self.document_topic_concept_word = []
+        self.document_topic_concept_word = {}
 #        tmp = {}
         for m in range(n_docs):
 #            print(m) #Print the document progress
@@ -417,7 +460,7 @@ class CLDA(object):
                     self.nzc[z,c] += 1 #Counts the number of topic concept distribution
                     self.nz[z] += 1 #Distribute the counts of the number of topics
                     self.topics_and_concepts[(m,i)] = (z,c)
-                    self.document_topic_concept_word.append([m,z,c,w]) #Storing the information about the word
+                    self.document_topic_concept_word[(m,i)] = (m,z,c,w) #Storing the information about the word
                 else:
                     z = np.random.randint(self.n_topics) #Randomise the topics
                     c = self.concept_names.index(self.feature_names[w]) #Randomly distribute the concepts per topics 
@@ -428,7 +471,7 @@ class CLDA(object):
                     
                     #For future update, they will be joined together....
                     self.topics_and_concepts[(m,i)] = (z,c)
-                    self.document_topic_concept_word.append([m,z,c,w])#Storing the information about the word, topic and concepts and its location
+                    self.document_topic_concept_word[(m,i)] = (m,z,c,w)#Storing the information about the word, topic and concepts and its location
                     
     
     
@@ -442,7 +485,9 @@ class CLDA(object):
         #Return topic and concet index
         return topic, concept
     
-
+#    t.p_z_stack[28947][1]
+    
+    
 #    np.array(([2,3,4],[7,6,5])).T.reshape((6,))    
     def _conditional_distribution(self, m, w): #Maybe the computation valuables
        
@@ -464,7 +509,10 @@ class CLDA(object):
         #Calculate the atomic topic distribution calculaiton
         #if there are no positive number in the concept array
         #We might need to have the section "Word_Concept: like"
-
+    a = [[3, 4, 5] ,[3,4,5]]
+    
+#    t.topics_and_concepts[(27,9891)]
+#    t.document_topic_concept_word[-100:-1]
     #z_c shape is something like this: (topic_num, concept_num)
     def run(self, matrix, concept_dict):
 
@@ -502,8 +550,8 @@ class CLDA(object):
                     self.nzc[z,c] += 1 #Addign the entity for 
                     self.nz[z] += 1 #Count the number of the topic occurrences
                     self.topics_and_concepts[(m,i)] = z,c #Re-assign the concepts and topics
-                    self.document_topic_concept_word[i][1] = z
-                    self.document_topic_concept_word[i][2] = c
+                    self.document_topic_concept_word[(m,i)] = (m,z,c,w)
+#                    self.document_topic_concept_word[i][2] = c
                     
             #Print the time of the iteration                    
             print("Iteration: {}".format(it))
@@ -583,37 +631,38 @@ class CLDA(object):
 #    t.topics_and_concepts.values((0,5086))
 #    t.show
 #        self.word_ranking = 
-    
-    def show_concept_word_ranking(self, K = 10):
-        
-        #Sorting the values by decending order
-        temp = np.argsort(-(self.phi_set[0]))
-        
-        #Setting the word ranking for each topic
-        self.word_ranking = [[(topic, ranking, self.concept_names[idx], list(set([(self.feature_names[self.word_concept[k]]) for k,v in self.topics_and_concepts.items() if v == (topic,idx) ]))) for ranking, idx in enumerate(concept_idx[0:K])]
-            for topic, concept_idx in enumerate(temp)]
-        #Word topic ranking should be calculated by words and words
-        #For each document the word probability under the condition zi, ci can be calculated by 
-        #P(w|ci)/P(w1|c1) + P(w2|c1) + P(w3|c1) + P(w4|c1) ... P(wn|c1) where all Ws appear in the same
-        #document. After all probabilities are calculated P(w|ci, zi) on each document, then they are
-        #summed up and then averaged for each word....
-        #Print word ranking over the concept topic
-        
-        print('\n')
-        print("*********************************")
-        print("Word ranking: ")
-        print("*********************************")
-        print('\n')
-        print('\n')
-        for elements in self.word_ranking:
-            print('\n')
-            #Each word ranking over topic and concept is printed
-            print("Topic {} word prob ranking: ".format(elements[0][0]))
-            for element in elements: 
-                
-                print("Rank: {}||Concept_name: \"{}\"||Word(s): \"{}\"".format( element[1], element[2], element[3]))
+
+#Obsolete
+#    def show_concept_word_ranking(self, K = 10):
+#        
+#        #Sorting the values by decending order
+#        temp = np.argsort(-(self.phi_set[0]))
+#        
+#        #Setting the word ranking for each topic
+#        self.word_ranking = [[(topic, ranking, self.concept_names[idx], list(set([(self.feature_names[self.word_concept[k]]) for k,v in self.topics_and_concepts.items() if v == (topic,idx) ]))) for ranking, idx in enumerate(concept_idx[0:K])]
+#            for topic, concept_idx in enumerate(temp)]
+#        #Word topic ranking should be calculated by words and words
+#        #For each document the word probability under the condition zi, ci can be calculated by 
+#        #P(w|ci)/P(w1|c1) + P(w2|c1) + P(w3|c1) + P(w4|c1) ... P(wn|c1) where all Ws appear in the same
+#        #document. After all probabilities are calculated P(w|ci, zi) on each document, then they are
+#        #summed up and then averaged for each word....
+#        #Print word ranking over the concept topic
+#        
+#        print('\n')
+#        print("*********************************")
+#        print("Word ranking: ")
+#        print("*********************************")
+#        print('\n')
+#        print('\n')
+#        for elements in self.word_ranking:
+#            print('\n')
+#            #Each word ranking over topic and concept is printed
+#            print("Topic {} word prob ranking: ".format(elements[0][0]))
+#            for element in elements: 
+#                
+#                print("Rank: {}||Concept_name: \"{}\"||Word(s): \"{}\"".format( element[1], element[2], element[3]))
             
-        
+    
     def show_doc_topic_ranking(self, rank=10):
         
         #Print document probabilities over topics
@@ -650,7 +699,87 @@ class CLDA(object):
             print("Topic {} concpet prob ranking: ".format(i))
             for j in range(rank):
                 print("Rank: {}, Concept: {}, Concept_prob value: {}".format(self.concept_ranking[i][j][1], self.concept_ranking[i][j][2], self.concept_ranking[i][j][3]))
+#    p_e_c[feature_names[841]][] concept_names.index('introductory word')
+#    p_e_c['dutroux']
+#    
+#    
+#    t.total_results
+    #[x for x in list(set(t.document_topic_concept_word.values())) if x[2] == 12983]
+    #Word topic ranking should be calculated by words and words
+    #For each document the word probability under the condition zi, ci can be calculated by 
+    #P(w|ci)/P(w1|c1) + P(w2|c1) + P(w3|c1) + P(w4|c1) ... P(wn|c1) where all Ws appear in the same
+    #document. After all probabilities are calculated P(w|ci, zi) on each document, then they are
+    #summed up and then averaged for each word....
+    #Print word ranking over the concept topic
+    def create_topic_concept_word_ranking(self, word_concept_probabilities):
+        total_results = {}
+        
+        #Reducing the amount of data by elimiating the elements overlap
+        lighten_document_topic_concept_word = sorted(list(set(list(self.document_topic_concept_word.values()))))
+        for w in range(len(self.feature_names)):
 
+            list_of_words_in_concepts_topics = [x for x in lighten_document_topic_concept_word if x[3] == w]
+            
+            #Eliminate overlap
+            list_of_words_in_concpets_topics = sorted(list(set([(x[1], x[2], x[3]) for x in list_of_words_in_concepts_topics])))
+            
+            results = []
+            for set_sum in list_of_words_in_concpets_topics:
+
+                #Set_sum[0], topic set_sum[1], concept, set_sum[2]: word to retrieve all relevant documents 
+                #for calculating the probability
+                set_summation_for_topic_concept =\
+                [x for x in lighten_document_topic_concept_word if (set_sum[0], set_sum[1], set_sum[2]) == (x[1], x[2], x[3])]
+                
+                
+                #initialise all values
+                total = 0
+                sum_of_value = 0
+                value = 0
+                
+                
+                try:
+                    #Meaning that it is an atomic concept
+                    if word_concept_probabilities[self.feature_names[w]] == {}:
+                        value += 1.0
+                    else:
+                        value += word_concept_probabilities[self.feature_names[w]][self.concept_names[set_sum[1]]]
+                except KeyError:
+    
+                    pass
+                
+                #Summing word-concept-topic probabilies in all documents
+                for relations in set_summation_for_topic_concept:
+                    words_relating_tcd =\
+                    [x for x in lighten_document_topic_concept_word if (relations[0], relations[1], relations[2]) == (x[0], x[1],x[2])]
+
+                    
+                    for k in words_relating_tcd:
+                        try:
+                        #Meaning that it is an atomic concept
+                            if word_concept_probabilities[self.feature_names[k[3]]] == {}:
+                                sum_of_value += 1.0
+                            else:
+                            #Calculate value for non-atomic concept values
+                                sum_of_value += word_concept_probabilities[self.feature_names[k[3]]][self.concept_names[k[2]]]
+                        except KeyError:
+
+                            pass
+                    try:
+                        total += value / sum_of_value
+                    except ZeroDivisionError:
+                        pass
+                total /= len(self.file_lists)
+                results.append((set_sum, total))
+                total_results[w] = results
+            self.total_results = total_results
+
+    def show_word_concept_topic(self, word):
+#        results = sorted(total_results[w], key= (lambda x: x[1]))
+        for i in sorted(self.total_results[self.feature_names.index(word)], key= (lambda x: x[1])):
+            print("Word: {}, Topic: {}, Concept: {}, Probability: {}".format(word, i[0][0],self.concept_names[i[0][1]], i[1]))
+
+#        total_results[998][0][0][0]
 #Baseline method
 #Done for comparison           
 class LDA(object):
