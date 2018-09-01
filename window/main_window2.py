@@ -23,8 +23,9 @@ from tkinter.filedialog import askdirectory
 import csv
 import pickle
 import itertools
-
-
+#from itertools import chain
+from multiprocessing import Pool
+#import threading
 
 import nltk
 from nltk import wordpunct_tokenize, WordNetLemmatizer, sent_tokenize, pos_tag
@@ -183,6 +184,7 @@ def read_test_files():
                                                                             columns=['File', 'Text']))
     
     return for_test_purpose_data
+
 
 
 #Create the test vectors 
@@ -590,12 +592,18 @@ class Application():
         self.training_button = tk.Button(self.root, text = 'training_data_creation')
         
         self.training_button.pack(side = tk.BOTTOM)
-        self.training_button['command'] = self.asynchronous_training_topic_concept_retrieval
+        self.training_button['command'] = partial(self.asynchronous_training_topic_concept_retrieval, self.select_folder_and_extract_xml_async, '.xml')
        
         self.test_button = tk.Button(self.root, text = 'test_data_creation')
         
         self.test_button.pack(side = tk.BOTTOM)
         self.test_button['command'] = self.asynchronous_testing_topic_concept_retrieval
+        
+        
+        self.training_button_txt = tk.Button(self.root, text = 'training_data_creation_text')
+        
+        self.training_button_txt.pack(side = tk.BOTTOM)
+        self.training_button_txt['command'] = partial(self.asynchronous_training_topic_concept_retrieval, self.select_folder_and_extract_txt_async, '.txt')
         
         self.CLDA_button = tk.Button(self.root, text = 'CLDA_model_creation')
         
@@ -771,6 +779,56 @@ class Application():
                     result += element.text + ' '
             #Remove the remained data
             result = result[:-1]
+            
+            name_of_the_file = (os.path.basename(path_string))
+            
+            for_test_purpose_data = for_test_purpose_data.append(pd.DataFrame([(name_of_the_file, 
+                                                                               topic_name,
+                                                                               result)], 
+            columns=['File','Topic', 'Text']))
+            if not os.path.isdir(dataset_dir):
+                os.makedirs(dataset_dir)
+        if(len(for_test_purpose_data) != 0):
+            for_test_purpose_data.to_csv(dataset_dir + '/' +
+                              topic_name + ".csv",
+                              index=False, encoding='utf-8',
+                              quoting=csv.QUOTE_ALL)
+            
+            return topic_name + ".csv"
+
+
+    def select_folder_and_extract_txt_async(self,ask_folder, topic_list, dataset_dir):
+  
+        folder_directory = ask_folder
+        
+#        self.folder_name = "C:/Users/n9648852/Desktop/New folder for project/RCV1/Training/Training101"        
+        
+#        folder_name = os.path.basename("C:/Users/n9648852/Desktop/New folder for project/RCV1/Training/Training101")
+        temp_substr = os.path.basename(folder_directory)
+            
+        #If the processed file has already exists, then the process of the
+        #topics will stop.
+        if any(temp_substr in string for string in topic_list):
+            print("topic already exist.")
+            return 
+        
+        for_test_purpose_data = pd.DataFrame([], columns=['File','Topic', 'Text'])
+        
+        training_path = []
+        for dirpath, dirs, files in os.walk(folder_directory):
+            training_path.extend(files)
+            
+        #Remove the files other than xml files
+        training_path = [x for x in training_path if x.endswith('.txt') and not x.startswith('._')]
+        print(training_path)
+        topic_name = os.path.basename(folder_directory)
+       
+        for path_to_file in training_path:
+            path_string = os.path.basename(os.path.normpath(path_to_file)) 
+            
+            file = folder_directory + '/' + path_string
+            f = open(file, "r")
+            result = f.read()
             
             name_of_the_file = (os.path.basename(path_string))
             
@@ -1326,14 +1384,14 @@ class Application():
     '''
     #Retrieve all test and training data asynchrously
     '''
-    def asynchronous_training_topic_concept_retrieval(self):
+    def asynchronous_training_topic_concept_retrieval(self, fobj, file_type):
         train_folder_selection = askdirectory()
         #train_folder_selection = "C:/Users/n9648852/Desktop/R8-Dataset/Dataset/R8/Testing"
         
         training_folders_tmp = []
         
         for dirpath, dirs, files in os.walk(train_folder_selection):
-            if len([x for x in files if x.endswith('.xml')]) != 0:
+            if len([x for x in files if x.endswith(file_type)]) != 0:
                 training_folders_tmp.append(dirpath) 
         
         #training_folders_tmp.remove(train_folder_selection)
@@ -1351,7 +1409,8 @@ class Application():
                 futures = [
                     loop.run_in_executor(
                         executor, 
-                        self.select_folder_and_extract_xml_async, 
+#                        self.select_folder_and_extract_xml_async
+                        fobj, 
                         folder_name,
                         topic_list, dataset_dir
                     )
@@ -1454,6 +1513,8 @@ class Application():
                 self.drop_down_concept_prob_vector_list.insert(tk.END, i)
         
         print("Concept graph retrieval completed!!")
+    
+
         
     def asynchronous_testing_topic_concept_retrieval(self):
         train_folder_selection = askdirectory()
@@ -1584,9 +1645,18 @@ class Application():
         
         print("Concept graph retrieval completed!!")
     
-    def create_CLDA_instance(self,i):
+    def create_CLDA_instance(i):
+        
+        CLDA_file_suffix = "_CLDA.pkl"
         file_index_name = pd.read_csv(dataset_dir + '/' + i + '.csv', encoding='utf-8', sep=',', 
                             error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)["File"]
+        files = []
+        for i,j, k in os.walk(dataset_dir):
+            files.extend(k)
+        
+        if (file_index_name + CLDA_file_suffix in files):
+            print("File {} already exists.".format(file_index_name + CLDA_file_suffix))
+            return True
         
         feature_matrix, feature_names = (None, None)
         with open( dataset_dir + '/' + i + "_f.pkl", "rb") as f :   
@@ -1599,8 +1669,8 @@ class Application():
         CLDA_instance = CLDA.CLDA(feature_names, concept_names, file_index_name, 5, 20)
 #        print(concept_names)
         CLDA_instance.run(feature_matrix, concept_dict)
-
-        with open(dataset_dir + '/' + i + "_CLDA.pkl", "wb") as f:
+        
+        with open(dataset_dir + '/' + i + CLDA_file_suffix, "wb") as f:
             pickle.dump(CLDA_instance, f)
         
         #Sleep just in case...
@@ -1611,38 +1681,87 @@ class Application():
         
     def asynchronous_CLDA_model_generation(self, dataset_dir):
         
+        def concurrent():
+            files = []
+            for dirpath, dirs, files in os.walk(dataset_dir):
+                if len([x for x in files if x.endswith('.csv')]) != 0:
+                    files.extend(files) 
+            
+    #        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
+            
+            fm = Asynchrous_CLDA
+            
+            results = fm.asynchronous_CLDA_creation(fm)
+            
+            if all(results):
+                print("CLDA model creation completed!")
+                
+        #Create CLDA object asynchronically.
+        concurrent()
+
         
+        
+            
+            
+class Asynchrous_CLDA(object):
+    
+    def __init__(self):
+        self.__init__(self)
+    
+    def create_CLDA_instance(self,i):
+        
+        print("file process {}: starts!".format(i))
+        file_index_name = pd.read_csv(dataset_dir + '/' + i + '.csv', encoding='utf-8', sep=',', 
+                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)["File"]
+        
+        feature_matrix, feature_names = (None, None)
+        with open( dataset_dir + '/' + i + "_f.pkl", "rb") as f :   
+            feature_matrix, feature_names = pickle.load(f)
+        
+        concept_dict, concept_names = (None, None)
+        with open(dataset_dir + '/' + i + "_c.pkl", "rb") as f:
+            concept_dict, concept_names = pickle.load(f)
+        print("file reading {}: complete!".format(i))
+        sys.stdout.flush()
+        CLDA_instance = CLDA.CLDA(feature_names, concept_names, file_index_name, 5, 20)
+#        print(concept_names)
+        CLDA_instance.run(feature_matrix, concept_dict)
+        
+        with open(dataset_dir + '/' + i + "_CLDA.pkl", "wb") as f:
+            pickle.dump(CLDA_instance, f)
+#        print("file reading {}: complete!".format(i))
+        #Sleep just in case...
+        time.sleep(0.5)
+        #Return True if the process stops normally
+        return True
+    
+    def asynchronous_CLDA_creation(self):
+           
+            
         files = []
         for dirpath, dirs, files in os.walk(dataset_dir):
             if len([x for x in files if x.endswith('.csv')]) != 0:
                 files.extend(files) 
         
         files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
-
         
-        async def asynchronous_CLDA_creation():
+        with Pool(5) as p:
+            pool_async = p.starmap_async(self.create_CLDA_instance, [[self, i] for i in files_list_for_modelling_CLDA])
             
-           with concurrent.futures.ThreadPoolExecutor(max_workers=30) as executor:
+            return pool_async.get()
+                
+        
             
-                loop = asyncio.get_event_loop()
-                futures = [
-                    loop.run_in_executor(
-                        executor, 
-                        self.create_CLDA_instance, 
-                        j
-                    )
-                    for j in files_list_for_modelling_CLDA
-                ]
-
-                return await asyncio.gather(*futures)
-        
-        
-        loop = asyncio.get_event_loop()
-        future = asyncio.ensure_future(asynchronous_CLDA_creation())
-        results = loop.run_until_complete(future)
-        
-        if all(results):
-            print("CLDA model creation completed!")
+#        with concurrent.futures.ProcessPoolExecutor() as executor:
+#            futures = [
+#                executor.submit(
+#                    self.create_CLDA_instance,self, 
+#                    j
+#                )
+#                for j in files_list_for_modelling_CLDA
+#            ]
+#                  
+#        return list(chain.from_iterable(f.result() for f in concurrent.futures.as_completed(futures)))
         
         
 def main():

@@ -11,7 +11,7 @@ import os
 import requests
 import itertools
 import pickle
-
+import sys
 
 
 
@@ -364,7 +364,7 @@ def main():
     t.show_concept_topic_ranking(10)
 #    t.show_concept_word_ranking(10)
     t.create_topic_concept_word_ranking(p_e_c)
-   # t.show_word_concept_topic('police')
+    t.show_word_concept_topic('seek')
     
     #Store the model
     with open("result.pkl", "wb") as f:
@@ -509,11 +509,7 @@ class CLDA(object):
         #Calculate the atomic topic distribution calculaiton
         #if there are no positive number in the concept array
         #We might need to have the section "Word_Concept: like"
-    a = [[3, 4, 5] ,[3,4,5]]
-    
-#    t.topics_and_concepts[(27,9891)]
-#    t.document_topic_concept_word[-100:-1]
-    #z_c shape is something like this: (topic_num, concept_num)
+
     def run(self, matrix, concept_dict):
 
 #        self.maxiter = maxiter
@@ -527,6 +523,7 @@ class CLDA(object):
 #        matrix = matrix.toarray().copy()
         for it in range(self.maxiter):
             print(it)
+            sys.stdout.flush()
             for m in range(n_docs):
                 #Asynchronisation can make the progress faster
                 #for conducting gibb sampling algorithm
@@ -711,6 +708,7 @@ class CLDA(object):
     #document. After all probabilities are calculated P(w|ci, zi) on each document, then they are
     #summed up and then averaged for each word....
     #Print word ranking over the concept topic
+    
     def create_topic_concept_word_ranking(self, word_concept_probabilities):
         total_results = {}
         
