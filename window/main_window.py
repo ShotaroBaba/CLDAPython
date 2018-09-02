@@ -241,7 +241,7 @@ class Application():
         self.document_data_test = []
         
         '''
-        List all LDA and CLDA list to
+        List all LDA and CLDA  to
         the values
         '''
         self.folder_name_list_test = []
@@ -605,10 +605,23 @@ class Application():
         self.training_button_txt.pack(side = tk.BOTTOM)
         self.training_button_txt['command'] = partial(self.asynchronous_training_topic_concept_retrieval, self.select_folder_and_extract_txt_async, '.txt')
         
-        self.CLDA_button = tk.Button(self.root, text = 'CLDA_model_creation')
+        self.CLDA_button = tk.Button(self.root, text = 'CLDA_model_creation (training)')
         
         self.CLDA_button.pack(side = tk.BOTTOM)
         self.CLDA_button['command'] = partial(self.asynchronous_CLDA_model_generation, dataset_dir)
+        
+        self.CLDA_button_test = tk.Button(self.root, text = 'CLDA_model_creation (testing)')
+        
+        self.CLDA_button_test.pack(side = tk.BOTTOM)
+        self.CLDA_button_test['command'] = partial(self.asynchronous_CLDA_model_generation, dataset_dir)
+        
+        
+        self.LDA_evaluation_screen = tk.Button(self.root, text = 'Go to CLDA evaluation')
+        
+        self.LDA_evaluation_screen.pack(side = tk.BOTTOM)
+        self.LDA_evaluation_screen['command'] = None
+        
+        
         '''
         #######################################
         ####End the main menu
@@ -1752,17 +1765,7 @@ class Asynchrous_CLDA(object):
                 
         
             
-#        with concurrent.futures.ProcessPoolExecutor() as executor:
-#            futures = [
-#                executor.submit(
-#                    self.create_CLDA_instance,self, 
-#                    j
-#                )
-#                for j in files_list_for_modelling_CLDA
-#            ]
-#                  
-#        return list(chain.from_iterable(f.result() for f in concurrent.futures.as_completed(futures)))
-        
+
         
 def main():
     #Run the main application
