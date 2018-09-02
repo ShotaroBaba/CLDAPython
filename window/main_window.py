@@ -10,9 +10,11 @@ Created on Fri Aug 24 21:45:47 2018
 import sys
 sys.path.append("..\/models/")
 
+
+import CLDA_eval_screen
 import CLDA
 import gc
-#CLDA()
+
 from functools import partial
 import tkinter as tk
 import os
@@ -23,9 +25,10 @@ from tkinter.filedialog import askdirectory
 import csv
 import pickle
 import itertools
-#from itertools import chain
+
+
 from multiprocessing import Pool
-#import threading
+
 
 import nltk
 from nltk import wordpunct_tokenize, WordNetLemmatizer, sent_tokenize, pos_tag
@@ -49,6 +52,8 @@ nltk.download('wordnet')
 #Create main menu            
 #Defining the lemmatizer
 gc.enable()
+core_use = 5
+
 def define_sw():
     
     return set(stopwords.words('english'))# + stop_words)
@@ -196,7 +201,14 @@ class Application():
         
     def __init__(self):
         self.root = tk.Tk()
+        self.root.title("File Pre Processing & Model Creation")
 #        self.pack()
+        self.menubar = tk.Menu(self.root)
+        self.menubar.add_command(label="Quit", command= self.root.destroy)
+        self.menubar.add_command(label="Help", command=None)
+        
+        self.root.config(menu=self.menubar)
+        
         self.start_menu()
         
         '''
@@ -274,8 +286,8 @@ class Application():
         self.main_group = tk.Frame(self.root)
         self.main_group.pack()
         
-        self.main_listbox_and_buttons = tk.Frame(self.main_group)
-        self.main_listbox_and_buttons.pack(side = tk.LEFT)
+        self.main_listbox_and_buttons = tk.Frame(self.main_group, relief = tk.RAISED, borderwidth = 1)
+        self.main_listbox_and_buttons.pack(side = tk.LEFT, padx = 5, pady = 5)
         
         self.result_box = tk.Frame(self.main_group)
         self.result_box.pack(side = tk.RIGHT, anchor = tk.N)
@@ -308,9 +320,6 @@ class Application():
         self.scrollbar_drop_down_menu_file.set
         self.scrollbar_drop_down_menu_file['command'] = self.user_drop_down_select_folder_list.yview
         
-        
-        
-        
         '''
         #######################################
         ####Folder selection & feature generation part end
@@ -339,8 +348,9 @@ class Application():
         self.user_drop_down_folder_selection_results_scroll_bar.pack(side = tk.RIGHT, fill = 'y')
         
         self.user_drop_down_folder_selection_results_scroll_list = tk.Text(self.user_drop_down_folder_selection_results_frame)
-        self.user_drop_down_folder_selection_results_scroll_list.pack(side = tk.LEFT)
+        self.user_drop_down_folder_selection_results_scroll_list.pack(side = tk.LEFT, fill = 'y')
         self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+        
         self.user_drop_down_folder_selection_results_scroll_list['yscrollcommand'] = \
         self.user_drop_down_folder_selection_results_scroll_bar.set
         
@@ -418,6 +428,67 @@ class Application():
         
         self.drop_down_concept_prob_vector_bar['command'] = \
         self.drop_down_concept_prob_vector_list.yview
+        
+        
+        '''
+        #######################################
+        ####Show the list of pre-existed CLDA model
+        #######################################
+        '''
+        self.CLDA_generation_list_frame = tk.Frame(self.main_listbox_and_result)
+        self.CLDA_generation_list_frame.pack(side = tk.LEFT, anchor = tk.N)
+        
+        self.drop_down_CLDA_label = tk.Label(self.CLDA_generation_list_frame,
+                                                         text = "CLDA\nCreated List")
+        self.drop_down_CLDA_label.pack()
+        
+        self.drop_down_CLDA_frame = tk.Frame(self.CLDA_generation_list_frame)
+        self.drop_down_CLDA_frame.pack()
+        
+        self.drop_down_CLDA_list = tk.Listbox(self.drop_down_CLDA_frame,
+                                                          exportselection = 0)
+        
+        self.drop_down_CLDA_list.pack(side = tk.LEFT, fill = 'y')
+        
+        self.drop_down_CLDA_bar = tk.Scrollbar(self.drop_down_CLDA_frame, orient = "vertical")
+        self.drop_down_CLDA_bar.pack(side = tk.RIGHT, fill = 'y')
+        
+        self.drop_down_CLDA_list['yscrollcommand'] = \
+        self.drop_down_CLDA_bar.set
+        
+        self.drop_down_CLDA_bar['command'] = \
+        self.drop_down_CLDA_list.yview
+        
+        '''
+        #######################################
+        ####Show the list of pre-existed CLDA model
+        #######################################
+        '''
+        self.LDA_generation_list_frame = tk.Frame(self.main_listbox_and_result)
+        self.LDA_generation_list_frame.pack(side = tk.LEFT, anchor = tk.N)
+        
+        self.drop_down_LDA_label = tk.Label(self.LDA_generation_list_frame,
+                                                         text = "LDA\nCreated List")
+        self.drop_down_LDA_label.pack()
+        
+        self.drop_down_LDA_frame = tk.Frame(self.LDA_generation_list_frame)
+        self.drop_down_LDA_frame.pack()
+        
+        self.drop_down_LDA_list = tk.Listbox(self.drop_down_LDA_frame,
+                                                          exportselection = 0)
+        
+        self.drop_down_LDA_list.pack(side = tk.LEFT, fill = 'y')
+        
+        self.drop_down_LDA_bar = tk.Scrollbar(self.drop_down_LDA_frame, orient = "vertical")
+        self.drop_down_LDA_bar.pack(side = tk.RIGHT, fill = 'y')
+        
+        self.drop_down_LDA_list['yscrollcommand'] = \
+        self.drop_down_LDA_bar.set
+        
+        self.drop_down_LDA_bar['command'] = \
+        self.drop_down_LDA_list.yview
+        
+        
         
         '''
         #######################################################################################
@@ -578,8 +649,68 @@ class Application():
         self.user_drop_down_select_folder_button_create_concept_prob_test['command'] = self.create_concept_matrix_test
         
         '''
+        #######################################
+        ####Show the list of pre-existed CLDA model
+        #######################################
+        '''
+        self.CLDA_generation_list_frame_test = tk.Frame(self.main_listbox_and_result_test)
+        self.CLDA_generation_list_frame_test.pack(side = tk.LEFT, anchor = tk.N)
+        
+        self.drop_down_CLDA_label_test = tk.Label(self.CLDA_generation_list_frame_test,
+                                                         text = "CLDA\nCreated List (Test)")
+        self.drop_down_CLDA_label_test.pack()
+        
+        self.drop_down_CLDA_frame_test = tk.Frame(self.CLDA_generation_list_frame_test)
+        self.drop_down_CLDA_frame_test.pack()
+        
+        self.drop_down_CLDA_list_test = tk.Listbox(self.drop_down_CLDA_frame_test,
+                                                          exportselection = 0)
+        
+        self.drop_down_CLDA_list_test.pack(side = tk.LEFT, fill = 'y')
+        
+        self.drop_down_CLDA_bar_test = tk.Scrollbar(self.drop_down_CLDA_frame_test, orient = "vertical")
+        self.drop_down_CLDA_bar_test.pack(side = tk.RIGHT, fill = 'y')
+        
+        self.drop_down_CLDA_list_test['yscrollcommand'] = \
+        self.drop_down_CLDA_bar_test.set
+        
+        self.drop_down_CLDA_bar_test['command'] = \
+        self.drop_down_CLDA_list_test.yview
+        
+        '''
+        #########################################
+        ####Show the list of pre-existed LDA model
+        #########################################
+        '''
+        self.LDA_generation_list_frame_test = tk.Frame(self.main_listbox_and_result_test)
+        self.LDA_generation_list_frame_test.pack(side = tk.LEFT, anchor = tk.N)
+        
+        self.drop_down_LDA_label_test = tk.Label(self.LDA_generation_list_frame_test,
+                                                         text = "LDA\nCreated List (Test)")
+        self.drop_down_LDA_label_test.pack()
+        
+        self.drop_down_LDA_frame_test = tk.Frame(self.LDA_generation_list_frame_test)
+        self.drop_down_LDA_frame_test.pack()
+        
+        self.drop_down_LDA_list_test = tk.Listbox(self.drop_down_LDA_frame_test,
+                                                          exportselection = 0)
+        
+        self.drop_down_LDA_list_test.pack(side = tk.LEFT, fill = 'y')
+        
+        self.drop_down_LDA_bar_test = tk.Scrollbar(self.drop_down_LDA_frame_test, orient = "vertical")
+        self.drop_down_LDA_bar_test.pack(side = tk.RIGHT, fill = 'y')
+        
+        self.drop_down_LDA_list_test['yscrollcommand'] = \
+        self.drop_down_LDA_bar_test.set
+        
+        self.drop_down_LDA_bar_test['command'] = \
+        self.drop_down_LDA_list_test.yview
+        
+        
+        
+        '''
         ##########################################
-        ###Quit button.
+        ###Buttons
         ##########################################
         '''
         
@@ -587,7 +718,7 @@ class Application():
         self.exit_button = tk.Button(self.root, text = 'quit')
         
         self.exit_button.pack(side = tk.BOTTOM)
-        self.exit_button['command'] = self.root.destroy
+        self.exit_button['command'] = self.move_to_CLDA_evaluation
         
         self.training_button = tk.Button(self.root, text = 'training_data_creation')
         
@@ -607,19 +738,26 @@ class Application():
         
         self.CLDA_button = tk.Button(self.root, text = 'CLDA_model_creation (training)')
         
-        self.CLDA_button.pack(side = tk.BOTTOM)
-        self.CLDA_button['command'] = partial(self.asynchronous_CLDA_model_generation, dataset_dir)
+        self.training_button_txt.pack(side = tk.BOTTOM)
+        self.training_button_txt['command'] = partial(self.asynchronous_training_topic_concept_retrieval, self.select_folder_and_extract_txt_async, '.txt')
+        
+        self.LDA_button = tk.Button(self.root, text = 'LDA_model_creation (training)')
+        
+        self.LDA_button.pack(side = tk.BOTTOM)
+        self.LDA_button['command'] = partial(self.asynchronous_LDA_model_generation, dataset_dir, 0)
         
         self.CLDA_button_test = tk.Button(self.root, text = 'CLDA_model_creation (testing)')
         
         self.CLDA_button_test.pack(side = tk.BOTTOM)
-        self.CLDA_button_test['command'] = partial(self.asynchronous_CLDA_model_generation, dataset_dir)
+        self.CLDA_button_test['command'] = partial(self.asynchronous_CLDA_model_generation, dataset_test, 1)
         
         
         self.LDA_evaluation_screen = tk.Button(self.root, text = 'Go to CLDA evaluation')
         
         self.LDA_evaluation_screen.pack(side = tk.BOTTOM)
-        self.LDA_evaluation_screen['command'] = None
+        self.LDA_evaluation_screen['command'] = self.move_to_CLDA_evaluation
+        
+        
         
         
         '''
@@ -627,6 +765,21 @@ class Application():
         ####End the main menu
         #######################################
         '''
+    def move_to_CLDA_evaluation(self):
+        
+        
+        self.root.destroy()
+        
+        #Destroy all the values in the self object
+        del self
+        
+        #Conduct the garbage collection for reducing the memory usage...
+        gc.collect()
+        
+        CLDA_eval_screen.main()
+        
+        
+        
         
     def retrieve_topic_feature_concept_list(self):
         files_tmp = []
@@ -651,8 +804,16 @@ class Application():
         
         for i in self.concept_list:
             self.drop_down_concept_prob_vector_list.insert(tk.END, i)
+        
+           
+        self.CLDA_list = [x for x in files_tmp if x.endswith('_CLDA.pkl')]
+        for i in self.CLDA_list:
+            self.drop_down_CLDA_list.insert(tk.END, i)
             
         
+        self.LDA_list = [x for x in files_tmp if x.endswith('_LDA.pkl')]
+        for i in self.LDA_list:
+            self.drop_down_LDA_list.insert(tk.END, i)
         
         for dirpath, dirs, files in os.walk(dataset_test):
             files_tmp_test.extend(files)
@@ -663,6 +824,7 @@ class Application():
         
         for i in self.topic_list_test:
             self.user_drop_down_select_folder_list_test.insert(tk.END, i)
+            
         #Initialise the features_list
         #Extract feature files from the file lists
         #No need to sort the values as the files are already sorted by names
@@ -675,7 +837,20 @@ class Application():
         
         for i in self.concept_list_test:
             self.drop_down_concept_prob_vector_list_test.insert(tk.END, i)
+        
+        self.CLDA_list_test = [x for x in files_tmp_test if x.endswith('_CLDA.pkl')]
+        for i in self.CLDA_list_test:
+            self.drop_down_CLDA_list_test.insert(tk.END, i)
             
+        
+        self.LDA_list_test = [x for x in files_tmp_test if x.endswith('_LDA.pkl')]
+        for i in self.LDA_list_test:
+            self.drop_down_LDA_list_test.insert(tk.END, i)
+        
+            
+            
+        
+        
     #Select the folder and extract the information
     def select_folder_and_extract_xml(self, ask_folder = None):
         if(ask_folder == None):
@@ -1692,30 +1867,55 @@ class Application():
         return True
         
         
-    def asynchronous_CLDA_model_generation(self, dataset_dir):
+    def asynchronous_CLDA_model_generation(self, dataset_dir, result_num):
         
         def concurrent():
-            files = []
-            for dirpath, dirs, files in os.walk(dataset_dir):
-                if len([x for x in files if x.endswith('.csv')]) != 0:
-                    files.extend(files) 
-            
     #        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
             
             fm = Asynchrous_CLDA
             
-            results = fm.asynchronous_CLDA_creation(fm)
+            results = fm.asynchronous_CLDA_creation(fm, dataset_dir)
             
             if all(results):
                 print("CLDA model creation completed!")
-                
-        #Create CLDA object asynchronically.
+        
         concurrent()
+        #Create CLDA object asynchronically.
+        
+        #If result num is equal to 1, then the result can be put into 1
+        if(result_num == 1):
+            pass
+        
+        #Otherwise, the value is put into the values
+        else:
+            pass            
 
+    def asynchronous_LDA_model_generation(self, dataset_dir, result_num):
         
+        def concurrent():
+    #        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
+            
+            fm = Asynchrous_LDA
+            
+            results = fm.asynchronous_LDA_creation(fm, dataset_dir)
+            
+            if all(results):
+                print("LDA model creation completed!")
+        
+        print("LDA model creation start!")
+        concurrent()
+        #Create CLDA object asynchronically.
+        
+        #If result num is equal to 1, then the result can be put into 1
+        if(result_num == 1):
+            pass
+        
+        #Otherwise, the value is put into the values
+        else:
+            pass            
         
             
-            
+#Asynchronous CLDA model creation            
 class Asynchrous_CLDA(object):
     
     def __init__(self):
@@ -1723,16 +1923,27 @@ class Asynchrous_CLDA(object):
     
     def create_CLDA_instance(self,i):
         
+        #Read CLDA files 
+        files_tmp = []
+        for dirpath, dirs, files in os.walk(self.dataset_dir):
+            if len([x for x in files if x.endswith('.csv')]) != 0:
+                files_tmp.extend() 
+        
+        if i + "_CLDA.pkl" in files_tmp:
+            print("File {} is already exists".format(i + "_CLDA.pkl"))
+            #Normal finish of the program...
+            return True
+        
         print("file process {}: starts!".format(i))
-        file_index_name = pd.read_csv(dataset_dir + '/' + i + '.csv', encoding='utf-8', sep=',', 
+        file_index_name = pd.read_csv(self.dataset_dir + '/' + i + '.csv', encoding='utf-8', sep=',', 
                             error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)["File"]
         
         feature_matrix, feature_names = (None, None)
-        with open( dataset_dir + '/' + i + "_f.pkl", "rb") as f :   
+        with open( self.dataset_dir + '/' + i + "_f.pkl", "rb") as f :   
             feature_matrix, feature_names = pickle.load(f)
         
         concept_dict, concept_names = (None, None)
-        with open(dataset_dir + '/' + i + "_c.pkl", "rb") as f:
+        with open(self.dataset_dir + '/' + i + "_c.pkl", "rb") as f:
             concept_dict, concept_names = pickle.load(f)
         print("file reading {}: complete!".format(i))
         sys.stdout.flush()
@@ -1740,7 +1951,7 @@ class Asynchrous_CLDA(object):
 #        print(concept_names)
         CLDA_instance.run(feature_matrix, concept_dict)
         
-        with open(dataset_dir + '/' + i + "_CLDA.pkl", "wb") as f:
+        with open(self.dataset_dir + '/' + i + "_CLDA.pkl", "wb") as f:
             pickle.dump(CLDA_instance, f)
 #        print("file reading {}: complete!".format(i))
         #Sleep just in case...
@@ -1748,22 +1959,87 @@ class Asynchrous_CLDA(object):
         #Return True if the process stops normally
         return True
     
-    def asynchronous_CLDA_creation(self):
+    def asynchronous_CLDA_creation(self, dataset_dir):
            
-            
+        self.dataset_dir = dataset_dir    
         files = []
-        for dirpath, dirs, files in os.walk(dataset_dir):
+        for dirpath, dirs, files in os.walk(self.dataset_dir):
             if len([x for x in files if x.endswith('.csv')]) != 0:
                 files.extend(files) 
         
         files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
         
-        with Pool(5) as p:
+        #Asynchronically create the CLDA object
+        with Pool(core_use) as p:
             pool_async = p.starmap_async(self.create_CLDA_instance, [[self, i] for i in files_list_for_modelling_CLDA])
             
             return pool_async.get()
                 
+class Asynchrous_LDA(object):
+    
+    def __init__(self):
+        self.__init__(self)
+        self.dataset_dir = None
         
+    def create_LDA_instance(self,i, dataset_dir):
+        
+        files_tmp = []
+        for dirpath, dirs, files in os.walk(dataset_dir):
+            if len([x for x in files if x.endswith('.csv')]) != 0:
+                files_tmp.extend(files) 
+        print(dataset_dir + '/' + i + "_LDA.pkl")
+        #If the file has already been created 
+        #then skip the process...
+        if i + "_LDA.pkl" in files_tmp:
+            print("File {} is already exists".format(i + "_LDA.pkl"))
+            #Normal finish of the program...
+            return True
+        #Read CLDA files 
+        print("file process {}: starts!".format(i))
+        file_index_name = pd.read_csv(dataset_dir + '/' + i + '.csv', encoding='utf-8', sep=',', 
+                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)["File"]
+        
+        feature_matrix, feature_names = (None, None)
+        with open(dataset_dir + '/' + i + "_f.pkl", "rb") as f :   
+            feature_matrix, feature_names = pickle.load(f)
+        
+        
+        sys.stdout.flush()
+        LDA_instance = CLDA.LDA(file_index_name, feature_names, 5)
+        #print(concept_names)
+        
+        #Later the iteration can be changed
+        #from GUI
+        LDA_instance.run(feature_matrix, 20)
+        
+        with open(dataset_dir + '/' + i + "_LDA.pkl", "wb") as f:
+            pickle.dump(LDA_instance, f)
+        #print("file reading {}: complete!".format(i))
+        #Sleep just in case...
+        print("Data generation complete!: {}".format(dataset_dir + '/' + i + "_LDA.pkl"))
+        time.sleep(0.5)
+        #Return True if the process stops normally
+        return True
+    
+    def asynchronous_LDA_creation(self, dataset_dir):
+           
+        dataset_dir    
+        
+        files = []
+        
+        for dirpath, dirs, files in os.walk(dataset_dir):
+            if len([x for x in files if x.endswith('.csv')]) != 0:
+                files.extend(files) 
+        
+        #Very rough file detection....
+        files_list_for_modelling_LDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
+        
+        #Core use
+        #Asynchronically create the CLDA object
+        with Pool(5) as p:
+            pool_async = p.starmap_async(self.create_LDA_instance, [[self, i, dataset_dir] for i in files_list_for_modelling_LDA])
+            
+            return pool_async.get()        
             
 
         

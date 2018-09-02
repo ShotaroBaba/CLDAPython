@@ -709,6 +709,7 @@ class CLDA(object):
     #summed up and then averaged for each word....
     #Print word ranking over the concept topic
     
+    #Calculate the word probability under the condition of topic and concept
     def create_topic_concept_word_ranking(self, word_concept_probabilities):
         total_results = {}
         
@@ -724,7 +725,8 @@ class CLDA(object):
             results = []
             for set_sum in list_of_words_in_concpets_topics:
 
-                #Set_sum[0], topic set_sum[1], concept, set_sum[2]: word to retrieve all relevant documents 
+                #Set_sum[0], topic,: set_sum[1], concept: set_sum[2]: word 
+                #Done to retrieve all relevant documents 
                 #for calculating the probability
                 set_summation_for_topic_concept =\
                 [x for x in lighten_document_topic_concept_word if (set_sum[0], set_sum[1], set_sum[2]) == (x[1], x[2], x[3])]
@@ -777,17 +779,18 @@ class CLDA(object):
         for i in sorted(self.total_results[self.feature_names.index(word)], key= (lambda x: x[1])):
             print("Word: {}, Topic: {}, Concept: {}, Probability: {}".format(word, i[0][0],self.concept_names[i[0][1]], i[1]))
 
-#        total_results[998][0][0][0]
 #Baseline method
 #Done for comparison           
 class LDA(object):
 
-    def __init__(self, n_topics,alpha=0.1, beta=0.1):
+    def __init__(self, file_list, feature_names, n_topics,alpha=0.1, beta=0.1):
        
         self.n_topics = n_topics
         self.alpha = alpha
         self.beta = beta
-    
+        self.feature_names = feature_names
+        self.file_list = file_list
+        
     def sample_index(self,p):
         
         return np.random.multinomial(1,p).argmax()
@@ -812,7 +815,7 @@ class LDA(object):
         self.topics = {} #Topics dictionary
 
         for m in range(n_docs):
-            print(m)
+#            print(m)
             # i is a number between 0 and doc_length-1
             # w is a number between 0 and vocab_size-1
             for i, w in enumerate(self.word_indices(matrix[m, :])):
@@ -824,11 +827,10 @@ class LDA(object):
                 self.nzw[z,w] += 1 #Counts the number of topic word distribution
                 self.nz[z] += 1 #Distribute the counts of the number of topics
                 self.topics[(m,i)] = z #Memorise the correspondence between topics and the entities
-
+        sys.stdout.flush()
+        
     def _conditional_distribution(self, m, w): #Maybe the computation valuables
-        """
-        Conditional distribution (vector of size n_topics).
-        """
+       
         vocab_size = self.nzw.shape[1]
         left = (self.nzw[:,w] + self.beta) / \
                (self.nz + self.beta * vocab_size) #Corresponding to the left hand side of the equation 
@@ -844,9 +846,7 @@ class LDA(object):
 
 
     def phi(self):
-        """
-        Compute phi = p(w|z).
-        """
+       
         #Not necessary values for the calculation
         #V = self.nzw.shape[1]
         num = self.nzw + self.beta #Calculate the counts of the number, the beta is the adjust ment value for the calcluation
@@ -855,7 +855,7 @@ class LDA(object):
     
     def doc_prob(self):
         
-
+        #Calculate document probability
         num = self.nmz + self.alpha 
         num /= np.sum(num, axis=1)[:, np.newaxis] 
         
@@ -869,17 +869,19 @@ class LDA(object):
         return num
     
     def run(self, matrix, maxiter=30):
-        """
-        Run the Gibbs sampler.
-        """
-        #Gibbs sampling program
+       
+        #Gibbs sampling
         self.phi_set = [] #Storing all results Initialisation of all different models
-        self.theta_set = [] #Storing all document_topic relation results & initalisation of all other models
+        self.theta_set = [] #Storing all document_topic relation results & initalisation of all other model
+        self.doc_prob_set = []
+        
         n_docs, vocab_size = matrix.shape
-        self._initialize(matrix)
         matrix = matrix.toarray().copy()
+        self._initialize(matrix)
+        
         for it in range(maxiter):
             print(it)
+            sys.stdout.flush()
             for m in range(n_docs):
                 
                 for i, w in enumerate(self.word_indices(matrix[m, :])):
@@ -901,13 +903,15 @@ class LDA(object):
 
             #Retrieve the phi, theta and document topic co-occurrence probability
             #values
-            print("iteration: {}".format(it))
+            print('\n' + "iteration: {}".format(it) + '\n')
             print("phi: {}".format(self.phi()))
             print("Theta: {}".format(self.theta()))
             print("doc_prob: {}".format(self.doc_prob()))
             
-            self.phi_set.append(self.phi())
-            self.theta_set.append(self.doc_prob())
+        self.phi_set.append(self.phi())
+        
+        #Document Probability!
+        self.doc_prob_set.append(self.doc_prob())
         
         self.maxiter = maxiter
         
@@ -915,27 +919,26 @@ class LDA(object):
     #Testing the programs for displaying the data
     #Testing
     
-    def set_the_rankings(self, feature_names):
+    def set_the_rankings(self):
         
         self.word_ranking = []
         self.doc_ranking = []
         
 #        if(not (self.phi_set in locals() or self.phi.set in globals())):
 #            print("The calculation of phi or theta is not done yet!")
+            
+        #Calcualte the topic_word distribution
+        temp = np.argsort(-(self.phi_set[0]))
         
-        for i in range(self.maxiter):
-            
-            #Calcualte the topic_word distribution
-            temp = np.argsort(self.phi_set[i])
-            #Calculate the topic_document distribuiton
-            temp2 = np.argsort(self.theta_set[i].T)
-            
-            #Create the leaderships 
-            self.word_ranking = [[[topic, ranking, feature_names[idx]] for ranking, idx in enumerate(word_idx)]
-                                    for topic, word_idx in enumerate(temp)]
-            
-            self.doc_ranking = [[[topic, ranking, doc_idx] for ranking, doc_idx in enumerate(docs_idx)]
-                        for topic, docs_idx in enumerate(temp2)]
+        #Calculate the topic_document distribuiton
+        temp2 = np.argsort(-(self.doc_prob_set[0].T))
+        
+        #Create the leaderships 
+        self.word_ranking = [[[topic, ranking, self.feature_names[idx], self.phi_set[0][topic][idx]] for ranking, idx in enumerate(word_idx)]
+                                for topic, word_idx in enumerate(temp)]
+        
+        self.doc_ranking = [[[topic, ranking, self.file_list[doc_idx], self.doc_prob_set[0][topic][doc_idx]] for ranking, doc_idx in enumerate(docs_idx)]
+                    for topic, docs_idx in enumerate(temp2)]
     
     #Show the document ranking over topic
     def show_doc_topic_ranking(self, rank=10):
@@ -944,17 +947,15 @@ class LDA(object):
             print("#############################")
             print("Topic {} ranking: ".format(i))
             for j in range(rank):
-                 print("Rank: {}, Document: {}".format(self.doc_ranking[i][j][1], self.doc_ranking[i][j][2]))
+                 print("Rank: {}, Document: {}, Probability: {}".format(self.doc_ranking[i][j][1], self.doc_ranking[i][j][2], self.doc_ranking[i][j][3]))
         
     #Show the topic ranking over the words
     def show_word_topic_ranking(self, rank=10):
-        
-        
         for i in range(self.nzw.shape[0]):
             print("#############################")
             print("Topic {} ranking: ".format(i))
             for j in range(rank):
-                print("Rank: {}, Word: {}".format(self.word_ranking[i][j][1], self.word_ranking[i][j][2]))
+                print("Rank: {}, Word: {}".format(self.word_ranking[i][j][1], self.word_ranking[i][j][2], self.word_ranking[i][j][3]))
             
         
             
