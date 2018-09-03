@@ -26,7 +26,7 @@ import csv
 import pickle
 import itertools
 
-
+from multiprocessing import cpu_count
 from multiprocessing import Pool
 
 
@@ -606,24 +606,24 @@ class Application():
         #######################################
         '''
         
-        self.button_for_training = tk.Frame(self.button_groups)
-        self.button_for_training.pack(side = tk.LEFT)        
-        
-        self.user_drop_down_select_folder_buttom = tk.Button(self.button_for_training , text = "Select Folder\n(Training)")
-        self.user_drop_down_select_folder_buttom.pack()
-        self.user_drop_down_select_folder_buttom['command'] = self.select_folder_and_extract_xml
-        
-        self.user_drop_down_select_folder_button_create_vector = tk.Button(self.button_for_training ,
-                                                                           text = "Create Feature\nVector(s) (Training)")
-        self.user_drop_down_select_folder_button_create_vector.pack()
-        self.user_drop_down_select_folder_button_create_vector['command'] = self.create_feature_vector
-        
-        self.user_drop_down_select_folder_button_create_concept_prob = tk.Button(self.button_for_training,
-                                                                           text = "Create Concept\nProb(s) (Training)")
-        self.user_drop_down_select_folder_button_create_concept_prob.pack()
-        self.user_drop_down_select_folder_button_create_concept_prob['command'] = self.create_concept_matrix
-        
-        self.exit_button = tk.Button(self.root, text = 'quit')
+#        self.button_for_training = tk.Frame(self.button_groups)
+#        self.button_for_training.pack(side = tk.LEFT)        
+#        
+#        self.user_drop_down_select_folder_buttom = tk.Button(self.button_for_training , text = "Select Folder\n(Training)")
+#        self.user_drop_down_select_folder_buttom.pack()
+#        self.user_drop_down_select_folder_buttom['command'] = self.select_folder_and_extract_xml
+#        
+#        self.user_drop_down_select_folder_button_create_vector = tk.Button(self.button_for_training ,
+#                                                                           text = "Create Feature\nVector(s) (Training)")
+#        self.user_drop_down_select_folder_button_create_vector.pack()
+#        self.user_drop_down_select_folder_button_create_vector['command'] = self.create_feature_vector
+#        
+#        self.user_drop_down_select_folder_button_create_concept_prob = tk.Button(self.button_for_training,
+#                                                                           text = "Create Concept\nProb(s) (Training)")
+#        self.user_drop_down_select_folder_button_create_concept_prob.pack()
+#        self.user_drop_down_select_folder_button_create_concept_prob['command'] = self.create_concept_matrix
+#        
+#        self.exit_button = tk.Button(self.root, text = 'quit')
         
         '''
         #######################################
@@ -631,23 +631,23 @@ class Application():
         #######################################
         '''
         
-        self.button_for_test = tk.Frame(self.button_groups)
-        self.button_for_test.pack(side = tk.LEFT)        
-        
-        self.user_drop_down_select_folder_buttom_test = tk.Button(self.button_for_test , text = "Select Folder\n(Tesing)")
-        self.user_drop_down_select_folder_buttom_test.pack()
-        self.user_drop_down_select_folder_buttom_test['command'] = self.select_folder_and_extract_xml_test
-        
-        self.user_drop_down_select_folder_button_create_vector_test = tk.Button(self.button_for_test ,
-                                                                           text = "Create Feature\nVector(s) (Tesing)")
-        self.user_drop_down_select_folder_button_create_vector_test.pack()
-        self.user_drop_down_select_folder_button_create_vector_test['command'] = self.create_feature_vector_test
-        
-        self.user_drop_down_select_folder_button_create_concept_prob_test = tk.Button(self.button_for_test,
-                                                                           text = "Create Concept\nProb(s) (Tesing)")
-        self.user_drop_down_select_folder_button_create_concept_prob_test.pack()
-        self.user_drop_down_select_folder_button_create_concept_prob_test['command'] = self.create_concept_matrix_test
-        
+#        self.button_for_test = tk.Frame(self.button_groups)
+#        self.button_for_test.pack(side = tk.LEFT)        
+#        
+#        self.user_drop_down_select_folder_buttom_test = tk.Button(self.button_for_test , text = "Select Folder\n(Tesing)")
+#        self.user_drop_down_select_folder_buttom_test.pack()
+#        self.user_drop_down_select_folder_buttom_test['command'] = self.select_folder_and_extract_xml_test
+#        
+#        self.user_drop_down_select_folder_button_create_vector_test = tk.Button(self.button_for_test ,
+#                                                                           text = "Create Feature\nVector(s) (Tesing)")
+#        self.user_drop_down_select_folder_button_create_vector_test.pack()
+#        self.user_drop_down_select_folder_button_create_vector_test['command'] = self.create_feature_vector_test
+#        
+#        self.user_drop_down_select_folder_button_create_concept_prob_test = tk.Button(self.button_for_test,
+#                                                                           text = "Create Concept\nProb(s) (Tesing)")
+#        self.user_drop_down_select_folder_button_create_concept_prob_test.pack()
+#        self.user_drop_down_select_folder_button_create_concept_prob_test['command'] = self.create_concept_matrix_test
+#        
         '''
         #######################################
         ####Show the list of pre-existed CLDA model
@@ -714,39 +714,57 @@ class Application():
         ##########################################
         '''
         
-        
-        self.exit_button = tk.Button(self.root, text = 'quit')
-        
-        self.exit_button.pack(side = tk.BOTTOM)
-        self.exit_button['command'] = self.move_to_CLDA_evaluation
-        
-        self.training_button = tk.Button(self.root, text = 'training_data_creation')
+        self.training_button = tk.Button(self.root, text = 'training_data_creation_xml')
         
         self.training_button.pack(side = tk.BOTTOM)
-        self.training_button['command'] = partial(self.asynchronous_training_topic_concept_retrieval, self.select_folder_and_extract_xml_async, '.xml')
-       
-        self.test_button = tk.Button(self.root, text = 'test_data_creation')
-        
-        self.test_button.pack(side = tk.BOTTOM)
-        self.test_button['command'] = self.asynchronous_testing_topic_concept_retrieval
-        
+        self.training_button['command'] = partial(self.asynchronous_topic_concept_retrieval,
+                            self.select_folder_and_extract_xml_async, '.xml', dataset_dir, 0)
+
         
         self.training_button_txt = tk.Button(self.root, text = 'training_data_creation_text')
         
         self.training_button_txt.pack(side = tk.BOTTOM)
-        self.training_button_txt['command'] = partial(self.asynchronous_training_topic_concept_retrieval, self.select_folder_and_extract_txt_async, '.txt')
+        self.training_button_txt['command'] = partial(self.asynchronous_topic_concept_retrieval,
+                                self.select_folder_and_extract_txt_async, '.txt', dataset_dir, 0)
         
-        self.CLDA_button = tk.Button(self.root, text = 'CLDA_model_creation (training)')
         
-        self.training_button_txt.pack(side = tk.BOTTOM)
-        self.training_button_txt['command'] = partial(self.asynchronous_training_topic_concept_retrieval, self.select_folder_and_extract_txt_async, '.txt')
         
+        self.test_button = tk.Button(self.root, text = 'test_data_creation_txt')
+        self.test_button.pack(side = tk.BOTTOM)
+        self.test_button['command'] =partial(self.asynchronous_topic_concept_retrieval, 
+                        self.select_folder_and_extract_txt_async, '.txt', dataset_test,1)
+        
+        self.training_button_txt_test = tk.Button(self.root, text = 'test_data_creation_xml')
+        self.training_button_txt_test.pack(side = tk.BOTTOM)
+        self.training_button_txt_test['command'] = partial(self.asynchronous_topic_concept_retrieval, 
+                                     self.select_folder_and_extract_xml_async, '.txt', dataset_test, 1)
+        
+        
+#        self.CLDA_button = tk.Button(self.root, text = 'CLDA_model_creation (training)')
+#        
+#        self.training_button_txt.pack(side = tk.BOTTOM)
+#        self.training_button_txt['command'] = partial(self.asynchronous_topic_concept_retrieval, self.select_folder_and_extract_txt_async, '.txt')
+#        
         self.LDA_button = tk.Button(self.root, text = 'LDA_model_creation (training)')
         
         self.LDA_button.pack(side = tk.BOTTOM)
         self.LDA_button['command'] = partial(self.asynchronous_LDA_model_generation, dataset_dir, 0)
         
-        self.CLDA_button_test = tk.Button(self.root, text = 'CLDA_model_creation (testing)')
+        self.CLDA_button = tk.Button(self.root, text = 'CLDA_model_creation (training)')
+        
+        self.CLDA_button.pack(side = tk.BOTTOM)
+        self.CLDA_button['command'] = partial(self.asynchronous_CLDA_model_generation, dataset_dir, 0)
+        
+        
+        
+        self.LDA_button_test = tk.Button(self.root, text = 'LDA_model_creation (test)')
+        
+        self.LDA_button_test.pack(side = tk.BOTTOM)
+        self.LDA_button_test['command'] = partial(self.asynchronous_LDA_model_generation, dataset_test, 1)
+        
+        
+        
+        self.CLDA_button_test = tk.Button(self.root, text = 'CLDA_model_creation (test)')
         
         self.CLDA_button_test.pack(side = tk.BOTTOM)
         self.CLDA_button_test['command'] = partial(self.asynchronous_CLDA_model_generation, dataset_test, 1)
@@ -849,83 +867,7 @@ class Application():
         
             
             
-        
-        
-    #Select the folder and extract the information
-    def select_folder_and_extract_xml(self, ask_folder = None):
-        if(ask_folder == None):
-            self.folder_directory = askdirectory()
-        else:
-            self.folder_directory = ask_folder
-        
-#        self.folder_name = "C:/Users/n9648852/Desktop/New folder for project/RCV1/Training/Training101"        
-        
-#        folder_name = os.path.basename("C:/Users/n9648852/Desktop/New folder for project/RCV1/Training/Training101")
-        temp_substr = os.path.basename(self.folder_directory)
-            
-        #If the processed file has already exists, then the process of the
-        #topics will stop.
-        if any(temp_substr in string for string in self.topic_list):
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, 
-                                                                            "Topic already exists") 
-            return 
-        
-        for_test_purpose_data = pd.DataFrame([], columns=['File','Topic', 'Text'])
-        self.training_path = []
-        
-        for dirpath, dirs, files in os.walk(self.folder_directory):
-            self.training_path.extend(files)
-    
-        #Remove the files other than xml files
-        self.training_path = [x for x in self.training_path if x.endswith('xml')]
-        print(self.training_path)
-        topic_name = os.path.basename(self.folder_directory)
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-        for path_to_file in self.training_path:
-            path_string = os.path.basename(os.path.normpath(path_to_file)) 
-            
-            #Extract xml information from the files
-            #then it construct the information
-            file = self.folder_directory + '/' + path_string 
-            tree = ET.parse(file)
-            root = tree.getroot()
-            result = ''
-            for element in root.iter():
-                if(element.text != None):
-                    result += element.text + ' '
-            #Remove the remained data
-            result = result[:-1]
-            
-            name_of_the_file = (os.path.basename(path_string))
-            
-            for_test_purpose_data = for_test_purpose_data.append(pd.DataFrame([(name_of_the_file, 
-                                                                               topic_name,
-                                                                               result)], 
-            columns=['File','Topic', 'Text']))
-            if not os.path.isdir(dataset_dir):
-                os.makedirs(dataset_dir)
-            
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, 
-                                                                            "{} has been read.\n".format(name_of_the_file))
-        for_test_purpose_data.to_csv(dataset_dir + '/' +
-                          topic_name + ".csv",
-                          index=False, encoding='utf-8',
-                          quoting=csv.QUOTE_ALL)
-        #print(for_test_purpose_data)
-        self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, 
-                                                                            "File read complete!\n")
-        
-        #Adding already created data lists
-        self.user_drop_down_select_folder_list.insert(tk.END, 
-                                                          topic_name + ".csv")
-        
-        self.document_data.append(for_test_purpose_data)
-        
-        self.topic_list.append(topic_name + ".csv")
-        
-        #Sort the data list after appending csv file
-        self.topic_list = sorted(self.topic_list)
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+
     
     def select_folder_and_extract_xml_async(self,ask_folder, topic_list, dataset_dir):
   
@@ -1038,44 +980,6 @@ class Application():
     #Based on the files_tmp made by the vectors 
     #Depending on what test vector u used 
     #The contents of the vector can be changed 
-    def create_feature_vector(self):
-        
-        files_tmp = []
-        
-        for dirpath, dirs, files in os.walk(dataset_dir):
-            files_tmp.extend(files)
-        
-        #Extract only the csv files and remove extension!
-        files_tmp = [os.path.splitext(x)[0] for x in files_tmp if x.endswith('.csv')]
-        
-        
-        for file_string in files_tmp:
-            if any(file_string in substring for substring in self.feature_list):
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, 
-                                                                                "Feature {} already exists.\n".format(file_string +  '_c.pkl'))
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
-                print("Feature {} already exists".format(file_string +  '_f.pkl'))
-            else:
-                #Read csv files 
-                datum = pd.read_csv(dataset_dir + '/' +file_string + '.csv', encoding='utf-8', sep=',', 
-                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
-                #Vectorise the document 
-                vect = generate_vector()
-                vectorized_data, feature_names = vectorize(vect, datum)
-                
-                with open(dataset_dir + '/' + file_string + '_f.pkl', "wb") as f:
-                    pickle.dump([vectorized_data, feature_names], f)
-                
-                self.drop_down_list_word_vector_list.insert(tk.END, file_string + '_f.pkl')
-                self.feature_list.append(file_string + '_f.pkl')
-        
-        #Sort feature list after appending some elements
-        self.feature_list = sorted(self.feature_list)
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-        self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "Complete {} feature generation.\n".format(file_string))
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
-    
     
     
     #Asynchoronic feature vector retrieval
@@ -1099,129 +1003,7 @@ class Application():
             return file_string + '_f.pkl'
             
 
-
-    def retrieve_data(feature_name, K = 10):
-        print('Now processing ' + str(feature_name) + " word...")
-
-        #Replace space to + to tolerate the phrases with space
-        req_str = 'https://concept.research.microsoft.com/api/Concept/ScoreByTypi?instance=' \
-        + feature_name.replace(' ', '+') + '&topK=' + str(K)
-        response = requests.get(req_str)
-        
-        #Retrieve the response from json file
-        return response.json()
     
-    
-    #Data directory and object should be in arguments to 
-    #optimise the data
-    def create_concept_matrix(self):
-        
-        files_tmp = []
-        
-        #Checking entire files in the text
-        for dirpath, dirs, files in os.walk(dataset_dir):
-            files_tmp.extend(files) 
-        rem_len = -len('_f.pkl')
-        #Check whether the concept file(s) exist(s)
-        files_tmp = [x[:rem_len] for x in files_tmp if x.endswith('_f.pkl')]
-#        "ssss"[3:4]
-        
-        #Define the methods for generating functions
-        #Retrieve the concept data asynchonically
-        #to retrieve the data simultaneously
-        async def retrieve_word_concept_data(feature_names, K = 20):
-            with concurrent.futures.ThreadPoolExecutor(max_workers=220) as executor:
-                collection_of_results = []
-                loop = asyncio.get_event_loop()
-                futures = [
-                    loop.run_in_executor(
-                        executor, 
-                        requests.get, 
-                        'https://concept.research.microsoft.com/api/Concept/ScoreByTypi?instance=' +
-                        i.replace(' ', '+') + 
-                        '&topK=' + str(K)
-                    )
-                    for i in feature_names
-                ]
-                for response in await asyncio.gather(*futures):
-                    collection_of_results.append(response.json())
-                
-                return collection_of_results
-        
-        for file_string in files_tmp:
-            #Check whether the test subject exists or no
-            if any(file_string in substring for substring in self.concept_list):
-                #Feature already exists
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, 
-                                                                                "Concept {} already exists.\n".format(file_string +  '_c.pkl'))
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
-                print("Feature {} already exists".format(file_string +  '_c.pkl'))
-            else:
-                p_e_c  = {}
-
-                feature_names = None                    
-                with open(dataset_dir + '/' + file_string + '_f.pkl', "rb") as f:
-                     _, feature_names = pickle.load(f)
-                
-                
-                #Sort the feature names just in case...
-                feature_names = sorted(feature_names)
-                '''
-                #Retrieve the tenth rankings of the words
-                
-                #K needed to be adjustable so that the
-                #Researcher can find the characteristics of
-                #all values!
-                '''
-                loop = asyncio.get_event_loop()
-                future = asyncio.ensure_future(retrieve_word_concept_data(feature_names))
-                results = loop.run_until_complete(future)
-                
-                #temporary
-                for idx, i  in enumerate(feature_names):
-                #    print(i)
-                #    print(idx)
-                    p_e_c[i] = results[int(idx)]
-                
-#                print(p_e_c)
-#                temp = {}
-#                type(temp) == dict
-                #List up the concept names
-                
-                l = [list(i.keys()) for i in list(p_e_c.values())]
-                concept_names = sorted(list(set(itertools.chain.from_iterable(l))))
-                
-                #    concept_sets[len(concept_sets)-1]
-                #Put the atom concept if there are no concepts in the words
-                
-                
-                #Adding atomic elements
-                for i in feature_names:
-                    #if there are no concepts in the words, then...
-                    if p_e_c[i] == {}:
-                        
-                        #Append the words with no related concpets
-                        #as the atomic concepts
-                        concept_names.append(i)
-#                    else:
-                        
-                #Sorting the concept_names after adding feature names
-                concept_names = sorted(concept_names)
-
-                
-                with open(dataset_dir + '/' + file_string +  '_c.pkl', "wb") as f:
-                    pickle.dump([p_e_c, concept_names], f)
-                    
-                self.concept_list.append(file_string +  '_c.pkl')
-                self.drop_down_concept_prob_vector_list.insert(tk.END, file_string +  '_c.pkl')
-        
-        #Sort after adding all values
-        self.concept_list = sorted(self.concept_list)
-#        for i in self.feature_list:
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-        self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "Complete {} concept generation.\n".format(file_string))
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
 #   
     def create_concept_matrix_async(self, file_string, concept_list, dataset_dir):
 
@@ -1308,271 +1090,9 @@ class Application():
             
 #        for i in self.feature_list:
 
-             
-    #Selecting test directory
-    def select_folder_and_extract_xml_test(self, ask_folder = None):
-        if(ask_folder == None):
-            self.folder_directory = askdirectory()
-        else:
-            self.folder_directory = ask_folder
-        self.folder_directory_test = askdirectory()
-#        self.folder_name = "C:/Users/n9648852/Desktop/New folder for project/RCV1/Training/Training101"        
-        
-#        folder_name = os.path.basename("C:/Users/n9648852/Desktop/New folder for project/RCV1/Training/Training101")
-        temp_substr = os.path.basename(self.folder_directory_test)
-            
-        #If the processed file has already exists, then the process of the
-        #topics will stop.
-        if any(temp_substr in string for string in self.topic_list_test):
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, 
-                                                                            "Topic already exists") 
-            return 
-        
-        for_test_purpose_data = pd.DataFrame([], columns=['File','Topic', 'Text'])
-        self.testing_path = []
-        
-        for dirpath, dirs, files in os.walk(self.folder_directory_test):
-            self.testing_path.extend(files)
-    
-        #Remove the files other than xml files
-        self.testing_path = [x for x in self.testing_path if x.endswith('xml')]
-        print(self.testing_path)
-        topic_name = os.path.basename(self.folder_directory_test)
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-        for path_to_file in self.testing_path:
-            path_string = os.path.basename(os.path.normpath(path_to_file)) 
-            
-            #Extract xml information from the files
-            #then it construct the information
-            file = self.folder_directory_test + '/' + path_string 
-            tree = ET.parse(file)
-            root = tree.getroot()
-            result = ''
-            for element in root.iter():
-                if(element.text != None):
-                    result += element.text + ' '
-            #Remove the remained data
-            result = result[:-1]
-            
-            name_of_the_file = (os.path.basename((path_string)))
-            
-            for_test_purpose_data = for_test_purpose_data.append(pd.DataFrame([(name_of_the_file, 
-                                                                               topic_name,
-                                                                               result)], 
-            columns=['File','Topic', 'Text']))
-            if not os.path.isdir(dataset_test):
-                os.makedirs(dataset_test)
-        
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, 
-                                                                            "{} has been read.\n".format(name_of_the_file))
-        for_test_purpose_data.to_csv(dataset_test + '/' +
-                          topic_name + ".csv",
-                          index=False, encoding='utf-8',
-                          quoting=csv.QUOTE_ALL)
-        #print(for_test_purpose_data)
-        self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, 
-                                                                            "File read complete!\n")
-        
-        #Adding already created data lists
-        self.user_drop_down_select_folder_list_test.insert(tk.END, 
-                                                          topic_name + ".csv")
-        
-        self.document_data_test.append(for_test_purpose_data)
-        
-        self.topic_list_test.append(topic_name + ".csv")
-        
-        #Sort the data list after appending csv file
-        self.topic_list_test = sorted(self.topic_list_test)
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
-    
-    def create_feature_vector_test(self):
-        
-        files_tmp = []
-        
-        for dirpath, dirs, files in os.walk(dataset_test):
-            files_tmp.extend(files)
-        
-        #Extract only the csv files and remove extension!
-        files_tmp = [os.path.splitext(x)[0] for x in files_tmp if x.endswith('.csv')]
-        
-        
-        for file_string in files_tmp:
-            if any(file_string in substring for substring in self.feature_list_test):
-                #Feature already exists
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, 
-                                                                                "Feature {} already exists.\n".format(file_string +  '_c.pkl'))
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
-                print("Feature {} already exists".format(file_string +  '_f.pkl'))
-            else:
-                #Read csv files 
-                datum = pd.read_csv(dataset_test + '/' +file_string + '.csv', encoding='utf-8', sep=',', 
-                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
-                #Vectorise the document 
-                vect = generate_vector()
-                vectorized_data, feature_names = vectorize(vect, datum)
-                
-                with open(dataset_test + '/' + file_string + '_f.pkl', "wb") as f:
-                    pickle.dump([vectorized_data, feature_names], f)
-                
-                self.drop_down_list_word_vector_list_test.insert(tk.END, file_string + '_f.pkl')
-                self.feature_list_test.append(file_string + '_f.pkl')
-        
-        #Sort feature list after appending some elements
-        self.feature_list_test = sorted(self.feature_list_test)
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-        self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "Complete {} feature generation.\n".format(file_string))
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
-        
-    def create_feature_vector_test_async(self, file_string):
-        files_tmp = []
-        
-        for dirpath, dirs, files in os.walk(dataset_test):
-            files_tmp.extend(files)
-        
-        #Extract only the csv files and remove extension!
-        files_tmp = [os.path.splitext(x)[0] for x in files_tmp if x.endswith('.csv')]
-        
-        
-        
-        if any(file_string in substring for substring in self.feature_list_test):
-            #Feature already exists
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, 
-                                                                            "Feature {} already exists.\n".format(file_string +  '_c.pkl'))
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
-            print("Feature {} already exists".format(file_string +  '_f.pkl'))
-        else:
-            #Read csv files 
-            datum = pd.read_csv(dataset_test + '/' +file_string + '.csv', encoding='utf-8', sep=',', 
-                        error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
-            #Vectorise the document 
-            vect = generate_vector()
-            vectorized_data, feature_names = vectorize(vect, datum)
-            
-            with open(dataset_test + '/' + file_string + '_f.pkl', "wb") as f:
-                pickle.dump([vectorized_data, feature_names], f)
-            
-            self.drop_down_list_word_vector_list_test.insert(tk.END, file_string + '_f.pkl')
-            self.feature_list_test.append(file_string + '_f.pkl')
-        
-        #Sort feature list after appending some elements
-        self.feature_list_test = sorted(self.feature_list_test)
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-        self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "Complete {} feature generation.\n".format(file_string))
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
-    
-    
-    def create_concept_matrix_test(self):
-        
-        files_tmp = []
-        
-        #Checking entire files in the text
-        for dirpath, dirs, files in os.walk(dataset_test):
-            files_tmp.extend(files) 
-        rem_len = -len('_f.pkl')
-        #Check whether the concept file(s) exist(s)
-        files_tmp = [x[:rem_len] for x in files_tmp if x.endswith('_f.pkl')]
-#        "ssss"[3:4]
-        
-        #Define the methods for generating functions
-        #Retrieve the concept data asynchonically
-        #to retrieve the data simultaneously
-        async def retrieve_word_concept_data(feature_names, K = 20):
-            with concurrent.futures.ThreadPoolExecutor(max_workers=220) as executor:
-                collection_of_results = []
-                loop = asyncio.get_event_loop()
-                futures = [
-                    loop.run_in_executor(
-                        executor, 
-                        requests.get, 
-                        'https://concept.research.microsoft.com/api/Concept/ScoreByTypi?instance=' +
-                        i.replace(' ', '+') + 
-                        '&topK=' + str(K)
-                    )
-                    for i in feature_names
-                ]
-                for response in await asyncio.gather(*futures):
-                    collection_of_results.append(response.json())
-                
-                return collection_of_results
-        
-        for file_string in files_tmp:
-            #Check whether the test subject exists or no
-            if any(file_string in substring for substring in self.concept_list_test):
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, 
-                                                                                "Concept {} already exists.\n".format(file_string +  '_c.pkl'))
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
-                print("Concept {} already exists".format(file_string +  '_c.pkl'))
-            else:
-                p_e_c  = {}
-                
-                feature_names = None                    
-                with open(dataset_test + '/' + file_string + '_f.pkl', "rb") as f:
-                     _, feature_names = pickle.load(f)
-                
-                
-                #Sort the feature names just in case...
-                feature_names = sorted(feature_names)
-                '''
-                #Retrieve the tenth rankings of the words
-                
-                #K needed to be adjustable so that the
-                #Researcher can find the characteristics of
-                #all values!
-                '''
-                loop = asyncio.get_event_loop()
-                future = asyncio.ensure_future(retrieve_word_concept_data(feature_names))
-                results = loop.run_until_complete(future)
-                
-                #temporary
-                for idx, i  in enumerate(feature_names):
-                #    print(i)
-                #    print(idx)
-                    p_e_c[i] = results[int(idx)]
-                
-#                print(p_e_c)
-#                temp = {}
-#                type(temp) == dict
-                #List up the concept names
-                
-                l = [list(i.keys()) for i in list(p_e_c.values())]
-                concept_names = sorted(list(set(itertools.chain.from_iterable(l))))
-                
-                #    concept_sets[len(concept_sets)-1]
-                #Put the atom concept if there are no concepts in the words
-                
-                
-                #Adding atomic elements
-                for i in feature_names:
-                    #if there are no concepts in the words, then...
-                    if p_e_c[i] == {}:
-                        
-                        #Append the words with no related concpets
-                        #as the atomic concepts
-                        concept_names.append(i)
-#                    else:
-                        
-                #Sorting the concept_names after adding feature names
-                concept_names = sorted(concept_names)
-
-                with open(dataset_test + '/' + file_string +  '_c.pkl', "wb") as f:
-                    pickle.dump([p_e_c, concept_names], f)
-                    
-                self.concept_list_test.append(file_string +  '_c.pkl')
-                self.drop_down_concept_prob_vector_list_test.insert(tk.END, file_string +  '_c.pkl')
-        
-        #Sort after adding all values
-        self.concept_list_test = sorted(self.concept_list_test)
-#        for i in self.feature_list:
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-        self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "Complete {} concept generation.\n".format(file_string))
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
-    '''
     #Retrieve all test and training data asynchrously
-    '''
-    def asynchronous_training_topic_concept_retrieval(self, fobj, file_type):
+    
+    def asynchronous_topic_concept_retrieval(self, fobj, file_type, dataset_dir, test_or_training):
         train_folder_selection = askdirectory()
         #train_folder_selection = "C:/Users/n9648852/Desktop/R8-Dataset/Dataset/R8/Testing"
         
@@ -1584,8 +1104,10 @@ class Application():
         
         #training_folders_tmp.remove(train_folder_selection)
         
-        topic_list = self.topic_list
-        
+        if(test_or_training == 0):
+            topic_list = self.topic_list
+        else:
+            topic_list = self.topic_list_test
         '''
         Asynchronous training dataset retrieval
         '''
@@ -1610,7 +1132,6 @@ class Application():
                     
                 return topics_vec 
       
-        topic_list = self.topic_list
         loop = asyncio.get_event_loop()
         future = asyncio.ensure_future(retrieve_file_data(training_folders_tmp, topic_list))
         topics = loop.run_until_complete(future)
@@ -1619,14 +1140,23 @@ class Application():
         if None in topics:
             topics = list(filter((None).__ne__, topics))
         print(topics)
-        if type(topics) == list:
-            self.topic_list.extend(topics)
+        if (test_or_training == 0):
+            if type(topics) == list:
+                self.topic_list.extend(topics)
+            self.topic_list = sorted(self.topic_list)
             
-        self.topic_list = sorted(self.topic_list)
+            if type(topics) == list:
+                for i in topics:
+                    self.user_drop_down_select_folder_list.insert(tk.END, i)
+        else:
+            if type(topics) == list:
+                self.topic_list_test.extend(topics)
+            self.topic_list_test = sorted(self.topic_list)
+            
+            if type(topics) == list:
+                for i in topics:
+                    self.user_drop_down_select_folder_list_test.insert(tk.END, i)
         
-        if type(topics) == list:
-            for i in topics:
-                self.user_drop_down_select_folder_list.insert(tk.END, i)
         
         
         time.sleep(4)
@@ -1650,8 +1180,12 @@ class Application():
                     features_vec.append(i)
                     
                 return features_vec
+            
+        if(test_or_training == 0):
+            feature_list = self.feature_list
+        else:
+            feature_list = self.feature_list_test
         
-        feature_list = self.feature_list
         loop = asyncio.get_event_loop()
         future = asyncio.ensure_future(create_feature_vectors(training_folders_tmp, feature_list, dataset_dir))
         features = loop.run_until_complete(future)
@@ -1660,16 +1194,24 @@ class Application():
         if None in features:
             features = list(filter((None).__ne__, features))
             
-        
-        if type(features) == list:    
-            self.feature_list.extend(features)
+        if(test_or_training == 0):
+            if type(features) == list:    
+                self.feature_list.extend(features)
+                
+            self.feature_list = sorted(self.feature_list)
             
-        self.feature_list = sorted(self.feature_list)
-        
-        if type(features) == list:
-            for i in topics:
-                self.drop_down_list_word_vector_bar.insert(tk.END, i)
-        
+            if type(features) == list:
+                for i in features:
+                    self.drop_down_list_word_vector_list.insert(tk.END, i)
+        else:
+            if type(features) == list:    
+                self.feature_list_test.extend(features)
+                
+            self.feature_list_test = sorted(self.feature_list_test)
+            
+            if type(features) == list:
+                for i in features:
+                    self.drop_down_list_word_vector_list_test.insert(tk.END, i)
         print("Feature extraction completed!!")
         
         time.sleep(2)
@@ -1683,155 +1225,42 @@ class Application():
             time.sleep(2)    
             return concept_vec
         
-        concept_list = self.concept_list
+        if(test_or_training == 0):
+            concept_list = self.concept_list
+        else:
+            concept_list = self.concept_list_test
+
+
         concepts = create_concept_word_lists(training_folders_tmp, concept_list, dataset_dir)
         
         if None in concepts:
             concepts = list(filter((None).__ne__, concepts))
+        
+        
+        if(test_or_training == 0):
+            if type(concepts) == list:    
+                self.concept_list.extend(concepts)
             
-        if type(concepts) == list:    
-            self.concept_list.extend(concepts)
-        
-        
-        self.concept_list = sorted(self.concept_list)
-        
-        
-        if type(concepts) == list:
-            for i in topics:
-                self.drop_down_concept_prob_vector_list.insert(tk.END, i)
-        
+            
+            self.concept_list = sorted(self.concept_list)
+            
+            
+            if type(concepts) == list:
+                for i in concepts:
+                    self.drop_down_concept_prob_vector_list.insert(tk.END, i)
+        else:
+            if type(concepts) == list:    
+                self.concept_list_test.extend(concepts)
+            
+            
+            self.concept_list_test = sorted(self.concept_list_test)
+            
+            
+            if type(concepts) == list:
+                for i in concepts:
+                    self.drop_down_concept_prob_vector_list_test.insert(tk.END, i)
         print("Concept graph retrieval completed!!")
     
-
-        
-    def asynchronous_testing_topic_concept_retrieval(self):
-        train_folder_selection = askdirectory()
-        #train_folder_selection = "C:/Users/n9648852/Desktop/R8-Dataset/Dataset/R8/Testing"
-        
-        training_folders_tmp = []
-        
-        for dirpath, dirs, files in os.walk(train_folder_selection):
-            if len([x for x in files if x.endswith('.xml')]) != 0:
-                training_folders_tmp.append(dirpath) 
-        
-        
-        
-        
-        topic_list = self.topic_list_test
-        
-        '''
-        Asynchronous training dataset retrieval
-        '''
-        async def retrieve_file_data(training_folders_tmp, topic_list, dataset_dir):
-        #Max worker set to 10
-           with concurrent.futures.ThreadPoolExecutor() as executor:
-            
-                loop = asyncio.get_event_loop()
-                futures = [
-                    loop.run_in_executor(
-                        executor, 
-                        self.select_folder_and_extract_xml_async, 
-                        folder_name,
-                        topic_list, dataset_dir
-                    )
-                    for folder_name in training_folders_tmp
-                ]
-                topics_vec = []
-                for i in await asyncio.gather(*futures):
-                    topics_vec.append(i)
-                    
-                return topics_vec 
-      
-        topic_list = self.topic_list_test
-        loop = asyncio.get_event_loop()
-        future = asyncio.ensure_future(retrieve_file_data(training_folders_tmp, topic_list, dataset_test))
-        topics = loop.run_until_complete(future)
-        
-        print(topics)
-        if None in topics:
-            topics = list(filter((None).__ne__, topics))
-        print(topics)
-        if type(topics) == list:
-            self.topic_list_test.extend(topics)
-            
-        self.topic_list_test = sorted(self.topic_list_test)
-        
-        if type(topics) == list:
-            for i in topics:
-                self.user_drop_down_select_folder_list_test.insert(tk.END, i)
-        
-        
-        time.sleep(2)
-        print(training_folders_tmp)
-        async def create_feature_vectors(training_folders_tmp, feature_list, dataset_dir):
-            
-           with concurrent.futures.ThreadPoolExecutor() as executor:
-            
-                loop = asyncio.get_event_loop()
-                futures = [
-                    loop.run_in_executor(
-                        executor, 
-                        self.create_feature_vector_async, 
-                        folder_name, feature_list, dataset_dir
-                    )
-                    for folder_name in training_folders_tmp
-                ]
-                features_vec = []
-                
-                for i in await asyncio.gather(*futures):
-                    features_vec.append(i)
-                    
-                return features_vec
-        
-        feature_list = self.feature_list_test
-        loop = asyncio.get_event_loop()
-        future = asyncio.ensure_future(create_feature_vectors(training_folders_tmp, feature_list, dataset_test))
-        features = loop.run_until_complete(future)
-        
-        
-        if None in features:
-            features = list(filter((None).__ne__, features))
-            
-        if type(features) == list:    
-            self.feature_list_test.extend(features)
-            
-        self.feature_list_test = sorted(self.feature_list_test)
-        
-        if type(features) == list:
-            for i in features:
-                self.drop_down_list_word_vector_bar_test.insert(tk.END, i)
-        
-        print("Feature extraction completed!")
-        
-        #Just in case of erroneous latency...
-        time.sleep(2)
-        concept_list = self.concept_list_test
-        
-        #Asyncio is not used for retrieving web data simultaneously
-        def create_concept_word_lists(training_folders_tmp, concept_list, dataset_dir):
-            concept_vec = []
-            for i in training_folders_tmp:
-                concept_vec.append(self.create_concept_matrix_async(i, concept_list, dataset_dir))
-                time.sleep(2)
-            return concept_vec
-    
-        concepts = create_concept_word_lists(training_folders_tmp, concept_list, dataset_test)
-        
-        if None in concepts:
-            concepts = list(filter((None).__ne__, concepts))
-            
-        if type(concepts) == list:    
-            self.concept_list_test.extend(concepts)
-        
-        
-        self.concept_list_test = sorted(self.concept_list_test)
-        
-        
-        if type(features) == list:
-            for i in features:
-                self.drop_down_concept_prob_vector_list_test.insert(tk.END, i)
-        
-        print("Concept graph retrieval completed!!")
     
     def create_CLDA_instance(i):
         
@@ -1872,23 +1301,26 @@ class Application():
         def concurrent():
     #        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
             
-            fm = Asynchrous_CLDA
+            fm = Asynchrous_CLDA()
             
-            results = fm.asynchronous_CLDA_creation(fm, dataset_dir)
+            results = fm.asynchronous_CLDA_creation(dataset_dir)
             
-            if all(results):
-                print("CLDA model creation completed!")
+            return results
         
-        concurrent()
+        print("CLDA model creation start!")
+        results = concurrent()
         #Create CLDA object asynchronically.
         
-        #If result num is equal to 1, then the result can be put into 1
-        if(result_num == 1):
-            pass
-        
-        #Otherwise, the value is put into the values
+        if(result_num == 0):
+            for i in results:
+                if(i != None):
+                    self.drop_down_CLDA_list.insert(tk.END, i)
+
         else:
-            pass            
+            for i in results:
+                if(i != None):
+                    self.drop_down_CLDA_list_test.insert(tk.END, i)          
+
 
     def asynchronous_LDA_model_generation(self, dataset_dir, result_num):
         
@@ -1899,40 +1331,50 @@ class Application():
             
             results = fm.asynchronous_LDA_creation(fm, dataset_dir)
             
-            if all(results):
-                print("LDA model creation completed!")
-        
+            return results
+            
         print("LDA model creation start!")
-        concurrent()
+        results = concurrent()
         #Create CLDA object asynchronically.
         
-        #If result num is equal to 1, then the result can be put into 1
-        if(result_num == 1):
-            pass
+        file_tmp = []
+        for dirpath, dirs, files in os.walk(dataset_dir):
+            file_tmp.extend(files)
         
+        
+        #If result num is equal to 1, then the result can be put into 1
+        if(result_num == 0):
+            for i in results:
+                if(i != None):
+                    self.drop_down_LDA_list.insert(tk.END, i)
         #Otherwise, the value is put into the values
         else:
-            pass            
+            for i in results:
+                if(i != None):
+                    self.drop_down_LDA_list_test.insert(tk.END, i)
+                
         
             
 #Asynchronous CLDA model creation            
 class Asynchrous_CLDA(object):
     
     def __init__(self):
-        self.__init__(self)
-    
+#        self.__init__()
+        self.dataset_dir = None
+        
+        
     def create_CLDA_instance(self,i):
         
         #Read CLDA files 
         files_tmp = []
         for dirpath, dirs, files in os.walk(self.dataset_dir):
             if len([x for x in files if x.endswith('.csv')]) != 0:
-                files_tmp.extend() 
+                files_tmp.extend(files) 
         
         if i + "_CLDA.pkl" in files_tmp:
             print("File {} is already exists".format(i + "_CLDA.pkl"))
             #Normal finish of the program...
-            return True
+            return None
         
         print("file process {}: starts!".format(i))
         file_index_name = pd.read_csv(self.dataset_dir + '/' + i + '.csv', encoding='utf-8', sep=',', 
@@ -1957,7 +1399,7 @@ class Asynchrous_CLDA(object):
         #Sleep just in case...
         time.sleep(0.5)
         #Return True if the process stops normally
-        return True
+        return i + "_CLDA.pkl"
     
     def asynchronous_CLDA_creation(self, dataset_dir):
            
@@ -1970,8 +1412,8 @@ class Asynchrous_CLDA(object):
         files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
         
         #Asynchronically create the CLDA object
-        with Pool(core_use) as p:
-            pool_async = p.starmap_async(self.create_CLDA_instance, [[self, i] for i in files_list_for_modelling_CLDA])
+        with Pool(cpu_count()-1) as p:
+            pool_async = p.starmap_async(self.create_CLDA_instance, [[i] for i in files_list_for_modelling_CLDA])
             
             return pool_async.get()
                 
@@ -1993,7 +1435,7 @@ class Asynchrous_LDA(object):
         if i + "_LDA.pkl" in files_tmp:
             print("File {} is already exists".format(i + "_LDA.pkl"))
             #Normal finish of the program...
-            return True
+            return None
         #Read CLDA files 
         print("file process {}: starts!".format(i))
         file_index_name = pd.read_csv(dataset_dir + '/' + i + '.csv', encoding='utf-8', sep=',', 
@@ -2019,12 +1461,12 @@ class Asynchrous_LDA(object):
         print("Data generation complete!: {}".format(dataset_dir + '/' + i + "_LDA.pkl"))
         time.sleep(0.5)
         #Return True if the process stops normally
-        return True
+        return (i + "_LDA.pkl")
     
     def asynchronous_LDA_creation(self, dataset_dir):
            
-        dataset_dir    
-        
+            
+#        results.insert(tk.END, "ttt")
         files = []
         
         for dirpath, dirs, files in os.walk(dataset_dir):
@@ -2035,8 +1477,8 @@ class Asynchrous_LDA(object):
         files_list_for_modelling_LDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
         
         #Core use
-        #Asynchronically create the CLDA object
-        with Pool(5) as p:
+        #Asynchronically create the LDA object
+        with Pool(cpu_count()-1) as p:
             pool_async = p.starmap_async(self.create_LDA_instance, [[self, i, dataset_dir] for i in files_list_for_modelling_LDA])
             
             return pool_async.get()        

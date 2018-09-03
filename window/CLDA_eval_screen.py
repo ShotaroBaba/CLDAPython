@@ -7,9 +7,10 @@ Created on Sat Sep  1 22:07:34 2018
 
 import tkinter as tk
 import gc
+import os
 import main_window
-
-
+dataset_training = "../../CLDA_data_training"
+dataset_testing = "../../CLDA_data_testing"
 
 class CLDA_evaluation_screen(object):
     
@@ -25,6 +26,8 @@ class CLDA_evaluation_screen(object):
         self.root.config(menu=self.menubar)
         
         self.start_menu()
+        
+        self.listing_all_model()
         
         self.root.mainloop()
         
@@ -103,6 +106,8 @@ class CLDA_evaluation_screen(object):
         self.CLDA_selection_word_ranking_button = tk.Button(self.CLDA_selection_and_preference, text = "Word ranking\nevaluation")
         self.CLDA_selection_word_ranking_button.grid(row = 3)
         
+        self.CLDA_accuracy_calculation_button = tk.Button(self.CLDA_selection_and_preference, text = "Calculate CLDA accuracy")
+        self.CLDA_accuracy_calculation_button.grid(row = 4)
         
         self.CLDA_selection_listbox['yscrollcommand'] = \
         self.CLDA_selection_listbox_scroll.set
@@ -151,6 +156,9 @@ class CLDA_evaluation_screen(object):
         self.LDA_selection_word_ranking_button.grid(row = 3)
         
         
+        self.LDA_accuracy_calculation_button = tk.Button(self.LDA_selection_and_preference, text = "Calculate LDA accuracy")
+        self.LDA_accuracy_calculation_button.grid(row = 4)
+        
         self.LDA_selection_listbox['yscrollcommand'] = \
         self.LDA_selection_listbox_scroll.set
         self.LDA_selection_listbox_scroll['command'] = self.LDA_selection_listbox.yview
@@ -179,10 +187,28 @@ class CLDA_evaluation_screen(object):
         
         #Delete the object to erase its data
         del self
-        gc.collect()
-        main_window.main()
         
-                
+        #Conduct the garbage collection if there is no 
+        gc.collect()
+        
+        
+        main_window.main()
+    
+    def listing_all_model(self):
+        files_tmp = []
+        
+        for dirpath, dirs, files in os.walk(dataset_training):
+            files_tmp.extend(files)
+        
+        self.LDA_list = [x for x in files_tmp if x.endswith("_LDA.pkl")]
+        
+        for i in self.LDA_list:
+            self.LDA_selection_listbox.insert(tk.END, i)
+
+        self.CLDA_list = [x for x in files_tmp if x.endswith("_CLDA.pkl")]
+        
+        for i in self.CLDA_list:
+            self.CLDA_selection_listbox.insert(tk.END, i)
 def main():
     
     CLDA_evaluation_screen()

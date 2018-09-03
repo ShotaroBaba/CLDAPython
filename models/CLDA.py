@@ -199,7 +199,7 @@ def retrieve_p_e_c(feature_names, K = 20):
                     )
                     for i in feature_names
                 ]
-                #Wait the response from the tasks until the tasks has finished
+                #Wait the response from the tasks until the data retrieval finishes
                 for response in await asyncio.gather(*futures):
                     collection_of_results.append(response.json())
                 
@@ -613,7 +613,7 @@ class CLDA(object):
                     for topic, docs_idx in enumerate(temp2)]
         
         
-        
+
 #Code temporarily exists for the further tests        
 #        
 #    tmp = [[(topic, ranking, t.concept_names[idx], list(set([(feature_names[t.word_concept[k]]) for k,v in t.topics_and_concepts.items() if v == (topic,idx)  ]))) for ranking, idx in enumerate(concept_idx[0:word_limit])]
@@ -629,7 +629,7 @@ class CLDA(object):
 #    t.show
 #        self.word_ranking = 
 
-#Obsolete
+#Obsolete code
 #    def show_concept_word_ranking(self, K = 10):
 #        
 #        #Sorting the values by decending order
@@ -719,7 +719,8 @@ class CLDA(object):
 
             list_of_words_in_concepts_topics = [x for x in lighten_document_topic_concept_word if x[3] == w]
             
-            #Eliminate overlap
+            #Extract all combination of topic concept and words
+            #from the result.
             list_of_words_in_concpets_topics = sorted(list(set([(x[1], x[2], x[3]) for x in list_of_words_in_concepts_topics])))
             
             results = []
@@ -749,11 +750,13 @@ class CLDA(object):
                     pass
                 
                 #Summing word-concept-topic probabilies in all documents
+                #Word probability = 
                 for relations in set_summation_for_topic_concept:
+                    #Find the word which is under concept and topic in a certain document.
                     words_relating_tcd =\
                     [x for x in lighten_document_topic_concept_word if (relations[0], relations[1], relations[2]) == (x[0], x[1],x[2])]
-
                     
+                    #Calculate word probability under the condition of topic and concept in one document.
                     for k in words_relating_tcd:
                         try:
                         #Meaning that it is an atomic concept
@@ -766,6 +769,7 @@ class CLDA(object):
 
                             pass
                     try:
+                        
                         total += value / sum_of_value
                     except ZeroDivisionError:
                         pass
