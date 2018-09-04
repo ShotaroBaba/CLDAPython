@@ -4,12 +4,15 @@ Created on Fri Aug 24 21:45:47 2018
 
 @author: Shotaro Baba
 """
-#Reading all necessary packages
+# Reading all necessary packages
 
-#Import all necessary packages.import sys
+# Import all necessary packages.import sys
 import sys
 sys.path.append("..\/models/")
-
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 import CLDA_eval_screen
 import CLDA
@@ -28,6 +31,7 @@ import itertools
 
 from multiprocessing import cpu_count
 from multiprocessing import Pool
+from multiprocessing import Process
 
 
 import nltk
@@ -43,14 +47,14 @@ import requests
 lemmatizer = WordNetLemmatizer()
 dataset_dir = "../../CLDA_data_training"
 dataset_test = "../../CLDA_data_testing"
-#Download all necessary nltk download
-#components
+# Download all necessary nltk download
+# components
 nltk.download('stopwords')
 nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
 nltk.download('wordnet')
-#Create main menu            
-#Defining the lemmatizer
+# Create main menu            
+# Defining the lemmatizer
 gc.enable()
 core_use = 5
 
@@ -68,7 +72,7 @@ def lemmatize(token, tag):
 
     return lemmatizer.lemmatize(token, tag)
 
-#The tokenizer for the documents
+# The tokenizer for the documents
 def cab_tokenizer(document):
     tokens = []
     sw = define_sw()
@@ -101,17 +105,17 @@ def cab_tokenizer(document):
 
 
 
-#Create vectorise files
-#Define the function here
-#Generate vector for creating the data
+# Create vectorise files
+# Define the function here
+# Generate vector for creating the data
 def generate_vector():
     return CountVectorizer(tokenizer=cab_tokenizer, ngram_range=[1,2],
                            min_df=0.02, max_df=0.98)
 
-#Generate count vectorizer
+# Generate count vectorizer
 def vectorize(tf_vectorizer, df):
-    #Generate_vector
-    #df = df.reindex(columns=['text'])  # reindex on tweet
+    # Generate_vector
+    # df = df.reindex(columns=['text'])  # reindex on tweet
 
     tf_matrix = tf_vectorizer.fit_transform(df['Text'])
     tf_feature_names = tf_vectorizer.get_feature_names()
@@ -119,13 +123,13 @@ def vectorize(tf_vectorizer, df):
     return tf_matrix, tf_feature_names
 
 
-#Retrieve the text file from the files
+# Retrieve the text file from the files
 def generate_files(path):
     for file in os.listdir(path):
         if os.path.isfile(os.path.join(path, file)):
             yield (path + '\\' + file)
 
-#Returns texts in the xml documents 
+# Returns texts in the xml documents 
 def return_text(path, path_string, x):
     file = path + '/' + path_string + '/' +str(x) + ".xml"
     tree = ET.parse(file)
@@ -141,45 +145,45 @@ def return_text(path, path_string, x):
         
     return result
 
-#Read all files in the training dataset
+# Read all files in the training dataset
 
 
-#Read the test files for the test purpose
+# Read the test files for the test purpose
 def read_test_files():
     for_test_purpose_data = pd.DataFrame([], columns=['File', 'Text'])
     training_path = []
 
-    #Creating 
+    # Creating 
     test_path = "../../R8-Dataset/Dataset/ForTest"
     for dirpath, dirs, files in os.walk(test_path):
         training_path.extend(files)
     
-    #Remove the files other than xml files
+    # Remove the files other than xml files
     training_path = [x for x in training_path if x.endswith('xml')]
-    #Remove the path where the 
-    #Extract only last directory name
+    # Remove the path where the 
+    # Extract only last directory name
 #    for_test_purpose_data = {}
 #    training_data_list = []
     for path_to_file in training_path:
         path_string = os.path.basename(os.path.normpath(path_to_file))        
-        #training_data_list.append(path_string)
-        #Initialise the list of the strings
-        #for_test_purpose_data[path_string] = {}
+        # training_data_list.append(path_string)
+        # Initialise the list of the strings
+        # for_test_purpose_data[path_string] = {}
         
         file = test_path + '/' + path_string 
         tree = ET.parse(file)
         
-        #Turn the string into
+        # Turn the string into
         root = tree.getroot()
         result = ''
-        #Retrieving the text from xml files
+        # Retrieving the text from xml files
         for element in root.iter():
             if(element.text != None):
                 result += element.text + ' '
         result = result[:-1] #Removing the space
         
                 
-        #Initialise 
+        # Initialise 
 #        for file in generate_files(path):
             #print("Now reading...")
             #print(open(file, "r").read())
@@ -192,10 +196,7 @@ def read_test_files():
 
 
 
-#Create the test vectors 
-
-
-#Root class for the application 
+ 
 class Application():
     
         
@@ -214,7 +215,7 @@ class Application():
         '''
         Training part
         '''
-        #The list of the files for the upload
+        # The list of the files for the upload
         self.upload_file_list_labelling = []
         self.upload_file_list_classifier = []
         
@@ -231,14 +232,14 @@ class Application():
         
         self.LDA_model_list = []
         
-        #The generation of CLDA model list
-        #Later this will be used for generating results
+        # The generation of CLDA model list
+        # Later this will be used for generating results
         
         self.CLDA_model_list = []
         self.LDA_model_list = []
         
-        #Initialisation of the topic feature concept list by retrieving the data from
-        #the documents
+        # Initialisation of the topic feature concept list by retrieving the data from
+        # the documents
         
         '''
         Testing part
@@ -261,8 +262,8 @@ class Application():
         
         self.LDA_model_list_test = []
         
-        #The generation of CLDA model list
-        #Later this will be used for generating results
+        # The generation of CLDA model list
+        # Later this will be used for generating results
         
         self.CLDA_model_list_test = []
         self.LDA_model_list_test = []
@@ -277,7 +278,7 @@ class Application():
         
     def start_menu(self):
         
-        #Bring all the frame which include all the Listbox frame together
+        # Bring all the frame which include all the Listbox frame together
         '''
         ##############################################################################
         ###Main frame
@@ -301,7 +302,7 @@ class Application():
         #######################################
         '''
         
-        #Main frame of the selection
+        # Main frame of the selection
         self.frame_for_folder_selection = tk.Frame(self.main_listbox_and_result)
         self.frame_for_folder_selection.pack(side = tk.LEFT)
         
@@ -595,7 +596,7 @@ class Application():
         ################################################################################
         '''
         
-        #Forming the button group for putting them together
+        # Forming the button group for putting them together
         self.button_groups = tk.Frame(self.main_listbox_and_buttons)
         self.button_groups.pack()
         
@@ -737,7 +738,7 @@ class Application():
         self.training_button_txt_test = tk.Button(self.root, text = 'test_data_creation_xml')
         self.training_button_txt_test.pack(side = tk.BOTTOM)
         self.training_button_txt_test['command'] = partial(self.asynchronous_topic_concept_retrieval, 
-                                     self.select_folder_and_extract_xml_async, '.txt', dataset_test, 1)
+                                     self.select_folder_and_extract_xml_async, '.xml', dataset_test, 1)
         
         
 #        self.CLDA_button = tk.Button(self.root, text = 'CLDA_model_creation (training)')
@@ -788,10 +789,10 @@ class Application():
         
         self.root.destroy()
         
-        #Destroy all the values in the self object
+        # Destroy all the values in the self object
         del self
         
-        #Conduct the garbage collection for reducing the memory usage...
+        # Conduct the garbage collection for reducing the memory usage...
         gc.collect()
         
         CLDA_eval_screen.main()
@@ -805,14 +806,14 @@ class Application():
         for dirpath, dirs, files in os.walk(dataset_dir):
             files_tmp.extend(files)
 #        print(files_tmp)
-            #only retrieve the files_tmp which end with .csv
-            #Initialise the topic list
+            # only retrieve the files_tmp which end with .csv
+            # Initialise the topic list
         self.topic_list = [x for x in files_tmp if x.endswith('.csv')]
         for i in self.topic_list:
             self.user_drop_down_select_folder_list.insert(tk.END, i)
-        #Initialise the features_list
-        #Extract feature files from the file lists
-        #No need to sort the values as the files are already sorted by names
+        # Initialise the features_list
+        # Extract feature files from the file lists
+        # No need to sort the values as the files are already sorted by names
         self.feature_list = [x for x in files_tmp if x.endswith('_f.pkl')]
         
         for i in self.feature_list:
@@ -835,17 +836,17 @@ class Application():
         
         for dirpath, dirs, files in os.walk(dataset_test):
             files_tmp_test.extend(files)
-#        print(files_tmp_test)
-            #only retrieve the files_tmp_test which end with .csv
-            #Initialise the topic list
+
+            # only retrieve the files_tmp_test which end with .csv
+            # Initialise the topic list
         self.topic_list_test = [x for x in files_tmp_test if x.endswith('.csv')]
         
         for i in self.topic_list_test:
             self.user_drop_down_select_folder_list_test.insert(tk.END, i)
             
-        #Initialise the features_list
-        #Extract feature files from the file lists
-        #No need to sort the values as the files are already sorted by names
+        # Initialise the features_list
+        # Extract feature files from the file lists
+        # No need to sort the values as the files are already sorted by names
         self.feature_list_test = [x for x in files_tmp_test if x.endswith('_f.pkl')]
         
         for i in self.feature_list_test:
@@ -873,13 +874,11 @@ class Application():
   
         folder_directory = ask_folder
         
-#        self.folder_name = "C:/Users/n9648852/Desktop/New folder for project/RCV1/Training/Training101"        
-        
-#        folder_name = os.path.basename("C:/Users/n9648852/Desktop/New folder for project/RCV1/Training/Training101")
+
         temp_substr = os.path.basename(folder_directory)
             
-        #If the processed file has already exists, then the process of the
-        #topics will stop.
+        # If the processed file has already exists, then the process of the
+        # topics will stop.
         if any(temp_substr in string for string in topic_list):
             print("topic already exist.")
             return 
@@ -890,7 +889,7 @@ class Application():
         for dirpath, dirs, files in os.walk(folder_directory):
             training_path.extend(files)
     
-        #Remove the files other than xml files
+        # Remove the files other than xml files
         training_path = [x for x in training_path if x.endswith('xml')]
         print(training_path)
         topic_name = os.path.basename(folder_directory)
@@ -898,8 +897,8 @@ class Application():
         for path_to_file in training_path:
             path_string = os.path.basename(os.path.normpath(path_to_file)) 
             
-            #Extract xml information from the files
-            #then it construct the information
+            # Extract xml information from the files
+            # then it construct the information
             file = folder_directory + '/' + path_string 
             tree = ET.parse(file)
             root = tree.getroot()
@@ -907,7 +906,7 @@ class Application():
             for element in root.iter():
                 if(element.text != None):
                     result += element.text + ' '
-            #Remove the remained data
+            # Remove the remained data
             result = result[:-1]
             
             name_of_the_file = (os.path.basename(path_string))
@@ -931,13 +930,11 @@ class Application():
   
         folder_directory = ask_folder
         
-#        self.folder_name = "C:/Users/n9648852/Desktop/New folder for project/RCV1/Training/Training101"        
-        
-#        folder_name = os.path.basename("C:/Users/n9648852/Desktop/New folder for project/RCV1/Training/Training101")
+
         temp_substr = os.path.basename(folder_directory)
             
-        #If the processed file has already exists, then the process of the
-        #topics will stop.
+        # If the processed file has already exists, then the process of the
+        # topics will stop.
         if any(temp_substr in string for string in topic_list):
             print("topic already exist.")
             return 
@@ -948,7 +945,7 @@ class Application():
         for dirpath, dirs, files in os.walk(folder_directory):
             training_path.extend(files)
             
-        #Remove the files other than xml files
+        # Remove the files other than xml files
         training_path = [x for x in training_path if x.endswith('.txt') and not x.startswith('._')]
         print(training_path)
         topic_name = os.path.basename(folder_directory)
@@ -975,14 +972,14 @@ class Application():
                               quoting=csv.QUOTE_ALL)
             
             return topic_name + ".csv"
-    #Retrieving topic list
+    # Retrieving topic list
     
-    #Based on the files_tmp made by the vectors 
-    #Depending on what test vector u used 
-    #The contents of the vector can be changed 
+    # Based on the files_tmp made by the vectors 
+    # Depending on what test vector u used 
+    # The contents of the vector can be changed 
     
     
-    #Asynchoronic feature vector retrieval
+    # Asynchoronic feature vector retrieval
     def create_feature_vector_async(self, file_string, feature_list, dataset_dir):
         
         file_string = os.path.splitext(os.path.basename(file_string))[0]
@@ -990,11 +987,11 @@ class Application():
             print("Feature {} already exists".format(file_string +  '_f.pkl'))
             return None
         else:
-            #Read csv files 
+            # Read csv files 
             datum = pd.read_csv(dataset_dir + '/' + file_string + '.csv', encoding='utf-8', sep=',', 
                         error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
             
-            #Vectorise the document 
+            # Vectorise the document 
             vect = generate_vector()
             vectorized_data, feature_names = vectorize(vect, datum)
             
@@ -1027,9 +1024,9 @@ class Application():
                 return collection_of_results
         
         file_string = os.path.splitext(os.path.basename(file_string))[0]
-        #Check whether the test subject exists or not
+        # Check whether the test subject exists or not
         if any(file_string in substring for substring in concept_list):
-            #Feature already exists
+            # Feature already exists
             print("Feature {} already exists".format(file_string +  '_c.pkl'))
         else:
             p_e_c  = {}
@@ -1042,16 +1039,16 @@ class Application():
             #Sort the feature names just in case...
             feature_names = sorted(feature_names)
             '''
-            #Retrieve the tenth rankings of the words
-            #K needed to be adjustable so that the
-            #Researcher can find the characteristics of
-            #all values!
+            # Retrieve the tenth rankings of the words
+            # K needed to be adjustable so that the
+            # Researcher can find the characteristics of
+            # all values!
             '''
             loop = asyncio.get_event_loop()
             future = asyncio.ensure_future(retrieve_word_concept_data(feature_names))
             results = loop.run_until_complete(future)
             
-            #temporary
+            # temporary
             for idx, i  in enumerate(feature_names):
             #    print(i)
             #    print(idx)
@@ -1060,16 +1057,16 @@ class Application():
 #                print(p_e_c)
 #                temp = {}
 #                type(temp) == dict
-            #List up the concept names
+            # List up the concept names
             
             l = [list(i.keys()) for i in list(p_e_c.values())]
             concept_names = sorted(list(set(itertools.chain.from_iterable(l))))
             
             #    concept_sets[len(concept_sets)-1]
-            #Put the atom concept if there are no concepts in the words
+            # Put the atom concept if there are no concepts in the words
             
             
-            #Adding atomic elements
+            # Adding atomic elements
             for i in feature_names:
                 #if there are no concepts in the words, then...
                 if p_e_c[i] == {}:
@@ -1079,7 +1076,7 @@ class Application():
                     concept_names.append(i)
 #                    else:
                     
-            #Sorting the concept_names after adding feature names
+            # Sorting the concept_names after adding feature names
             concept_names = sorted(concept_names)
 
             
@@ -1090,7 +1087,7 @@ class Application():
             
 #        for i in self.feature_list:
 
-    #Retrieve all test and training data asynchrously
+    # Retrieve all test and training data asynchrously
     
     def asynchronous_topic_concept_retrieval(self, fobj, file_type, dataset_dir, test_or_training):
         train_folder_selection = askdirectory()
@@ -1102,7 +1099,7 @@ class Application():
             if len([x for x in files if x.endswith(file_type)]) != 0:
                 training_folders_tmp.append(dirpath) 
         
-        #training_folders_tmp.remove(train_folder_selection)
+        # training_folders_tmp.remove(train_folder_selection)
         
         if(test_or_training == 0):
             topic_list = self.topic_list
@@ -1112,7 +1109,7 @@ class Application():
         Asynchronous training dataset retrieval
         '''
         async def retrieve_file_data(training_folders_tmp, topic_list):
-        #Max worker set to 10
+        # Max worker set to 10
            with concurrent.futures.ThreadPoolExecutor() as executor:
             
                 loop = asyncio.get_event_loop()
@@ -1217,7 +1214,7 @@ class Application():
         time.sleep(2)
         
         
-        #Asyncio is not used for retrieving web data simultaneously
+        # Asyncio is not used for retrieving web data simultaneously
         def create_concept_word_lists(training_folders_tmp, concept_list, dataset_dir):
             concept_vec = []
             for i in training_folders_tmp:
@@ -1290,9 +1287,9 @@ class Application():
         with open(dataset_dir + '/' + i + CLDA_file_suffix, "wb") as f:
             pickle.dump(CLDA_instance, f)
         
-        #Sleep just in case...
+        # Sleep just in case...
         time.sleep(0.5)
-        #Return True if the process stops normally
+        # Return True if the process stops normally
         return True
         
         
@@ -1307,25 +1304,35 @@ class Application():
             
             return results
         
-        print("CLDA model creation start!")
         results = concurrent()
         #Create CLDA object asynchronically.
         
+        for i in results:
+            line = i[1].getvalue()
+            if line != "":
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, line)
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+        # If result num is equal to 1, then the result can be put into 1
+        
         if(result_num == 0):
             for i in results:
-                if(i != None):
-                    self.drop_down_CLDA_list.insert(tk.END, i)
-
+                if(i[0] != None):
+                    self.drop_down_LDA_list.insert(tk.END, i[0])
+        # Otherwise, the value is put into the values
         else:
             for i in results:
-                if(i != None):
-                    self.drop_down_CLDA_list_test.insert(tk.END, i)          
-
+                if(i[0] != None):
+                    self.drop_down_LDA_list_test.insert(tk.END, i[0])
+        
+        # Make the stdout setting to default just in case...
+        sys.stdout = sys.__stdout__            
 
     def asynchronous_LDA_model_generation(self, dataset_dir, result_num):
         
+
         def concurrent():
-    #        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
+        #        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
             
             fm = Asynchrous_LDA
             
@@ -1335,24 +1342,28 @@ class Application():
             
         print("LDA model creation start!")
         results = concurrent()
-        #Create CLDA object asynchronically.
+        # Create CLDA object asynchronically.
         
-        file_tmp = []
-        for dirpath, dirs, files in os.walk(dataset_dir):
-            file_tmp.extend(files)
+        for i in results:
+            line = i[1].getvalue()
+            if line != "":
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, line)
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+        # If result num is equal to 1, then the result can be put into 1
         
-        
-        #If result num is equal to 1, then the result can be put into 1
         if(result_num == 0):
             for i in results:
-                if(i != None):
-                    self.drop_down_LDA_list.insert(tk.END, i)
-        #Otherwise, the value is put into the values
+                if(i[0] != None):
+                    self.drop_down_LDA_list.insert(tk.END, i[0])
+        # Otherwise, the value is put into the values
         else:
             for i in results:
-                if(i != None):
-                    self.drop_down_LDA_list_test.insert(tk.END, i)
-                
+                if(i[0] != None):
+                    self.drop_down_LDA_list_test.insert(tk.END, i[0])
+        
+        # Make the stdout setting to default just in case...
+        sys.stdout = sys.__stdout__
         
             
 #Asynchronous CLDA model creation            
@@ -1364,8 +1375,10 @@ class Asynchrous_CLDA(object):
         
         
     def create_CLDA_instance(self,i):
-        
-        #Read CLDA files 
+        # turn standard out into string IO...
+        # to capture the standard output
+        sys.stdout = buffer = StringIO()
+        # Read CLDA files 
         files_tmp = []
         for dirpath, dirs, files in os.walk(self.dataset_dir):
             if len([x for x in files if x.endswith('.csv')]) != 0:
@@ -1373,8 +1386,8 @@ class Asynchrous_CLDA(object):
         
         if i + "_CLDA.pkl" in files_tmp:
             print("File {} is already exists".format(i + "_CLDA.pkl"))
-            #Normal finish of the program...
-            return None
+            # Normal finish of the program...
+            return None, ""
         
         print("file process {}: starts!".format(i))
         file_index_name = pd.read_csv(self.dataset_dir + '/' + i + '.csv', encoding='utf-8', sep=',', 
@@ -1390,16 +1403,18 @@ class Asynchrous_CLDA(object):
         print("file reading {}: complete!".format(i))
         sys.stdout.flush()
         CLDA_instance = CLDA.CLDA(feature_names, concept_names, file_index_name, 5, 20)
-#        print(concept_names)
+
         CLDA_instance.run(feature_matrix, concept_dict)
         
         with open(self.dataset_dir + '/' + i + "_CLDA.pkl", "wb") as f:
             pickle.dump(CLDA_instance, f)
-#        print("file reading {}: complete!".format(i))
-        #Sleep just in case...
+        
+        # Sleep just in case...
         time.sleep(0.5)
-        #Return True if the process stops normally
-        return i + "_CLDA.pkl"
+        sys.stdout = sys.__stdout__
+        
+        # Return True if the process stops normally
+        return i + "_CLDA.pkl", buffer
     
     def asynchronous_CLDA_creation(self, dataset_dir):
            
@@ -1411,7 +1426,7 @@ class Asynchrous_CLDA(object):
         
         files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
         
-        #Asynchronically create the CLDA object
+        # Asynchronically create the CLDA object
         with Pool(cpu_count()-1) as p:
             pool_async = p.starmap_async(self.create_CLDA_instance, [[i] for i in files_list_for_modelling_CLDA])
             
@@ -1423,20 +1438,21 @@ class Asynchrous_LDA(object):
         self.__init__(self)
         self.dataset_dir = None
         
-    def create_LDA_instance(self,i, dataset_dir):
         
+    def create_LDA_instance(self,i, dataset_dir):
+        sys.stdout = buffer = StringIO()  
         files_tmp = []
         for dirpath, dirs, files in os.walk(dataset_dir):
             if len([x for x in files if x.endswith('.csv')]) != 0:
                 files_tmp.extend(files) 
         print(dataset_dir + '/' + i + "_LDA.pkl")
-        #If the file has already been created 
-        #then skip the process...
+        # If the file has already been created 
+        # then skip the process...
         if i + "_LDA.pkl" in files_tmp:
             print("File {} is already exists".format(i + "_LDA.pkl"))
             #Normal finish of the program...
-            return None
-        #Read CLDA files 
+            return None, ""
+        # Read CLDA files 
         print("file process {}: starts!".format(i))
         file_index_name = pd.read_csv(dataset_dir + '/' + i + '.csv', encoding='utf-8', sep=',', 
                             error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)["File"]
@@ -1448,24 +1464,25 @@ class Asynchrous_LDA(object):
         
         sys.stdout.flush()
         LDA_instance = CLDA.LDA(file_index_name, feature_names, 5)
-        #print(concept_names)
+        # print(concept_names)
         
-        #Later the iteration can be changed
-        #from GUI
+        # Later the iteration can be changed
+        # from GUI
         LDA_instance.run(feature_matrix, 20)
         
         with open(dataset_dir + '/' + i + "_LDA.pkl", "wb") as f:
             pickle.dump(LDA_instance, f)
-        #print("file reading {}: complete!".format(i))
-        #Sleep just in case...
-        print("Data generation complete!: {}".format(dataset_dir + '/' + i + "_LDA.pkl"))
+        # print("file reading {}: complete!".format(i))
+        # Sleep just in case...
+        print("Model generation complete!: {}".format(dataset_dir + '/' + i + "_LDA.pkl"))
         time.sleep(0.5)
-        #Return True if the process stops normally
-        return (i + "_LDA.pkl")
+        # Return True if the process stops normally
+        sys.stdout = sys.__stdout__
+        return (i + "_LDA.pkl"), buffer
     
     def asynchronous_LDA_creation(self, dataset_dir):
            
-            
+          
 #        results.insert(tk.END, "ttt")
         files = []
         
@@ -1473,11 +1490,11 @@ class Asynchrous_LDA(object):
             if len([x for x in files if x.endswith('.csv')]) != 0:
                 files.extend(files) 
         
-        #Very rough file detection....
+        # Very rough file detection....
         files_list_for_modelling_LDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
         
-        #Core use
-        #Asynchronically create the LDA object
+        # Core use
+        # Asynchronically create the LDA object
         with Pool(cpu_count()-1) as p:
             pool_async = p.starmap_async(self.create_LDA_instance, [[self, i, dataset_dir] for i in files_list_for_modelling_LDA])
             

@@ -24,7 +24,7 @@ from nltk import wordpunct_tokenize, WordNetLemmatizer, sent_tokenize, pos_tag
 from nltk.corpus import stopwords, wordnet
 from string import punctuation
 from sklearn.feature_extraction.text import CountVectorizer
-#from sklearn.feature_extraction.text import CountVectorizer
+# from sklearn.feature_extraction.text import CountVectorizer
 
 nltk.download('stopwords')
 nltk.download('punkt')
@@ -43,14 +43,14 @@ lemmatizer = WordNetLemmatizer()
 
 """Preparation for the pre-processing"""
 
-#Setting stop words 
+# Setting stop words 
 def define_sw():
     
-    #Use default english stopword     
+    # Use default english stopword     
     return set(stopwords.words('english'))
 
 
-#Defining the lemmatizer
+# Defining the lemmatizer
 def lemmatize(token, tag):
     tag = {
         'N': wordnet.NOUN,
@@ -61,7 +61,7 @@ def lemmatize(token, tag):
 
     return lemmatizer.lemmatize(token, tag)
 
-#The tokenizer for the documents
+# The tokenizer for the documents
 def cab_tokenizer(document):
     tokens = []
     sw = define_sw()
@@ -94,19 +94,19 @@ def cab_tokenizer(document):
 
 
 
-#Create vectorise files
-#Define the function here
-#Generate vector for creating the data
+# Create vectorise files
+# Define the function here
+# Generate vector for creating the data
 def generate_vector():
     return CountVectorizer(tokenizer=cab_tokenizer, ngram_range=[1,2],
                            min_df=0.02, max_df=0.98)
 
-#Generate document word count vector
-#This vector shows how many number of each word is in
-#in each document.
+# Generate document word count vector
+# This vector shows how many number of each word is in
+# in each document.
 def vectorize(tf_vectorizer, df):
-    #Generate_vector
-    #df = df.reindex(columns=['text'])  # reindex on tweet
+    # Generate_vector
+    # df = df.reindex(columns=['text'])  #  reindex on tweet
 
     tf_matrix = tf_vectorizer.fit_transform(df['Text'])
     tf_feature_names = tf_vectorizer.get_feature_names()
@@ -114,13 +114,13 @@ def vectorize(tf_vectorizer, df):
     return tf_matrix, tf_feature_names
 
 
-#Retrieve the text file from the files
+# Retrieve the text file from the files
 def generate_files(path):
     for file in os.listdir(path):
         if os.path.isfile(os.path.join(path, file)):
             yield (path + '\\' + file)
 
-#Returns texts in the xml documents 
+# Returns texts in the xml documents 
 def return_text(path, path_string, x):
     file = path + '/' + path_string + '/' +str(x) + ".xml"
     tree = ET.parse(file)
@@ -136,35 +136,35 @@ def return_text(path, path_string, x):
         
     return result
 
-#Read all files in the training dataset
-#Read the test files for the test purpose
+# Read all files in the training dataset
+# Read the test files for the test purpose
 def read_test_files(test_path):
-    #Construct pandas dataframe
+    # Construct pandas dataframe
     for_test_purpose_data = pd.DataFrame([], columns=['File', 'Text'])
     training_path = []
     
-    #Retrieving the file paths
+    # Retrieving the file paths
     for dirpath, dirs, files in os.walk(test_path):
         training_path.extend(files)
     
-    #Remove the files other than xml files
+    # Remove the files other than xml files
     training_path = [x for x in training_path if x.endswith('xml')]
     
-    #For each file, a xml file changes to a text file
-    #by parsing xml in the file
+    # For each file, a xml file changes to a text file
+    # by parsing xml in the file
     for path_to_file in training_path:
         path_string = os.path.basename(os.path.normpath(path_to_file))        
 
         file = test_path + '/' + path_string 
         tree = ET.parse(file)
         
-        #Turn the string into text file
+        # Turn the string into text file
         root = tree.getroot()
         result = ''
         for element in root.iter():
             if(element.text != None):
                 result += element.text + ' '
-        #Removing the white space from the result.
+        # Removing the white space from the result.
         result = result[:-1]
         
                 
@@ -177,15 +177,15 @@ def read_test_files(test_path):
     return for_test_purpose_data
 
 
-#Retrieve the data simultaneously
-#K represents the range of ranking you want to 
-#Retrieve from the Probase database.
+# Retrieve the data simultaneously
+# K represents the range of ranking you want to 
+# Retrieve from the Probase database.
 def retrieve_p_e_c(feature_names, K = 20):
 #    responses  = {}
 #    j = 0
-    #Asynchronically fetch p(e|c) data from Microsoft Probase database
+    # Asynchronically fetch p(e|c) data from Microsoft Probase database
     async def retrieve_word_concept_data(feature_names, K = 20):
-            #Setting the max workers
+            # Setting the max workers
             with concurrent.futures.ThreadPoolExecutor(max_workers=220) as executor:
                 collection_of_results = []
                 loop = asyncio.get_event_loop()
@@ -199,16 +199,16 @@ def retrieve_p_e_c(feature_names, K = 20):
                     )
                     for i in feature_names
                 ]
-                #Wait the response from the tasks until the data retrieval finishes
+                # Wait the response from the tasks until the data retrieval finishes
                 for response in await asyncio.gather(*futures):
                     collection_of_results.append(response.json())
                 
                 return collection_of_results
-    #Retrieve the 
+    # Retrieve the 
     loop = asyncio.get_event_loop()
     future = asyncio.ensure_future(retrieve_word_concept_data(feature_names))
     results = loop.run_until_complete(future)    
-    #Retrieve the tenth rankings of the words
+    # Retrieve the tenth rankings of the words
     p_e_c = {}
     
     for idx, i  in enumerate(feature_names):
@@ -220,25 +220,25 @@ def retrieve_p_e_c(feature_names, K = 20):
     return p_e_c
 
 
-#Now still testing my codes in the
-#
+# Now still testing my codes in the
+# 
 def retrieve_data(feature_name):
         K = 10
         print('Now processing ' + str(feature_name) + " word...")
 
-        #Replace space to + to tolerate the phrases with space
+        # Replace space to + to tolerate the phrases with space
         req_str = 'https://concept.research.microsoft.com/api/Concept/ScoreByTypi?instance=' \
         + feature_name.replace(' ', '+') + '&topK=' + str(K)
         response = requests.get(req_str)
         
-        #Retrieve the response from json file
+        # Retrieve the response from json file
         return response.json()
 #
 
 
 
 def main():
-    #Set your folder path here.
+    # Set your folder path here.
     test_path = "../../R8-Dataset/Dataset/ForTest"
     test_data = read_test_files(test_path)
     vect = generate_vector()
@@ -248,32 +248,32 @@ def main():
     l = [list(i.keys()) for i in list(p_e_c.values())]
     concept_names = sorted(list(set(itertools.chain.from_iterable(l))))
     
-#    concept_sets[len(concept_sets)-1]
+#     concept_sets[len(concept_sets)-1]
     
-    #Put the atom concept if there are no concepts in the words
+    # Put the atom concept if there are no concepts in the words
     
     file_lists = test_data['File']
-    #Adding atomic elements
+    # Adding atomic elements
     for i in feature_names:
-        #if there are no concepts in the words, then...
+        # if there are no concepts in the words, then...
         if p_e_c[i] == {}:
             
-            #Append the words with no related concpets
-            #as this is atomic concepts by definition
+            # Append the words with no related concpets
+            # as this is atomic concepts by definition
             concept_names.append(i)
     
     
     concept_names = sorted(concept_names)
 
     
-    #Create CLDA object
+    # Create CLDA object
     t = CLDA(feature_names, concept_names, file_lists, 2, 5)
     
-    #Run the methods of CLDA to calculate the topic-document, topic-concept probabilities.
+    # Run the methods of CLDA to calculate the topic-document, topic-concept probabilities.
     t.run(vectorised_data, p_e_c)
     
     t.document_topic_concept_word
-    #(m,z,c,w)
+    # (m,z,c,w)
 #    sum_of_the_values = 0
 #    top = 0
 
@@ -382,33 +382,33 @@ class CLDA(object):
             for i in range(int(vec[idx])):
                 yield idx      
     
-    #Initialise the objects in a CLDA instance
+    # Initialise the objects in a CLDA instance
     def __init__(self, feature_names, concept_names, file_lists, n_topics = 3, maxiter = 15, alpha = 0.1, beta = 0.1):
 
         
-        #Assign feature names
+        # Assign feature names
         self.feature_names = feature_names
         
-        #Assign concept names
+        # Assign concept names
         self.concept_names = concept_names
         
-        #The number of topics
+        # The number of topics
         self.n_topics = n_topics
         
-        #Alpha value
+        # Alpha value
         self.alpha = alpha
         
-        #File list
+        # File list
         self.file_lists = file_lists
         
         
-        #Beta value
+        # Beta value
         self.beta = beta
         
-        #Max gibb's sampling iteration value
+        # Max gibb's sampling iteration value
         self.maxiter = maxiter
         
-        #Relationship between word and concept
+        # Relationship between word and concept
         self.word_concept = {}
         
 #    p_e_c[feature_names[1223]]
@@ -423,22 +423,22 @@ class CLDA(object):
         
         n_concepts = len(self.concept_names)
 
-        #Relationships between concepts and words
-        #Can be used for optimising the processes
-        #Make it [[]] for consistency for calculation
+        # Relationships between concepts and words
+        # Can be used for optimising the processes
+        # Make it [[]] for consistency for calculation
         self.concept_word_relationship = [[[self.concept_names.index(y),
                                             concept_dict[x][y]]
                                             for y in concept_dict[x].keys()] if concept_dict[x] != {} else [[self.concept_names.index(x),
                                                                    1.0]] for x in self.feature_names]
         
-#        matrix = matrix.toarray().copy()
+#         matrix = matrix.toarray().copy()
         # number of times document m and topic z co-occur
-        self.nmz = np.zeros((n_docs, self.n_topics)) #C_D_T Count document topic
+        self.nmz = np.zeros((n_docs, self.n_topics)) # C_D_T Count document topic
         # number of times topic z and word w co-occur
-        self.nzc = np.zeros((self.n_topics, n_concepts)) #Topic size * word size
-        self.nm = np.zeros(n_docs) # The number of documents
-        self.nz = np.zeros(self.n_topics) #The number of each topic
-        self.topics_and_concepts = {} #Topics and concepts
+        self.nzc = np.zeros((self.n_topics, n_concepts)) # Topic size * word size
+        self.nm = np.zeros(n_docs) #  The number of documents
+        self.nz = np.zeros(self.n_topics) # The number of each topic
+        self.topics_and_concepts = {} # Topics and concepts
         self.document_topic_concept_word = {}
 #        tmp = {}
         for m in range(n_docs):
@@ -447,42 +447,42 @@ class CLDA(object):
             # w is a number between 0 and vocab_size-1
             #Count the
             for i, w in enumerate(self. word_indices(matrix[m, :])):
-                #Randomly put 
+                # Randomly put 
                 # choose an arbitrary topic as first topic for word i
                 # Change this value to if councept_dict[feature_names[w]] != {}
                 
-                #if the given feature concept probability is zero... then
+                # if the given feature concept probability is zero... then
                 if concept_dict[self.feature_names[w]] != {}:
-                    z = np.random.randint(self.n_topics) #Randomise the topics
-                    c = np.random.randint(n_concepts) #Randomly distribute the concepts per topics 
-                    self.nmz[m,z] += 1 #Distribute the count of topic doucment
-                    self.nm[m] += 1 #Count the number of occurrences
-                    self.nzc[z,c] += 1 #Counts the number of topic concept distribution
-                    self.nz[z] += 1 #Distribute the counts of the number of topics
+                    z = np.random.randint(self.n_topics) # Randomise the topics
+                    c = np.random.randint(n_concepts) # Randomly distribute the concepts per topics 
+                    self.nmz[m,z] += 1 # Distribute the count of topic doucment
+                    self.nm[m] += 1 # Count the number of occurrences
+                    self.nzc[z,c] += 1 # Counts the number of topic concept distribution
+                    self.nz[z] += 1 # Distribute the counts of the number of topics
                     self.topics_and_concepts[(m,i)] = (z,c)
-                    self.document_topic_concept_word[(m,i)] = (m,z,c,w) #Storing the information about the word
+                    self.document_topic_concept_word[(m,i)] = (m,z,c,w) # Storing the information about the word
                 else:
-                    z = np.random.randint(self.n_topics) #Randomise the topics
-                    c = self.concept_names.index(self.feature_names[w]) #Randomly distribute the concepts per topics 
-                    self.nmz[m,z] += 1 #Distribute the count of topic doucment
-                    self.nm[m] += 1 #Count the number of occurrences
-                    self.nzc[z,c] += 1 #Counts the number of topic concept distribution
-                    self.nz[z] += 1 #Distribute the counts of the number of topics
+                    z = np.random.randint(self.n_topics) # Randomise the topics
+                    c = self.concept_names.index(self.feature_names[w]) # Randomly distribute the concepts per topics 
+                    self.nmz[m,z] += 1 # Distribute the count of topic doucment
+                    self.nm[m] += 1 # Count the number of occurrences
+                    self.nzc[z,c] += 1 # Counts the number of topic concept distribution
+                    self.nz[z] += 1 # Distribute the counts of the number of topics
                     
-                    #For future update, they will be joined together....
+                    # For future update, they will be joined together....
                     self.topics_and_concepts[(m,i)] = (z,c)
-                    self.document_topic_concept_word[(m,i)] = (m,z,c,w)#Storing the information about the word, topic and concepts and its location
+                    self.document_topic_concept_word[(m,i)] = (m,z,c,w)# Storing the information about the word, topic and concepts and its location
                     
     
     
     def _sample_index(self, p_z, nzc):
 
         
-        choice = np.random.multinomial(1,p_z).argmax() #Making the choice throught the 2-dimensional probability array
-        concept = int(choice/nzc.shape[0]) #Extract concept array
-        topic = choice % nzc.shape[0] #Extract topic index 
+        choice = np.random.multinomial(1,p_z).argmax() # Making the choice throught the 2-dimensional probability array
+        concept = int(choice/nzc.shape[0]) # Extract concept array
+        topic = choice % nzc.shape[0] # Extract topic index 
         
-        #Return topic and concet index
+        # Return topic and concet index
         return topic, concept
     
 #    t.p_z_stack[28947][1]
@@ -494,69 +494,69 @@ class CLDA(object):
         concept_size = self.nzc.shape[1]
         n_topics = self.nzc.shape[0]
         p_z_stack = np.zeros((self.nzc.shape[1], self.nzc.shape[0]))
-        self.p_z_stack = p_z_stack#For testing purpose
-        #Count non-zero value in the 
-        #Meaning that the words is the atomic concept
-            #Calculate only the 
+        self.p_z_stack = p_z_stack# For testing purpose
+        # Count non-zero value in the 
+        # Meaning that the words is the atomic concept
+            # Calculate only the 
         for concept_num, concept_prob in self.concept_word_relationship[w]:
-            left = (self.nzc[:,concept_num] + self.beta) / (self.nz + self.beta * concept_size)  #Corresponding to the left hand side of the equation 
+            left = (self.nzc[:,concept_num] + self.beta) / (self.nz + self.beta * concept_size)  # Corresponding to the left hand side of the equation 
             right = (self.nmz[m,:] + self.alpha) / (self.nm[m] + self.alpha * n_topics)
             p_z_stack[concept_num] = left * right * concept_prob
 
-            #Normalize the values of p_z_stack
-            #Reshaping the probability string 
+            # Normalize the values of p_z_stack
+            # Reshaping the probability string 
         return (p_z_stack/np.sum(p_z_stack)).reshape((self.nzc.shape[0] * self.nzc.shape[1],))
-        #Calculate the atomic topic distribution calculaiton
-        #if there are no positive number in the concept array
-        #We might need to have the section "Word_Concept: like"
+        # Calculate the atomic topic distribution calculaiton
+        # if there are no positive number in the concept array
+        # We might need to have the section "Word_Concept: like"
 
     def run(self, matrix, concept_dict):
 
 #        self.maxiter = maxiter
-        #Gibbs sampling program
-        self.phi_set = [] #Storing all results Initialisation of all different models
-        self.theta_set = [] #Storing all document_topic relation results & initalisation of all other models
+        # Gibbs sampling program
+        self.phi_set = [] # Storing all results Initialisation of all different models
+        self.theta_set = [] # Storing all document_topic relation results & initalisation of all other models
         n_docs, vocab_size = matrix.shape
         matrix = matrix.toarray().copy()
-        #Initalise the values
+        # Initalise the values
         self._initialize(matrix, concept_dict)
 #        matrix = matrix.toarray().copy()
         for it in range(self.maxiter):
             print(it)
             sys.stdout.flush()
             for m in range(n_docs):
-                #Asynchronisation can make the progress faster
-                #for conducting gibb sampling algorithm
+                # Asynchronisation can make the progress faster
+                # for conducting gibb sampling algorithm
                 for i, w in enumerate(self.word_indices(matrix[m, :])):
                     
-                    z,c = self.topics_and_concepts[(m,i)] #Extract the topics and concepts from the doucment 
-                    self.nmz[m,z] -= 1#Removing the indices from document topic distribution
-                    self.nm[m] -= 1 #Removign the indices from total indices in document
-                    self.nzc[z,c] -= 1 #Removing the indices from topic concept distribution
-                    self.nz[z] -= 1 #Removing the indices from topic distribution
+                    z,c = self.topics_and_concepts[(m,i)] # Extract the topics and concepts from the doucment 
+                    self.nmz[m,z] -= 1# Removing the indices from document topic distribution
+                    self.nm[m] -= 1 # Removign the indices from total indices in document
+                    self.nzc[z,c] -= 1 # Removing the indices from topic concept distribution
+                    self.nz[z] -= 1 # Removing the indices from topic distribution
                     
-                    #Calculate the probabilities of both topic and concepts
-                    p_z = self._conditional_distribution(m, w) #Put the categorical probability on it
-                    #If there are topics, then it returns the random topics based on the 
-                    #calculated probabilities, otherwise it returns the atomic bomb
-                    z,c = self._sample_index(p_z, self.nzc) #Re-distribute concept and topic 
+                    # Calculate the probabilities of both topic and concepts
+                    p_z = self._conditional_distribution(m, w) # Put the categorical probability on it
+                    # If there are topics, then it returns the random topics based on the 
+                    # calculated probabilities, otherwise it returns the atomic bomb
+                    z,c = self._sample_index(p_z, self.nzc) # Re-distribute concept and topic 
                     
-                    #Randomly adding the indices based on the calculated probabilities
+                    # Randomly adding the indices based on the calculated probabilities
                     self.nmz[m,z] += 1
-                    self.nm[m] += 1 #Adding the entity based on the percentage
-                    self.nzc[z,c] += 1 #Addign the entity for 
-                    self.nz[z] += 1 #Count the number of the topic occurrences
-                    self.topics_and_concepts[(m,i)] = z,c #Re-assign the concepts and topics
+                    self.nm[m] += 1 # Adding the entity based on the percentage
+                    self.nzc[z,c] += 1 # Addign the entity for 
+                    self.nz[z] += 1 #  Count the number of the topic occurrences
+                    self.topics_and_concepts[(m,i)] = z,c # Re-assign the concepts and topics
                     self.document_topic_concept_word[(m,i)] = (m,z,c,w)
-#                    self.document_topic_concept_word[i][2] = c
+#                     self.document_topic_concept_word[i][2] = c
                     
-            #Print the time of the iteration                    
+            # Print the time of the iteration                    
             print("Iteration: {}".format(it))
-            #Print phi value(s)
+            # Print phi value(s)
             print("Phi: {}".format(self.phi()))
-            #Print the document probability value
+            # Print the document probability value
             print("Doc_prob: {}".format(self.doc_prob()))
-            #Print theta value
+            # Print theta value
             print("Theta: {}".format(self.theta()))
         
         #Storing newest phi value and theta value for calculating word, concept and topic ranking
@@ -564,16 +564,16 @@ class CLDA(object):
         self.theta_set.append(self.doc_prob())
 
 #    
-    #Calculate phi value
+    # Calculate phi value
     def phi(self):
 
-        #Not necessary values for the calculation
-        #V = nzw.shape[1]
-        num = self.nzc + self.beta #Calculate the counts of the number, the beta is the adjust ment value for the calcluation
-        num /= np.sum(num, axis=1)[:, np.newaxis] #Summation of all value and then, but weight should be calculated in this case....
+        # Not necessary values for the calculation
+        # V = nzw.shape[1]
+        num = self.nzc + self.beta # Calculate the counts of the number, the beta is the adjust ment value for the calcluation
+        num /= np.sum(num, axis=1)[:, np.newaxis] # Summation of all value and then, but weight should be calculated in this case....
         return num
     
-    #Calculate document probability
+    # Calculate document probability
     def doc_prob(self):
         
 #        T = nmz.shape[0]
@@ -582,14 +582,14 @@ class CLDA(object):
         
         return num
     
-    #Calculate theta
+    # Calculate theta
     def theta(self):
         num = self.nmz.sum(axis = 0) + self.alpha
         num /= np.sum(num)
         
         return num
         
-    #Set the word ranking as it takes too much time to
+    # Set the word ranking as it takes too much time to
     def set_the_rankings(self):
         
         self.concept_ranking = []
@@ -598,23 +598,23 @@ class CLDA(object):
 #        if(not (self.phi_set in locals() or self.phi.set in globals())):
 #            print("The calculation of phi or theta is not done yet!")
         
-        #Calcualte the topic_word distribution by sorti
+        # Calcualte the topic_word distribution by sorti
         temp = np.argsort(-(self.phi_set[0]))
         
-        #Calculate the topic_document distribuiton
+        # Calculate the topic_document distribuiton
         temp2 = np.argsort(-(self.theta_set[0].T))
         
-        #Create the concept ranking
+        # Create the concept ranking
         self.concept_ranking = [[[topic, ranking, self.concept_names[idx], self.phi_set[0][topic][idx], idx] for ranking, idx in enumerate(concept_idx)]
                                 for topic, concept_idx in enumerate(temp)]
         
-        #Create the document ranking
+        # Create the document ranking
         self.doc_ranking = [[[topic, ranking, self.file_lists[doc_idx], self.theta_set[0].T[topic][doc_idx]] for ranking, doc_idx in enumerate(docs_idx)]
                     for topic, docs_idx in enumerate(temp2)]
         
         
 
-#Code temporarily exists for the further tests        
+# Code temporarily exists for the further tests        
 #        
 #    tmp = [[(topic, ranking, t.concept_names[idx], list(set([(feature_names[t.word_concept[k]]) for k,v in t.topics_and_concepts.items() if v == (topic,idx)  ]))) for ranking, idx in enumerate(concept_idx[0:word_limit])]
 #            for topic, concept_idx in enumerate(temp)]
@@ -629,7 +629,7 @@ class CLDA(object):
 #    t.show
 #        self.word_ranking = 
 
-#Obsolete code
+# Obsolete code
 #    def show_concept_word_ranking(self, K = 10):
 #        
 #        #Sorting the values by decending order
@@ -701,46 +701,46 @@ class CLDA(object):
 #    
 #    
 #    t.total_results
-    #[x for x in list(set(t.document_topic_concept_word.values())) if x[2] == 12983]
-    #Word topic ranking should be calculated by words and words
-    #For each document the word probability under the condition zi, ci can be calculated by 
-    #P(w|ci)/P(w1|c1) + P(w2|c1) + P(w3|c1) + P(w4|c1) ... P(wn|c1) where all Ws appear in the same
-    #document. After all probabilities are calculated P(w|ci, zi) on each document, then they are
-    #summed up and then averaged for each word....
-    #Print word ranking over the concept topic
+    # [x for x in list(set(t.document_topic_concept_word.values())) if x[2] == 12983]
+    # Word topic ranking should be calculated by words and words
+    # For each document the word probability under the condition zi, ci can be calculated by 
+    # P(w|ci)/P(w1|c1) + P(w2|c1) + P(w3|c1) + P(w4|c1) ... P(wn|c1) where all Ws appear in the same
+    # document. After all probabilities are calculated P(w|ci, zi) on each document, then they are
+    # summed up and then averaged for each word....
+    # Print word ranking over the concept topic
     
     #Calculate the word probability under the condition of topic and concept
     def create_topic_concept_word_ranking(self, word_concept_probabilities):
         total_results = {}
         
-        #Reducing the amount of data by elimiating the elements overlap
+        # Reducing the amount of data by elimiating the elements overlap
         lighten_document_topic_concept_word = sorted(list(set(list(self.document_topic_concept_word.values()))))
         for w in range(len(self.feature_names)):
 
             list_of_words_in_concepts_topics = [x for x in lighten_document_topic_concept_word if x[3] == w]
             
-            #Extract all combination of topic concept and words
-            #from the result.
+            # Extract all combination of topic concept and words
+            # from the result.
             list_of_words_in_concpets_topics = sorted(list(set([(x[1], x[2], x[3]) for x in list_of_words_in_concepts_topics])))
             
             results = []
             for set_sum in list_of_words_in_concpets_topics:
 
-                #Set_sum[0], topic,: set_sum[1], concept: set_sum[2]: word 
-                #Done to retrieve all relevant documents 
-                #for calculating the probability
+                # Set_sum[0], topic,: set_sum[1], concept: set_sum[2]: word 
+                # Done to retrieve all relevant documents 
+                # for calculating the probability
                 set_summation_for_topic_concept =\
                 [x for x in lighten_document_topic_concept_word if (set_sum[0], set_sum[1], set_sum[2]) == (x[1], x[2], x[3])]
                 
                 
-                #initialise all values
+                # Initialise all values
                 total = 0
                 sum_of_value = 0
                 value = 0
                 
                 
                 try:
-                    #Meaning that it is an atomic concept
+                    # Meaning that it is an atomic concept
                     if word_concept_probabilities[self.feature_names[w]] == {}:
                         value += 1.0
                     else:
@@ -749,21 +749,20 @@ class CLDA(object):
     
                     pass
                 
-                #Summing word-concept-topic probabilies in all documents
-                #Word probability = 
+                # Summing word-concept-topic probabilies in each document
                 for relations in set_summation_for_topic_concept:
-                    #Find the word which is under concept and topic in a certain document.
+                    # Find the word which is under concept and topic in a certain document.
                     words_relating_tcd =\
                     [x for x in lighten_document_topic_concept_word if (relations[0], relations[1], relations[2]) == (x[0], x[1],x[2])]
                     
-                    #Calculate word probability under the condition of topic and concept in one document.
+                    # Calculate word probability under the condition of topic and concept in one document.
                     for k in words_relating_tcd:
                         try:
-                        #Meaning that it is an atomic concept
+                        # Meaning that it is an atomic concept
                             if word_concept_probabilities[self.feature_names[k[3]]] == {}:
                                 sum_of_value += 1.0
                             else:
-                            #Calculate value for non-atomic concept values
+                            # Calculate value for non-atomic concept values
                                 sum_of_value += word_concept_probabilities[self.feature_names[k[3]]][self.concept_names[k[2]]]
                         except KeyError:
 
@@ -807,16 +806,16 @@ class LDA(object):
     
     def _initialize(self, matrix):
         
-        #For test purpose only!
+        # For test purpose only!
         n_docs, vocab_size = matrix.shape
 #        matrix = matrix.toarray().copy()
         # number of times document m and topic z co-occur
-        self.nmz = np.zeros((n_docs, self.n_topics)) #C_D_T Count document topic
+        self.nmz = np.zeros((n_docs, self.n_topics)) # C_D_T Count document topic
         # number of times topic z and word w co-occur
-        self.nzw = np.zeros((self.n_topics, vocab_size)) #Topic size * word size
+        self.nzw = np.zeros((self.n_topics, vocab_size)) # Topic size * word size
         self.nm = np.zeros(n_docs) # Number of documents
-        self.nz = np.zeros(self.n_topics) #Number of topic
-        self.topics = {} #Topics dictionary
+        self.nz = np.zeros(self.n_topics) # Number of topic
+        self.topics = {} # Topics dictionary
 
         for m in range(n_docs):
 #            print(m)
@@ -825,22 +824,22 @@ class LDA(object):
             for i, w in enumerate(self.word_indices(matrix[m, :])):
                 
                 # choose an arbitrary topic as first topic for word i
-                z = np.random.randint(self.n_topics) #Randomise the topics
-                self.nmz[m,z] += 1 #Distribute the count of topic doucment
-                self.nm[m] += 1 #Count the number of occurrences
-                self.nzw[z,w] += 1 #Counts the number of topic word distribution
-                self.nz[z] += 1 #Distribute the counts of the number of topics
-                self.topics[(m,i)] = z #Memorise the correspondence between topics and the entities
+                z = np.random.randint(self.n_topics) # Randomise the topics
+                self.nmz[m,z] += 1 # Distribute the count of topic doucment
+                self.nm[m] += 1 # Count the number of occurrences
+                self.nzw[z,w] += 1 # Counts the number of topic word distribution
+                self.nz[z] += 1 # Distribute the counts of the number of topics
+                self.topics[(m,i)] = z # Memorise the correspondence between topics and the entities
         sys.stdout.flush()
         
-    def _conditional_distribution(self, m, w): #Maybe the computation valuables
+    def _conditional_distribution(self, m, w): # Maybe the computation valuables
        
         vocab_size = self.nzw.shape[1]
         left = (self.nzw[:,w] + self.beta) / \
-               (self.nz + self.beta * vocab_size) #Corresponding to the left hand side of the equation 
+               (self.nz + self.beta * vocab_size) # Corresponding to the left hand side of the equation 
         right = (self.nmz[m,:] + self.alpha) / \
                 (self.nm[m] + self.alpha * self.n_topics) #Corresponding to the right hand side of the equation
-        #We might need to have the section "Word_Concept: like"
+        # We might need to have the section "Word_Concept: like"
         # p_e_c = some expression
         p_z = left * right #* P(e|c)
         # normalize to obtain probabilities
@@ -851,21 +850,21 @@ class LDA(object):
 
     def phi(self):
        
-        #Not necessary values for the calculation
-        #V = self.nzw.shape[1]
-        num = self.nzw + self.beta #Calculate the counts of the number, the beta is the adjust ment value for the calcluation
-        num /= np.sum(num, axis=1)[:, np.newaxis] #Summation of all value and then, but weight should be calculated in this case....
+        # Not necessary values for the calculation
+        # V = self.nzw.shape[1]
+        num = self.nzw + self.beta # Calculate the counts of the number, the beta is the adjust ment value for the calcluation
+        num /= np.sum(num, axis=1)[:, np.newaxis] # Summation of all value and then, but weight should be calculated in this case....
         return num
     
     def doc_prob(self):
         
-        #Calculate document probability
+        # Calculate document probability
         num = self.nmz + self.alpha 
         num /= np.sum(num, axis=1)[:, np.newaxis] 
         
         return num
     
-    #Calculate theta
+    # Calculate theta
     def theta(self):
         num = self.nmz.sum(axis = 0) + self.alpha
         num /= np.sum(num)
@@ -874,9 +873,9 @@ class LDA(object):
     
     def run(self, matrix, maxiter=30):
        
-        #Gibbs sampling
-        self.phi_set = [] #Storing all results Initialisation of all different models
-        self.theta_set = [] #Storing all document_topic relation results & initalisation of all other model
+        # Gibbs sampling
+        self.phi_set = [] # Storing all results Initialisation of all different models
+        self.theta_set = [] # Storing all document_topic relation results & initalisation of all other model
         self.doc_prob_set = []
         
         n_docs, vocab_size = matrix.shape
@@ -890,23 +889,23 @@ class LDA(object):
                 
                 for i, w in enumerate(self.word_indices(matrix[m, :])):
                     
-                    z = self.topics[(m,i)] #The entities of topics, the value c needs to be included in here
-                    self.nmz[m,z] -= 1#Removing the indices 
-                    self.nm[m] -= 1 #Removign the indices
-                    self.nzw[z,w] -= 1 #Removing the indices
-                    self.nz[z] -= 1 #Removing the indices
+                    z = self.topics[(m,i)] # The entities of topics, the value c needs to be included in here
+                    self.nmz[m,z] -= 1# Removing the indices 
+                    self.nm[m] -= 1 # Removign the indices
+                    self.nzw[z,w] -= 1 # Removing the indices
+                    self.nz[z] -= 1 # Removing the indices
 
-                    p_z = self._conditional_distribution(m, w) #Put the categorical probability on it
+                    p_z = self._conditional_distribution(m, w) # Put the categorical probability on it
                     z = self.sample_index(p_z)
 
-                    self.nmz[m,z] += 1 #Randomly adding the indices based on the calculated probabilities
-                    self.nm[m] += 1 #Adding the entity based on the percentage
-                    self.nzw[z,w] += 1 #Addign the entity for 
-                    self.nz[z] += 1 #Count the number of the occureences
-                    self.topics[(m,i)] = z #Re=assignm the topic
+                    self.nmz[m,z] += 1 # Randomly adding the indices based on the calculated probabilities
+                    self.nm[m] += 1 # Adding the entity based on the percentage
+                    self.nzw[z,w] += 1 # Addign the entity for 
+                    self.nz[z] += 1 # Count the number of the occureences
+                    self.topics[(m,i)] = z # Re=assignm the topic
 
-            #Retrieve the phi, theta and document topic co-occurrence probability
-            #values
+            # Retrieve the phi, theta and document topic co-occurrence probability
+            # values
             print('\n' + "iteration: {}".format(it) + '\n')
             print("phi: {}".format(self.phi()))
             print("Theta: {}".format(self.theta()))
@@ -914,37 +913,37 @@ class LDA(object):
             
         self.phi_set.append(self.phi())
         
-        #Document Probability!
+        # Document Probability!
         self.doc_prob_set.append(self.doc_prob())
         
         self.maxiter = maxiter
         
     
-    #Testing the programs for displaying the data
-    #Testing
+    # Testing the programs for displaying the data
+    # Testing
     
     def set_the_rankings(self):
         
         self.word_ranking = []
         self.doc_ranking = []
         
-#        if(not (self.phi_set in locals() or self.phi.set in globals())):
-#            print("The calculation of phi or theta is not done yet!")
+#         if(not (self.phi_set in locals() or self.phi.set in globals())):
+#             print("The calculation of phi or theta is not done yet!")
             
-        #Calcualte the topic_word distribution
+        # Calcualte the topic_word distribution
         temp = np.argsort(-(self.phi_set[0]))
         
-        #Calculate the topic_document distribuiton
+        # Calculate the topic_document distribuiton
         temp2 = np.argsort(-(self.doc_prob_set[0].T))
         
-        #Create the leaderships 
+        # Create the leaderships 
         self.word_ranking = [[[topic, ranking, self.feature_names[idx], self.phi_set[0][topic][idx]] for ranking, idx in enumerate(word_idx)]
                                 for topic, word_idx in enumerate(temp)]
         
         self.doc_ranking = [[[topic, ranking, self.file_list[doc_idx], self.doc_prob_set[0][topic][doc_idx]] for ranking, doc_idx in enumerate(docs_idx)]
                     for topic, docs_idx in enumerate(temp2)]
     
-    #Show the document ranking over topic
+    # Show the document ranking over topic
     def show_doc_topic_ranking(self, rank=10):
 
         for i in range(self.nzw.shape[0]):
@@ -953,7 +952,7 @@ class LDA(object):
             for j in range(rank):
                  print("Rank: {}, Document: {}, Probability: {}".format(self.doc_ranking[i][j][1], self.doc_ranking[i][j][2], self.doc_ranking[i][j][3]))
         
-    #Show the topic ranking over the words
+    # Show the topic ranking over the words
     def show_word_topic_ranking(self, rank=10):
         for i in range(self.nzw.shape[0]):
             print("#############################")

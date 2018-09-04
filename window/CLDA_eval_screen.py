@@ -188,7 +188,8 @@ class CLDA_evaluation_screen(object):
         #Delete the object to erase its data
         del self
         
-        #Conduct the garbage collection if there is no 
+        #Conduct the garbage collection for reducing memory
+        #Usage
         gc.collect()
         
         
