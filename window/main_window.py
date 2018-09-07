@@ -17,6 +17,8 @@ except ImportError:
 import CLDA_eval_screen
 import CLDA
 import gc
+import numpy as np
+
 
 from functools import partial
 import tkinter as tk
@@ -28,10 +30,11 @@ from tkinter.filedialog import askdirectory
 import csv
 import pickle
 import itertools
+import json
 
 from multiprocessing import cpu_count
 from multiprocessing import Pool
-from multiprocessing import Process
+#from multiprocessing import Process
 
 
 import nltk
@@ -47,6 +50,17 @@ import requests
 lemmatizer = WordNetLemmatizer()
 dataset_dir = "../../CLDA_data_training"
 dataset_test = "../../CLDA_data_testing"
+concept_prob_suffix_json = "_c_prob.json"
+concept_name_suffix_txt = "_c_name.txt"
+feature_matrix_suffix_csv = "_f_mat.csv"
+feature_name_suffix_txt = "_f_name.txt"
+file_name_df_suffix_csv = "_data.csv"
+CLDA_suffix_pickle = "_CLDA.pkl"
+delim = ","
+#K = 0
+#with open( "../../CLDA_data_testing" + '/' + "ForTest_c_prob.json", "r") as f:
+#    K = json.load(f)
+#
 # Download all necessary nltk download
 # components
 nltk.download('stopwords')
@@ -808,24 +822,24 @@ class Application():
 #        print(files_tmp)
             # only retrieve the files_tmp which end with .csv
             # Initialise the topic list
-        self.topic_list = [x for x in files_tmp if x.endswith('.csv')]
+        self.topic_list = [x for x in files_tmp if x.endswith(file_name_df_suffix_csv)]
         for i in self.topic_list:
             self.user_drop_down_select_folder_list.insert(tk.END, i)
         # Initialise the features_list
         # Extract feature files from the file lists
         # No need to sort the values as the files are already sorted by names
-        self.feature_list = [x for x in files_tmp if x.endswith('_f.pkl')]
+        self.feature_list = [x for x in files_tmp if x.endswith(feature_matrix_suffix_csv)]
         
         for i in self.feature_list:
             self.drop_down_list_word_vector_list.insert(tk.END, i)
         
-        self.concept_list = [x for x in files_tmp if x.endswith('_c.pkl')]
+        self.concept_list = [x for x in files_tmp if x.endswith(concept_prob_suffix_json)]
         
         for i in self.concept_list:
             self.drop_down_concept_prob_vector_list.insert(tk.END, i)
         
            
-        self.CLDA_list = [x for x in files_tmp if x.endswith('_CLDA.pkl')]
+        self.CLDA_list = [x for x in files_tmp if x.endswith(CLDA_suffix_pickle)]
         for i in self.CLDA_list:
             self.drop_down_CLDA_list.insert(tk.END, i)
             
@@ -839,7 +853,7 @@ class Application():
 
             # only retrieve the files_tmp_test which end with .csv
             # Initialise the topic list
-        self.topic_list_test = [x for x in files_tmp_test if x.endswith('.csv')]
+        self.topic_list_test = [x for x in files_tmp_test if x.endswith(file_name_df_suffix_csv)]
         
         for i in self.topic_list_test:
             self.user_drop_down_select_folder_list_test.insert(tk.END, i)
@@ -847,17 +861,17 @@ class Application():
         # Initialise the features_list
         # Extract feature files from the file lists
         # No need to sort the values as the files are already sorted by names
-        self.feature_list_test = [x for x in files_tmp_test if x.endswith('_f.pkl')]
+        self.feature_list_test = [x for x in files_tmp_test if x.endswith(feature_matrix_suffix_csv)]
         
         for i in self.feature_list_test:
             self.drop_down_list_word_vector_list_test.insert(tk.END, i)
         
-        self.concept_list_test = [x for x in files_tmp_test if x.endswith('_c.pkl')]
+        self.concept_list_test = [x for x in files_tmp_test if x.endswith(concept_prob_suffix_json)]
         
         for i in self.concept_list_test:
             self.drop_down_concept_prob_vector_list_test.insert(tk.END, i)
         
-        self.CLDA_list_test = [x for x in files_tmp_test if x.endswith('_CLDA.pkl')]
+        self.CLDA_list_test = [x for x in files_tmp_test if x.endswith(CLDA_suffix_pickle)]
         for i in self.CLDA_list_test:
             self.drop_down_CLDA_list_test.insert(tk.END, i)
             
@@ -919,11 +933,11 @@ class Application():
                 os.makedirs(dataset_dir)
         if(len(for_test_purpose_data) != 0):
             for_test_purpose_data.to_csv(dataset_dir + '/' +
-                              topic_name + ".csv",
+                              topic_name + file_name_df_suffix_csv,
                               index=False, encoding='utf-8',
                               quoting=csv.QUOTE_ALL)
             
-            return topic_name + ".csv"
+            return topic_name + file_name_df_suffix_csv
 
 
     def select_folder_and_extract_txt_async(self,ask_folder, topic_list, dataset_dir):
@@ -967,11 +981,11 @@ class Application():
                 os.makedirs(dataset_dir)
         if(len(for_test_purpose_data) != 0):
             for_test_purpose_data.to_csv(dataset_dir + '/' +
-                              topic_name + ".csv",
+                              topic_name + file_name_df_suffix_csv,
                               index=False, encoding='utf-8',
                               quoting=csv.QUOTE_ALL)
             
-            return topic_name + ".csv"
+            return topic_name + file_name_df_suffix_csv
     # Retrieving topic list
     
     # Based on the files_tmp made by the vectors 
@@ -984,20 +998,28 @@ class Application():
         
         file_string = os.path.splitext(os.path.basename(file_string))[0]
         if any(file_string in substring for substring in feature_list):
-            print("Feature {} already exists".format(file_string +  '_f.pkl'))
+            print("Feature {} already exists".format(file_string +  feature_matrix_suffix_csv))
             return None
         else:
             # Read csv files 
-            datum = pd.read_csv(dataset_dir + '/' + file_string + '.csv', encoding='utf-8', sep=',', 
+            datum = pd.read_csv(dataset_dir + '/' + file_string + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
                         error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
             
             # Vectorise the document 
             vect = generate_vector()
             vectorized_data, feature_names = vectorize(vect, datum)
             
-            with open(dataset_dir + '/' + file_string + '_f.pkl', "wb") as f:
-                pickle.dump([vectorized_data, feature_names], f)
-            return file_string + '_f.pkl'
+            #Save array as the csv file
+            np.savetxt(dataset_dir + '/' + file_string + feature_matrix_suffix_csv, vectorized_data.toarray(), delimiter = delim)
+            
+#            with open(dataset_dir + '/' + file_string + '.csv')
+            with open(dataset_dir + '/' + file_string + feature_name_suffix_txt, "w") as f:
+                for i in feature_names:
+                    f.write("{}\n".format(i))
+            
+#            with open(dataset_dir + '/' + file_string + feature_matrix_suffix_csv, "w") as f:
+#                pickle.dump([vectorized_data, feature_names], f)
+            return file_string + feature_matrix_suffix_csv
             
 
     
@@ -1027,13 +1049,14 @@ class Application():
         # Check whether the test subject exists or not
         if any(file_string in substring for substring in concept_list):
             # Feature already exists
-            print("Feature {} already exists".format(file_string +  '_c.pkl'))
+            print("Feature {} already exists".format(file_string + concept_prob_suffix_json))
         else:
             p_e_c  = {}
 
-            feature_names = None                    
-            with open(dataset_dir + '/' + file_string + '_f.pkl', "rb") as f:
-                 _, feature_names = pickle.load(f)
+            feature_names = []                    
+            with open(dataset_dir + '/' + file_string + feature_name_suffix_txt, "r") as f:
+                for line in f:
+                    feature_names.append(line.strip('\n'))
             
             
             #Sort the feature names just in case...
@@ -1080,11 +1103,16 @@ class Application():
             concept_names = sorted(concept_names)
 
             
-            with open(dataset_dir + '/' + file_string +  '_c.pkl', "wb") as f:
-                pickle.dump([p_e_c, concept_names], f)
-                
-            return file_string +  '_c.pkl'
+            with open(dataset_dir + '/' + file_string + concept_prob_suffix_json, "w") as f:
+                json.dump(p_e_c, f, indent = "\t")
             
+            with open(dataset_dir + '/' + file_string + concept_name_suffix_txt, "w") as f:
+                for i in concept_names:
+                    f.write("{}\n".format(i))
+                    
+            
+            return file_string + concept_prob_suffix_json
+        
 #        for i in self.feature_list:
 
     # Retrieve all test and training data asynchrously
@@ -1259,38 +1287,38 @@ class Application():
         print("Concept graph retrieval completed!!")
     
     
-    def create_CLDA_instance(i):
-        
-        CLDA_file_suffix = "_CLDA.pkl"
-        file_index_name = pd.read_csv(dataset_dir + '/' + i + '.csv', encoding='utf-8', sep=',', 
-                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)["File"]
-        files = []
-        for i,j, k in os.walk(dataset_dir):
-            files.extend(k)
-        
-        if (file_index_name + CLDA_file_suffix in files):
-            print("File {} already exists.".format(file_index_name + CLDA_file_suffix))
-            return True
-        
-        feature_matrix, feature_names = (None, None)
-        with open( dataset_dir + '/' + i + "_f.pkl", "rb") as f :   
-            feature_matrix, feature_names = pickle.load(f)
-        
-        concept_dict, concept_names = (None, None)
-        with open(dataset_dir + '/' + i + "_c.pkl", "rb") as f:
-            concept_dict, concept_names = pickle.load(f)
+#    def create_CLDA_instance(i):
 #        
-        CLDA_instance = CLDA.CLDA(feature_names, concept_names, file_index_name, 5, 20)
-#        print(concept_names)
-        CLDA_instance.run(feature_matrix, concept_dict)
-        
-        with open(dataset_dir + '/' + i + CLDA_file_suffix, "wb") as f:
-            pickle.dump(CLDA_instance, f)
-        
-        # Sleep just in case...
-        time.sleep(0.5)
-        # Return True if the process stops normally
-        return True
+#        CLDA_file_suffix = "_CLDA.pkl"
+#        file_index_name = pd.read_csv(dataset_dir + '/' + i + '.csv', encoding='utf-8', sep=',', 
+#                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)["File"]
+#        files = []
+#        for i,j, k in os.walk(dataset_dir):
+#            files.extend(k)
+#        
+#        if (file_index_name + CLDA_file_suffix in files):
+#            print("File {} already exists.".format(file_index_name + CLDA_file_suffix))
+#            return True
+#        
+#        feature_matrix, feature_names = (None, None)
+#        with open( dataset_dir + '/' + i + "_f.pkl", "rb") as f :   
+#            feature_matrix, feature_names = pickle.load(f)
+#        
+#        concept_dict, concept_names = (None, None)
+#        with open(dataset_dir + '/' + i + "_c.pkl", "rb") as f:
+#            concept_dict, concept_names = pickle.load(f)
+##        
+#        CLDA_instance = CLDA.CLDA(feature_names, concept_names, file_index_name, 5, 20)
+##        print(concept_names)
+#        CLDA_instance.run(feature_matrix, concept_dict)
+#        
+#        with open(dataset_dir + '/' + i + CLDA_file_suffix, "wb") as f:
+#            pickle.dump(CLDA_instance, f)
+#        
+#        # Sleep just in case...
+#        time.sleep(0.5)
+#        # Return True if the process stops normally
+#        return True
         
         
     def asynchronous_CLDA_model_generation(self, dataset_dir, result_num):
@@ -1318,12 +1346,12 @@ class Application():
         if(result_num == 0):
             for i in results:
                 if(i[0] != None):
-                    self.drop_down_LDA_list.insert(tk.END, i[0])
+                    self.drop_down_CLDA_list.insert(tk.END, i[0])
         # Otherwise, the value is put into the values
         else:
             for i in results:
                 if(i[0] != None):
-                    self.drop_down_LDA_list_test.insert(tk.END, i[0])
+                    self.drop_down_CLDA_list_test.insert(tk.END, i[0])
         
         # Make the stdout setting to default just in case...
         sys.stdout = sys.__stdout__            
@@ -1381,32 +1409,51 @@ class Asynchrous_CLDA(object):
         # Read CLDA files 
         files_tmp = []
         for dirpath, dirs, files in os.walk(self.dataset_dir):
-            if len([x for x in files if x.endswith('.csv')]) != 0:
+            if len([x for x in files if x.endswith(CLDA_suffix_pickle)]) != 0:
                 files_tmp.extend(files) 
         
-        if i + "_CLDA.pkl" in files_tmp:
-            print("File {} is already exists".format(i + "_CLDA.pkl"))
+        if i + CLDA_suffix_pickle in files_tmp:
+            print("File {} is already exists".format(i + CLDA_suffix_pickle))
             # Normal finish of the program...
             return None, ""
         
         print("file process {}: starts!".format(i))
-        file_index_name = pd.read_csv(self.dataset_dir + '/' + i + '.csv', encoding='utf-8', sep=',', 
+        file_index_name = pd.read_csv(self.dataset_dir + '/' + i + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
                             error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)["File"]
         
-        feature_matrix, feature_names = (None, None)
-        with open( self.dataset_dir + '/' + i + "_f.pkl", "rb") as f :   
-            feature_matrix, feature_names = pickle.load(f)
+#        feature_matrix, feature_names = (None, None)
+#        with open( self.dataset_dir + '/' + i + "_f.pkl", "rb") as f :   
+#            feature_matrix, feature_names = pickle.load(f)
+            
+            
+        feature_matrix, feature_names = (None, [])
         
-        concept_dict, concept_names = (None, None)
-        with open(self.dataset_dir + '/' + i + "_c.pkl", "rb") as f:
-            concept_dict, concept_names = pickle.load(f)
+        with open(self.dataset_dir + '/' + i + feature_name_suffix_txt, "r") as f: 
+            for line in f:
+                #Remove the \n
+                feature_names.append(line.strip('\n'))
+        
+        with open(self.dataset_dir + '/' + i + feature_matrix_suffix_csv, "r") as f:
+            feature_matrix = np.loadtxt(f, delimiter = delim)
+        
+        concept_dict, concept_names = (None, [])
+            
+        with open(self.dataset_dir + '/' + i + concept_prob_suffix_json, "r") as f:
+            concept_dict = json.load(f)
+            
+        
+        with open(self.dataset_dir + '/' + i + concept_name_suffix_txt, "r") as f:
+            for line in f:
+                concept_names.append(line.strip('\n'))
+            
+            
         print("file reading {}: complete!".format(i))
         sys.stdout.flush()
         CLDA_instance = CLDA.CLDA(feature_names, concept_names, file_index_name, 5, 20)
 
         CLDA_instance.run(feature_matrix, concept_dict)
         
-        with open(self.dataset_dir + '/' + i + "_CLDA.pkl", "wb") as f:
+        with open(self.dataset_dir + '/' + i + CLDA_suffix_pickle, "wb") as f:
             pickle.dump(CLDA_instance, f)
         
         # Sleep just in case...
@@ -1414,17 +1461,17 @@ class Asynchrous_CLDA(object):
         sys.stdout = sys.__stdout__
         
         # Return True if the process stops normally
-        return i + "_CLDA.pkl", buffer
+        return i + CLDA_suffix_pickle, buffer
     
     def asynchronous_CLDA_creation(self, dataset_dir):
            
         self.dataset_dir = dataset_dir    
         files = []
         for dirpath, dirs, files in os.walk(self.dataset_dir):
-            if len([x for x in files if x.endswith('.csv')]) != 0:
+            if len([x for x in files if x.endswith(file_name_df_suffix_csv)]) != 0:
                 files.extend(files) 
         
-        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
+        files_list_for_modelling_CLDA = sorted(list(set([x[:-len(file_name_df_suffix_csv)] for x in files if x.endswith(file_name_df_suffix_csv)])))
         
         # Asynchronically create the CLDA object
         with Pool(cpu_count()-1) as p:
@@ -1432,6 +1479,7 @@ class Asynchrous_CLDA(object):
             
             return pool_async.get()
                 
+        
 class Asynchrous_LDA(object):
     
     def __init__(self):
@@ -1443,7 +1491,7 @@ class Asynchrous_LDA(object):
         sys.stdout = buffer = StringIO()  
         files_tmp = []
         for dirpath, dirs, files in os.walk(dataset_dir):
-            if len([x for x in files if x.endswith('.csv')]) != 0:
+            if len([x for x in files if x.endswith(file_name_df_suffix_csv)]) != 0:
                 files_tmp.extend(files) 
         print(dataset_dir + '/' + i + "_LDA.pkl")
         # If the file has already been created 
@@ -1454,7 +1502,7 @@ class Asynchrous_LDA(object):
             return None, ""
         # Read CLDA files 
         print("file process {}: starts!".format(i))
-        file_index_name = pd.read_csv(dataset_dir + '/' + i + '.csv', encoding='utf-8', sep=',', 
+        file_index_name = pd.read_csv(dataset_dir + '/' + i + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
                             error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)["File"]
         
         feature_matrix, feature_names = (None, None)
@@ -1487,7 +1535,7 @@ class Asynchrous_LDA(object):
         files = []
         
         for dirpath, dirs, files in os.walk(dataset_dir):
-            if len([x for x in files if x.endswith('.csv')]) != 0:
+            if len([x for x in files if x.endswith(file_name_df_suffix_csv)]) != 0:
                 files.extend(files) 
         
         # Very rough file detection....

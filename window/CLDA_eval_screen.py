@@ -49,7 +49,7 @@ class CLDA_evaluation_screen(object):
         self.result_frame = tk.Frame(self.result_and_selection_frame)
         self.result_frame.pack(side = tk.RIGHT, pady = 10, padx = 5)
         
-        self.result_screen_label = tk.Label(self.result_frame, text = "CLDA evaluation result")
+        self.result_screen_label = tk.Label(self.result_frame, text = "CLDA & LDA Evaluation Result")
         self.result_screen_label.pack()
         
         self.result_screen_text = tk.Text(self.result_frame)
@@ -74,7 +74,7 @@ class CLDA_evaluation_screen(object):
         
         
         
-        self.CLDA_selection_label = tk.Label(self.CLDA_selection_and_preference, text = "CLDA selection")
+        self.CLDA_selection_label = tk.Label(self.CLDA_selection_and_preference, text = "CLDA Selection")
         self.CLDA_selection_label.grid(row = 0)
         
         #######################################
@@ -96,14 +96,14 @@ class CLDA_evaluation_screen(object):
         self.CLDA_word_ranking_input_frame = tk.Frame(self.CLDA_selection_and_preference)
         self.CLDA_word_ranking_input_frame.grid(row = 2)
         
-        self.CLDA_selection_word_ranking_label = tk.Label(self.CLDA_word_ranking_input_frame, text = "Enter word\nfor ranking\nfor CLDA:")
+        self.CLDA_selection_word_ranking_label = tk.Label(self.CLDA_word_ranking_input_frame, text = "Enter Word\nfor Ranking\nfor CLDA:")
         self.CLDA_selection_word_ranking_label.pack(side = tk.LEFT)
         
         self.CLDA_selection_word_ranking_box = tk.Entry(self.CLDA_word_ranking_input_frame)
         self.CLDA_selection_word_ranking_box.pack(side = tk.RIGHT)
         
         
-        self.CLDA_selection_word_ranking_button = tk.Button(self.CLDA_selection_and_preference, text = "Word ranking\nevaluation")
+        self.CLDA_selection_word_ranking_button = tk.Button(self.CLDA_selection_and_preference, text = "Word Ranking\nEvaluation")
         self.CLDA_selection_word_ranking_button.grid(row = 3)
         
         self.CLDA_accuracy_calculation_button = tk.Button(self.CLDA_selection_and_preference, text = "Calculate CLDA accuracy")
@@ -145,18 +145,18 @@ class CLDA_evaluation_screen(object):
         self.LDA_word_ranking_input_frame = tk.Frame(self.LDA_selection_and_preference)
         self.LDA_word_ranking_input_frame.grid(row = 2)
         
-        self.LDA_selection_word_ranking_label = tk.Label(self.LDA_word_ranking_input_frame, text = "Enter word\nfor ranking\nfor LDA:")
+        self.LDA_selection_word_ranking_label = tk.Label(self.LDA_word_ranking_input_frame, text = "Enter Word\nfor Ranking\nfor LDA:")
         self.LDA_selection_word_ranking_label.pack(side = tk.LEFT)
         
         self.LDA_selection_word_ranking_box = tk.Entry(self.LDA_word_ranking_input_frame)
         self.LDA_selection_word_ranking_box.pack(side = tk.RIGHT)
         
         
-        self.LDA_selection_word_ranking_button = tk.Button(self.LDA_selection_and_preference, text = "Word ranking\nevaluation")
+        self.LDA_selection_word_ranking_button = tk.Button(self.LDA_selection_and_preference, text = "Word Ranking\nEvaluation")
         self.LDA_selection_word_ranking_button.grid(row = 3)
         
         
-        self.LDA_accuracy_calculation_button = tk.Button(self.LDA_selection_and_preference, text = "Calculate LDA accuracy")
+        self.LDA_accuracy_calculation_button = tk.Button(self.LDA_selection_and_preference, text = "Calculate LDA Accuracy")
         self.LDA_accuracy_calculation_button.grid(row = 4)
         
         self.LDA_selection_listbox['yscrollcommand'] = \
