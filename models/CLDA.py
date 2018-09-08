@@ -26,6 +26,7 @@ feature_matrix_suffix_csv = "_f_mat.csv"
 feature_name_suffix_txt = "_f_name.txt"
 file_name_df_suffix_csv = "_data.csv"
 CLDA_suffix_pickle = "_CLDA.pkl"
+converted_xml_suffix = "_conv.txt"
 delim = ","
 import asyncio
 import concurrent.futures
@@ -179,7 +180,7 @@ def read_test_files(test_path):
         # Removing the white space from the result.
         result = result[:-1]
         
-                
+        
 
 
         
@@ -251,7 +252,7 @@ def retrieve_data(feature_name):
 #Main method for test purpose
 def main():
     # Set your folder path here.
-    test_path = "../../R8-Dataset/Dataset/ForTest"
+    test_path = "../../R8-Dataset/Dataset/ForTest_c"
     test_data = read_test_files(test_path)
     vect = generate_vector()
     vectorised_data, feature_names = vectorize(vect, test_data)        
@@ -303,62 +304,52 @@ def main():
     
 #    
     data_dir = "../../CLDA_data_testing"
-    part_file_name = "ForTest"
-#    
     
+    #The topic name (folder name containing the names)
+    topic_name = "ForTest_c"
+#    
+    ##########################################################
+    ######This region is for the test of CLDA methods...
+    ##########################################################
     
     test_CLDA = None
     
-    test_file_names = pd.read_csv(data_dir + '/' + part_file_name + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
-                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)["File"]
+#    test_file_names = pd.read_csv(data_dir + '/' + part_file_name + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
+#                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)["File"]
     
     
     test_feature_vec, test_feature_names = (None, [])
         
-    with open(data_dir + '/' + part_file_name + feature_name_suffix_txt, "r") as f: 
+    with open(data_dir + '/' + topic_name + feature_name_suffix_txt, "r") as f: 
         for line in f:
             #Remove the \n
             test_feature_names.append(line.strip('\n'))
     
-    with open(data_dir + '/' + part_file_name + feature_matrix_suffix_csv, "r") as f:
+    with open(data_dir + '/' + topic_name + feature_matrix_suffix_csv, "r") as f:
         test_feature_vec = np.loadtxt(f, delimiter = delim)
     
     test_concept_prob, test_concept_names = (None, [])
         
-    with open(data_dir + '/' + part_file_name + concept_prob_suffix_json, "r") as f:
+    with open(data_dir + '/' + topic_name + concept_prob_suffix_json, "r") as f:
         test_concept_prob = json.load(f)
         
     
-    with open(data_dir + '/' + part_file_name + concept_name_suffix_txt, "r") as f:
+    with open(data_dir + '/' + topic_name + concept_name_suffix_txt, "r") as f:
         for line in f:
             test_concept_names.append(line.strip('\n'))
-#    
-#    with open(data_dir + '/' + part_file_name + "_f.pkl", "rb") as f:
-#        test_feature_vec, test_feature_names  = pickle.load(f)
-#       
-#    with open(data_dir + '/' + part_file_name + "_c.pkl", "rb") as f:
-#        test_concept_prob, test_concept_names  = pickle.load(f)
-#
-    with open(data_dir + '/' + part_file_name + "_CLDA.pkl", "rb") as f:
+
+    with open(data_dir + '/' + topic_name + "_CLDA.pkl", "rb") as f:
         test_CLDA = pickle.load(f)
     test_CLDA.set_the_rankings()
     
     test_CLDA.show_normalized_concept_topic_ranking()
     
-    test_CLDA.show_word_prob_under_concept_topic(4,'sex', test_concept_prob)
+    test_CLDA.show_word_prob_under_concept_topic(3,'plural reference', test_concept_prob)
     
-    test_CLDA.create_topic_concept_word_ranking(test_concept_prob)
-    test_CLDA.show_word_prob_under_concept_topic(1, '1')
-    test = []
-    for i in list(test_CLDA.total_results.values()):
-        test.extend(i)
-    test = sorted(test, key=(lambda x: x[1]), reverse=True)
-    
-    test_concept_names[12359]    
-    test_feature_names[2576]
-    test[0:30]
-    
-    list(test_CLDA.total_results)
+    ##########################################################
+    ######This region is for the test
+    ##########################################################
+#    list(test_CLDA.total_results)
     
 class CLDA(object):
     
@@ -816,11 +807,10 @@ class CLDA(object):
     
     
 #    #Word under concept and word
-    #Put the concept name here...
-    #Put the name of the concepts...
-    #test_CLDA.concept_names[2484]
-    #Topic ==> integer value
-    #Concept ==> choose the word
+    # test_CLDA.concept_names[2484]
+    # Topic ==> integer value
+    # Concept ==> choose the word
+    # Concept must be the string or one of concept name.
     def show_word_prob_under_concept_topic(self, topic, concept = None, word_under_concept_probability = None):
             
             if word_under_concept_probability == None:
@@ -833,9 +823,9 @@ class CLDA(object):
                                           #If the value is atomic value
                                           (x[1],x[2],x[3], 1.0) for x in tmp if (topic, concept_index) == (x[1], x[2])])))
             set_of_candidates = sorted(set_of_candidates, key = (lambda x: x[3]), reverse = True)
-            for i in set_of_candidates:
-                out_str = "topic: {}, concept: {}, word: {}, probability: {}".format(topic, self.concept_names[concept_index], self.feature_names[i[2]],
-                                 word_under_concept_probability[self.feature_names[i[2]]][self.concept_names[concept_index]])
+            for candidate in set_of_candidates:
+                out_str = "topic: {}, concept: {}, word: {}, probability: {}".format(topic, self.concept_names[concept_index], self.feature_names[candidate[2]],
+                                 candidate[3])
                 print(out_str)
 #                test_CLDA.concept_names.index('sex')
 #                word_under_concept_probability['sex']
@@ -936,7 +926,7 @@ class LDA(object):
         self.doc_prob_set = []
         
         n_docs, vocab_size = matrix.shape
-        matrix = matrix.toarray().copy()
+#        matrix = matrix.toarray().copy()
         self._initialize(matrix)
         
         for it in range(maxiter):
