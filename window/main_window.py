@@ -390,9 +390,6 @@ class Application():
         self.upload_file_list_labelling_test = []
         self.upload_file_list_classifier_test = []
         
-        self.linked_folders_test = []
-        self.folder_directory_test = None
-        self.document_data_test = []
         
         '''
         List all LDA and CLDA  to
@@ -1160,6 +1157,10 @@ class Application():
         '''
         Asynchronous training dataset retrieval
         '''
+        # Retrieve file (either text or xml) data and then
+        # Stores them as one csv file
+        # Each row corresponds to the file
+        # which this method have retrieved from the folder
         async def retrieve_file_data(training_folders_tmp, topic_list):
         # Max worker set to 10
            with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -1211,7 +1212,7 @@ class Application():
         time.sleep(4)
         
         #The nltk related package errors can be the cause of
-        #the error ""
+        #the error in this code...
 #        async def create_feature_vectors(training_folders_tmp, feature_list, dataset_dir):
 #            
 #           with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -1322,40 +1323,7 @@ class Application():
                     self.drop_down_concept_prob_vector_list_test.insert(tk.END, i)
         print("Concept graph retrieval completed!!")
     
-    
-#    def create_CLDA_instance(i):
-#        
-#        CLDA_file_suffix = "_CLDA.pkl"
-#        file_index_name = pd.read_csv(dataset_dir + '/' + i + '.csv', encoding='utf-8', sep=',', 
-#                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)["File"]
-#        files = []
-#        for i,j, k in os.walk(dataset_dir):
-#            files.extend(k)
-#        
-#        if (file_index_name + CLDA_file_suffix in files):
-#            print("File {} already exists.".format(file_index_name + CLDA_file_suffix))
-#            return True
-#        
-#        feature_matrix, feature_names = (None, None)
-#        with open( dataset_dir + '/' + i + "_f.pkl", "rb") as f :   
-#            feature_matrix, feature_names = pickle.load(f)
-#        
-#        concept_dict, concept_names = (None, None)
-#        with open(dataset_dir + '/' + i + "_c.pkl", "rb") as f:
-#            concept_dict, concept_names = pickle.load(f)
-##        
-#        CLDA_instance = CLDA.CLDA(feature_names, concept_names, file_index_name, 5, 20)
-##        print(concept_names)
-#        CLDA_instance.run(feature_matrix, concept_dict)
-#        
-#        with open(dataset_dir + '/' + i + CLDA_file_suffix, "wb") as f:
-#            pickle.dump(CLDA_instance, f)
-#        
-#        # Sleep just in case...
-#        time.sleep(0.5)
-#        # Return True if the process stops normally
-#        return True
-        
+
         
     def asynchronous_CLDA_model_generation(self, dataset_dir, result_num):
         
@@ -1372,7 +1340,7 @@ class Application():
         #Create CLDA object asynchronically.
         
         for i in results:
-            line = i[1].getvalue()
+            line = i[1]
             if line != "":
                 self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
                 self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, line)
@@ -1406,10 +1374,10 @@ class Application():
             
         print("LDA model creation start!")
         results = concurrent()
-        # Create CLDA object asynchronically.
+        # Create CLDA object asynchronously
         
         for i in results:
-            line = i[1].getvalue()
+            line = i[1]
             if line != "":
                 self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
                 self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, line)
@@ -1497,7 +1465,7 @@ class Asynchrous_CLDA(object):
         sys.stdout = sys.__stdout__
         
         # Return True if the process stops normally
-        return i + CLDA_suffix_pickle, buffer
+        return (i + CLDA_suffix_pickle, buffer)
     
     def asynchronous_CLDA_creation(self, dataset_dir):
            
@@ -1571,7 +1539,7 @@ class Asynchrous_LDA(object):
         time.sleep(0.5)
         # Return True if the process stops normally
         sys.stdout = sys.__stdout__
-        return (i + LDA_suffix_pickle), buffer
+        return (i + LDA_suffix_pickle, buffer)
     
     def asynchronous_LDA_creation(self, dataset_dir):
            

@@ -13,7 +13,7 @@ import itertools
 import pickle
 import sys
 
-
+from multiprocessing import Pool
 import pickle
 import csv
 import json
@@ -252,11 +252,14 @@ def retrieve_data(feature_name):
 #Main method for test purpose
 def main():
     # Set your folder path here.
-    test_path = "../../R8-Dataset/Dataset/ForTest_c"
+    test_path = "../../R8-Dataset/Dataset/ForTest"
     test_data = read_test_files(test_path)
+
     vect = generate_vector()
     vectorised_data, feature_names = vectorize(vect, test_data)        
 
+    
+    
     p_e_c = retrieve_p_e_c(feature_names)
     l = [list(i.keys()) for i in list(p_e_c.values())]
     concept_names = sorted(list(set(itertools.chain.from_iterable(l))))
@@ -280,72 +283,80 @@ def main():
 
     
     # Create CLDA object
-    t = CLDA(feature_names, concept_names, file_lists, 2, 5)
+    t = CLDA(feature_names, concept_names, file_lists, 5, 20)
     
     # Run the methods of CLDA to calculate the topic-document, topic-concept probabilities.
+    
+    vectorised_data= vectorised_data.toarray()
     t.run(vectorised_data, p_e_c)
+    
+#    [x for x in t.document_topic_concept_word.values() if (x[3]) == (t.feature_names.index('humiliate'))]
     
     t.document_topic_concept_word
     # (m,z,c,w)
-
-    t.topics_and_concepts
-    #Show all rankings
-    concept_names.index('word')
-    t.set_the_rankings()
+#    t.feature_names.index('humiliate')
+#    t.topics_and_concepts
+    # Show all rankings
+#    t.set_the_rankings()
     t.show_doc_topic_ranking(2)
     t.show_concept_topic_ranking(10)
-#    t.show_concept_word_ranking(10)
-    t.create_topic_concept_word_ranking(p_e_c)
-    t.show_word_concept_topic('seek')
+    t.show_normalized_concept_topic_ranking()
     
-    #Store the model
-    with open("result.pkl", "wb") as f:
+    # Adjust the number value (Topic) and concept string as
+    # you would like by looking at the normalized_concept_topic
+    # ranking result above.
+    
+    # Usage: show_word_prob_under_concept_topic(topic_number (integer value)
+    # concept_name 'string_value', p(e|c) values dictionary)
+    t.show_word_prob_under_concept_topic(4,'corps leader', p_e_c)
+    
+    with open("CLDA_result.pkl", "wb") as f:
         pickle.dump(t,f)
     
+##    
+#    data_dir = "../../CLDA_data_testing"
 #    
-    data_dir = "../../CLDA_data_testing"
-    
-    #The topic name (folder name containing the names)
-    topic_name = "ForTest_c"
+#    #The topic name (folder name containing the names)
+#    topic_name = "ForTest_c"
 #    
     ##########################################################
     ######This region is for the test of CLDA methods...
     ##########################################################
     
-    test_CLDA = None
-    
-#    test_file_names = pd.read_csv(data_dir + '/' + part_file_name + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
-#                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)["File"]
-    
-    
-    test_feature_vec, test_feature_names = (None, [])
-        
-    with open(data_dir + '/' + topic_name + feature_name_suffix_txt, "r") as f: 
-        for line in f:
-            #Remove the \n
-            test_feature_names.append(line.strip('\n'))
-    
-    with open(data_dir + '/' + topic_name + feature_matrix_suffix_csv, "r") as f:
-        test_feature_vec = np.loadtxt(f, delimiter = delim)
-    
-    test_concept_prob, test_concept_names = (None, [])
-        
-    with open(data_dir + '/' + topic_name + concept_prob_suffix_json, "r") as f:
-        test_concept_prob = json.load(f)
-        
-    
-    with open(data_dir + '/' + topic_name + concept_name_suffix_txt, "r") as f:
-        for line in f:
-            test_concept_names.append(line.strip('\n'))
-
-    with open(data_dir + '/' + topic_name + "_CLDA.pkl", "rb") as f:
-        test_CLDA = pickle.load(f)
-    test_CLDA.set_the_rankings()
-    
-    test_CLDA.show_normalized_concept_topic_ranking()
-    
-    test_CLDA.show_word_prob_under_concept_topic(3,'plural reference', test_concept_prob)
-    
+#    test_CLDA = None
+#    
+##    test_file_names = pd.read_csv(data_dir + '/' + part_file_name + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
+##                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)["File"]
+#    
+#    
+#    test_feature_vec, test_feature_names = (None, [])
+#        
+#    with open(data_dir + '/' + topic_name + feature_name_suffix_txt, "r") as f: 
+#        for line in f:
+#            #Remove the \n
+#            test_feature_names.append(line.strip('\n'))
+#    
+#    with open(data_dir + '/' + topic_name + feature_matrix_suffix_csv, "r") as f:
+#        test_feature_vec = np.loadtxt(f, delimiter = delim)
+#    
+#    test_concept_prob, test_concept_names = (None, [])
+#        
+#    with open(data_dir + '/' + topic_name + concept_prob_suffix_json, "r") as f:
+#        test_concept_prob = json.load(f)
+#        
+#    
+#    with open(data_dir + '/' + topic_name + concept_name_suffix_txt, "r") as f:
+#        for line in f:
+#            test_concept_names.append(line.strip('\n'))
+#
+#    with open(data_dir + '/' + topic_name + "_CLDA.pkl", "rb") as f:
+#        test_CLDA = pickle.load(f)
+#    test_CLDA.set_the_rankings()
+#    
+#    test_CLDA.show_normalized_concept_topic_ranking()
+#    
+#    test_CLDA.show_word_prob_under_concept_topic(0,'number', test_concept_prob)
+#    
     ##########################################################
     ######This region is for the test
     ##########################################################
@@ -965,6 +976,9 @@ class LDA(object):
         
         self.maxiter = maxiter
         
+        # Ranking is automatically set
+        # after a series of process
+        self.set_the_rankings()
     
     # Testing the programs for displaying the data
     # Testing
