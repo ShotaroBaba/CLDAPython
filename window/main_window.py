@@ -34,7 +34,7 @@ import json
 
 from multiprocessing import cpu_count
 from multiprocessing import Pool
-#from multiprocessing import Process
+# from multiprocessing import Process
 
 
 import nltk
@@ -140,7 +140,7 @@ def vectorize(tf_vectorizer, df):
 
     return tf_matrix, tf_feature_names
 ######################################################
-#######End of stop word definition
+####### End of stop word definition
 ######################################################
 
 
@@ -181,10 +181,9 @@ def read_test_files():
     
     # Remove the files other than xml files
     training_path = [x for x in training_path if x.endswith('xml')]
+
     # Remove the path where the 
     # Extract only last directory name
-#    for_test_purpose_data = {}
-#    training_data_list = []
     for path_to_file in training_path:
         path_string = os.path.basename(os.path.normpath(path_to_file))        
         # training_data_list.append(path_string)
@@ -194,21 +193,17 @@ def read_test_files():
         file = test_path + '/' + path_string 
         tree = ET.parse(file)
         
-        # Turn the string into
+        # Turn the string in xml into text
         root = tree.getroot()
         result = ''
         # Retrieving the text from xml files
         for element in root.iter():
             if(element.text != None):
                 result += element.text + ' '
-        result = result[:-1] #Removing the space
+        result = result[:-1] # Removing the space at the back of the string
         
                 
         # Initialise 
-#        for file in generate_files(path):
-            #print("Now reading...")
-            #print(open(file, "r").read())
-
         
         for_test_purpose_data = for_test_purpose_data.append(pd.DataFrame([(os.path.basename((path_string)), result)], 
                                                                             columns=['File', 'Text']))
@@ -224,7 +219,7 @@ def create_feature_vector_async(file_string, feature_list, dataset_dir):
         print("Feature {} already exists".format(file_string +  feature_matrix_suffix_csv))
         return None
     else:
-        #Ensure load just in case...
+        # Ensure load just in case...
         wn.ensure_loaded()
         # Read csv files 
         print(file_string)
@@ -235,7 +230,7 @@ def create_feature_vector_async(file_string, feature_list, dataset_dir):
         vect = generate_vector()
         vectorized_data, feature_names = vectorize(vect, datum)
         
-        #Save array as the csv file
+        # Save array as the csv file
         np.savetxt(dataset_dir + '/' + file_string + feature_matrix_suffix_csv, vectorized_data.toarray(), delimiter = delim)
         
 #            with open(dataset_dir + '/' + file_string + '.csv')
@@ -243,13 +238,15 @@ def create_feature_vector_async(file_string, feature_list, dataset_dir):
             for i in feature_names:
                 f.write("{}\n".format(i))
         
-#            with open(dataset_dir + '/' + file_string + feature_matrix_suffix_csv, "w") as f:
-#                pickle.dump([vectorized_data, feature_names], f)
+
         return file_string + feature_matrix_suffix_csv
 
-def create_concept_matrix_async(file_string, concept_list, dataset_dir):
-
-        async def retrieve_word_concept_data(feature_names, K = 20):
+# Later the value K, and smooth will allowed to be changed 
+# in GUI to generate CLDA
+        
+def create_concept_matrix_async(file_string, concept_list, dataset_dir, K = 20, smooth = 0.0001):
+        
+        async def retrieve_word_concept_data(feature_names):
             with concurrent.futures.ThreadPoolExecutor(max_workers=150) as executor:
                 collection_of_results = []
                 with requests.Session() as s:
@@ -260,7 +257,8 @@ def create_concept_matrix_async(file_string, concept_list, dataset_dir):
                             s.get, 
                             'https://concept.research.microsoft.com/api/Concept/ScoreByTypi?instance=' +
                             i.replace(' ', '+') + 
-                            '&topK=' + str(K) #This K will later be adjustable in later stage...
+                            '&topK=' + str(K) + # This K will later be adjustable in later stage...
+                            '&smooth=' + str(smooth) # The value is smoothen by the given value
                         )
                         for i in feature_names
                     ]
@@ -297,13 +295,9 @@ def create_concept_matrix_async(file_string, concept_list, dataset_dir):
             
             # temporary
             for idx, i  in enumerate(feature_names):
-            #    print(i)
-            #    print(idx)
+
                 p_e_c[i] = results[int(idx)]
             
-#                print(p_e_c)
-#                temp = {}
-#                type(temp) == dict
             # List up the concept names
             
             l = [list(i.keys()) for i in list(p_e_c.values())]
@@ -318,18 +312,18 @@ def create_concept_matrix_async(file_string, concept_list, dataset_dir):
                 #if there are no concepts in the words, then...
                 if p_e_c[i] == {}:
                     
-                    #Append the words with no related concpets
-                    #as the atomic concepts
+                    # Append the words with no related concpets
+                    # as the atomic concepts
                     concept_names.append(i)
-#                    else:
                     
             # Sorting the concept_names after adding feature names
             concept_names = sorted(concept_names)
 
-            
+            # Save p(e|c) as json file
             with open(dataset_dir + '/' + file_string + concept_prob_suffix_json, "w") as f:
                 json.dump(p_e_c, f, indent = "\t")
             
+            # Save concept_names as text file
             with open(dataset_dir + '/' + file_string + concept_name_suffix_txt, "w") as f:
                 for i in concept_names:
                     f.write("{}\n".format(i))
@@ -344,7 +338,7 @@ class Application():
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("File Pre Processing & Model Creation")
-#        self.pack()
+
         self.menubar = tk.Menu(self.root)
         self.menubar.add_command(label="Quit", command= self.root.destroy)
         self.menubar.add_command(label="Help", command=None)
@@ -386,7 +380,7 @@ class Application():
         Testing part
         '''
        
-        #The list of the files for the upload
+        # The list of the files for the upload
         self.upload_file_list_labelling_test = []
         self.upload_file_list_classifier_test = []
         
@@ -402,7 +396,6 @@ class Application():
         
         # The generation of CLDA model list
         # Later this will be used for generating results
-        
         self.CLDA_model_list_test = []
         self.LDA_model_list_test = []
         
@@ -1211,35 +1204,14 @@ class Application():
         
         time.sleep(4)
         
-        #The nltk related package errors can be the cause of
-        #the error in this code...
-#        async def create_feature_vectors(training_folders_tmp, feature_list, dataset_dir):
-#            
-#           with concurrent.futures.ThreadPoolExecutor() as executor:
-#            
-#                loop = asyncio.get_event_loop()
-#                futures = [
-#                    loop.run_in_executor(
-#                        executor, 
-#                        create_feature_vector_async, 
-#                        folder_name, feature_list, dataset_dir
-#                    )
-#                    for folder_name in training_folders_tmp
-#                ]
-#                features_vec = []
-#                
-#                for i in await asyncio.gather(*futures):
-#                    features_vec.append(i)
-#                    
-#                return features_vec
-#        features = None
-#        
         
         if(test_or_training == 0):
             feature_list = self.feature_list
         else:
             feature_list = self.feature_list_test
-        
+        # As nltk is not thread safe model generator
+        # this method is applied to create massive amount of 
+        # LDA model later on
         with Pool(cpu_count()-1) as p:
             pool_async = p.starmap_async(create_feature_vector_async, [[i, feature_list, dataset_dir] for i in training_folders_tmp])
             features = pool_async.get()
@@ -1275,7 +1247,8 @@ class Application():
         time.sleep(2)
         
         
-        # Asyncio is not used for retrieving web data simultaneously
+        # Asynchrously retrieve the probability p(word|concept) from
+        # Probase
         def create_concept_word_lists(training_folders_tmp, concept_list, dataset_dir):
             concept_vec = [] #Move out just in case...
 #            for i in training_folders_tmp:
@@ -1328,7 +1301,6 @@ class Application():
     def asynchronous_CLDA_model_generation(self, dataset_dir, result_num):
         
         def concurrent():
-    #        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
             
             fm = Asynchrous_CLDA()
             
@@ -1337,7 +1309,7 @@ class Application():
             return results
         
         results = concurrent()
-        #Create CLDA object asynchronically.
+        # Create CLDA object asynchronically.
         
         for i in results:
             line = i[1]
@@ -1416,6 +1388,7 @@ class Asynchrous_CLDA(object):
             if len([x for x in files if x.endswith(CLDA_suffix_pickle)]) != 0:
                 files_tmp.extend(files) 
         
+        # 
         if i + CLDA_suffix_pickle in files_tmp:
             print("File {} is already exists".format(i + CLDA_suffix_pickle))
             # Normal finish of the program...
@@ -1424,39 +1397,45 @@ class Asynchrous_CLDA(object):
         print("file process {}: starts!".format(i))
         file_index_name = pd.read_csv(self.dataset_dir + '/' + i + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
                             error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)["File"]
-        
-#        feature_matrix, feature_names = (None, None)
-#        with open( self.dataset_dir + '/' + i + "_f.pkl", "rb") as f :   
-#            feature_matrix, feature_names = pickle.load(f)
+
             
             
         feature_matrix, feature_names = (None, [])
         
+        # Load the feature_name from a txt file
         with open(self.dataset_dir + '/' + i + feature_name_suffix_txt, "r") as f: 
             for line in f:
                 #Remove the \n
                 feature_names.append(line.strip('\n'))
         
+        # Load the matrix data from a csv file
         with open(self.dataset_dir + '/' + i + feature_matrix_suffix_csv, "r") as f:
             feature_matrix = np.loadtxt(f, delimiter = delim)
         
         concept_dict, concept_names = (None, [])
-            
+        
+        # Load the word-concept probability data from a json file
         with open(self.dataset_dir + '/' + i + concept_prob_suffix_json, "r") as f:
             concept_dict = json.load(f)
             
-        
+        # Load concept name data from a text file
         with open(self.dataset_dir + '/' + i + concept_name_suffix_txt, "r") as f:
             for line in f:
                 concept_names.append(line.strip('\n'))
             
             
         print("file reading {}: complete!".format(i))
+        
+        # Forcefully create standard output
         sys.stdout.flush()
+        
+        # Create CLDA instance
         CLDA_instance = CLDA.CLDA(feature_names, concept_names, file_index_name, 5, 20)
-
+        
+        # Run CLDA
         CLDA_instance.run(feature_matrix, concept_dict)
         
+        # The created CLDA object is stored in the files
         with open(self.dataset_dir + '/' + i + CLDA_suffix_pickle, "wb") as f:
             pickle.dump(CLDA_instance, f)
         
@@ -1481,6 +1460,7 @@ class Asynchrous_CLDA(object):
         with Pool(cpu_count()-1) as p:
             pool_async = p.starmap_async(self.create_CLDA_instance, [[i] for i in files_list_for_modelling_CLDA])
             
+            # Return processed result
             return pool_async.get()
                 
         
@@ -1495,16 +1475,19 @@ class Asynchrous_LDA(object):
         sys.stdout = buffer = StringIO()  
         files_tmp = []
         
+        # Looking around the file with topic name i
         for dirpath, dirs, files in os.walk(dataset_dir):
             if len([x for x in files if x.endswith(LDA_suffix_pickle)]) != 0:
                 files_tmp.extend(files) 
         print(dataset_dir + '/' + i + LDA_suffix_pickle)
+        
         # If the file has already been created 
         # then skip the process...
         if i + LDA_suffix_pickle in files_tmp:
             print("File {} is already exists".format(i + LDA_suffix_pickle))
             #Normal finish of the program...
             return None, ""
+        
         # Read CLDA files 
         print("file process {}: starts!".format(i))
         file_index_name = pd.read_csv(dataset_dir + '/' + i + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
@@ -1512,31 +1495,34 @@ class Asynchrous_LDA(object):
         
         feature_matrix, feature_names = (None, [])
         
+        # Load the feature_name from a txt file
         with open(dataset_dir + '/' + i + feature_name_suffix_txt, "r") as f: 
             for line in f:
                 #Remove the \n
                 feature_names.append(line.strip('\n'))
-        
+        # Load the matrix data from a csv file
         with open(dataset_dir + '/' + i + feature_matrix_suffix_csv, "r") as f:
             feature_matrix = np.loadtxt(f, delimiter = delim)
         
 
         
-        
+        # Forcefully make standard output
         sys.stdout.flush()
-        LDA_instance = CLDA.LDA(file_index_name, feature_names, 5)
-        # print(concept_names)
         
-        # Later the iteration can be changed
-        # from GUI
+        # Create LDA instance
+        LDA_instance = CLDA.LDA(file_index_name, feature_names, 5)
+        
+        # Fit LDA model to dataset
         LDA_instance.run(feature_matrix, 20)
         
+        # Save fitted LDA model
         with open(dataset_dir + '/' + i + LDA_suffix_pickle, "wb") as f:
             pickle.dump(LDA_instance, f)
-        # print("file reading {}: complete!".format(i))
+        
         # Sleep just in case...
         print("Model generation complete!: {}".format(dataset_dir + '/' + i + LDA_suffix_pickle))
         time.sleep(0.5)
+        
         # Return True if the process stops normally
         sys.stdout = sys.__stdout__
         return (i + LDA_suffix_pickle, buffer)
@@ -1544,14 +1530,11 @@ class Asynchrous_LDA(object):
     def asynchronous_LDA_creation(self, dataset_dir):
            
           
-#        results.insert(tk.END, "ttt")
+        # Initialize file_tmp list
         files_tmp = []
         
-#        for dirpath, dirs, files in os.walk(dataset_test):
-#            if len([x for x in files if x.endswith(file_name_df_suffix_csv)]) != 0:
-#                print(files)
-#                files_tmp.extend(files) 
-        
+        # Walk down the files to search for
+        # files to geenrate model
         for dirpath, dirs, files in os.walk(dataset_dir):
             if len([x for x in files if x.endswith(file_name_df_suffix_csv)]) != 0:
                 print(files)
@@ -1565,6 +1548,7 @@ class Asynchrous_LDA(object):
         with Pool(cpu_count()-1) as p:
             pool_async = p.starmap_async(self.create_LDA_instance, [[self, i, dataset_dir] for i in files_list_for_modelling_LDA])
             
+            # Return processed result
             return pool_async.get()        
             
 

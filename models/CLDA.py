@@ -13,10 +13,10 @@ import itertools
 import pickle
 import sys
 
-from multiprocessing import Pool
-import pickle
-import csv
-import json
+#from multiprocessing import Pool
+#import pickle
+#import csv
+#import json
 dataset_dir = "../../CLDA_data_training"
 dataset_test = "../../CLDA_data_testing"
 
@@ -193,11 +193,11 @@ def read_test_files(test_path):
 # Retrieve the data simultaneously
 # K represents the range of ranking you want to 
 # Retrieve from the Probase database.
-def retrieve_p_e_c(feature_names, K = 20):
+def retrieve_p_e_c(feature_names, K = 20, smooth = 0.0001):
 #    responses  = {}
 #    j = 0
     # Asynchronically fetch p(e|c) data from Microsoft Probase database
-    async def retrieve_word_concept_data(feature_names, K = 20):
+    async def retrieve_word_concept_data(feature_names):
             # Setting the max workers
             with concurrent.futures.ThreadPoolExecutor(max_workers=220) as executor:
                 collection_of_results = []
@@ -208,7 +208,8 @@ def retrieve_p_e_c(feature_names, K = 20):
                         requests.get, 
                         'https://concept.research.microsoft.com/api/Concept/ScoreByTypi?instance=' +
                         i.replace(' ', '+') + 
-                        '&topK=' + str(K)
+                        '&topK=' + str(K) +
+                        '&smooth=' + str(smooth) 
                     )
                     for i in feature_names
                 ]
@@ -252,7 +253,7 @@ def retrieve_data(feature_name):
 #Main method for test purpose
 def main():
     # Set your folder path here.
-    test_path = "../../R8-Dataset/Dataset/ForTest"
+    test_path = "../../R8-Dataset/Dataset/ForTest_c"
     test_data = read_test_files(test_path)
 
     vect = generate_vector()
@@ -283,8 +284,8 @@ def main():
 
     
     # Create CLDA object
+#    t = LDA( file_lists,feature_names , 5, 20)
     t = CLDA(feature_names, concept_names, file_lists, 5, 20)
-    
     # Run the methods of CLDA to calculate the topic-document, topic-concept probabilities.
     
     vectorised_data= vectorised_data.toarray()
@@ -294,10 +295,7 @@ def main():
     
     t.document_topic_concept_word
     # (m,z,c,w)
-#    t.feature_names.index('humiliate')
-#    t.topics_and_concepts
-    # Show all rankings
-#    t.set_the_rankings()
+
     t.show_doc_topic_ranking(2)
     t.show_concept_topic_ranking(10)
     t.show_normalized_concept_topic_ranking()
@@ -308,7 +306,7 @@ def main():
     
     # Usage: show_word_prob_under_concept_topic(topic_number (integer value)
     # concept_name 'string_value', p(e|c) values dictionary)
-    t.show_word_prob_under_concept_topic(4,'corps leader', p_e_c)
+    t.show_word_prob_under_concept_topic(4,'promotional information', p_e_c)
     
     with open("CLDA_result.pkl", "wb") as f:
         pickle.dump(t,f)
@@ -318,11 +316,11 @@ def main():
 #    
 #    #The topic name (folder name containing the names)
 #    topic_name = "ForTest_c"
+##    
+#    ##########################################################
+#    ######This region is for the test of CLDA methods...
+#    ##########################################################
 #    
-    ##########################################################
-    ######This region is for the test of CLDA methods...
-    ##########################################################
-    
 #    test_CLDA = None
 #    
 ##    test_file_names = pd.read_csv(data_dir + '/' + part_file_name + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
@@ -355,7 +353,7 @@ def main():
 #    
 #    test_CLDA.show_normalized_concept_topic_ranking()
 #    
-#    test_CLDA.show_word_prob_under_concept_topic(0,'number', test_concept_prob)
+#    test_CLDA.show_word_prob_under_concept_topic(4,'growth regulator herbicide', test_concept_prob)
 #    
     ##########################################################
     ######This region is for the test
@@ -546,7 +544,8 @@ class CLDA(object):
         #Storing newest phi value and theta value for calculating word, concept and topic ranking
         self.phi_set.append(self.phi())
         self.theta_set.append(self.doc_prob())
-
+        
+        self.set_the_rankings()
 #    
     # Calculate phi value
     def phi(self):
@@ -557,7 +556,7 @@ class CLDA(object):
         num /= np.sum(num, axis=1)[:, np.newaxis] # Summation of all value and then, but weight should be calculated in this case....
         return num
     
-    # Calculate document probability
+    # This is actually theta value...
     def doc_prob(self):
         
 #        T = nmz.shape[0]
@@ -822,6 +821,8 @@ class CLDA(object):
     # Topic ==> integer value
     # Concept ==> choose the word
     # Concept must be the string or one of concept name.
+    # The standard output of all of these values will be
+    # displayed in GUI...
     def show_word_prob_under_concept_topic(self, topic, concept = None, word_under_concept_probability = None):
             
             if word_under_concept_probability == None:
@@ -831,17 +832,15 @@ class CLDA(object):
             tmp = list(set(list(self.document_topic_concept_word.values()))) 
             set_of_candidates = list(set(list([(x[1],x[2],x[3],word_under_concept_probability[self.feature_names[x[3]]][self.concept_names[concept_index]]) if
                                           word_under_concept_probability[self.feature_names[x[3]]] != {} else
-                                          #If the value is atomic value
+                                          # If the value is atomic value, then it is regarded as 1
                                           (x[1],x[2],x[3], 1.0) for x in tmp if (topic, concept_index) == (x[1], x[2])])))
             set_of_candidates = sorted(set_of_candidates, key = (lambda x: x[3]), reverse = True)
             for candidate in set_of_candidates:
                 out_str = "topic: {}, concept: {}, word: {}, probability: {}".format(topic, self.concept_names[concept_index], self.feature_names[candidate[2]],
                                  candidate[3])
-                print(out_str)
-#                test_CLDA.concept_names.index('sex')
-#                word_under_concept_probability['sex']
-#                word_under_concept_probability[test_CLDA.feature_names[1379]][test_CLDA.concept_names[concept]    
-        
+                print(out_str)  
+                
+# Baseline method
 class LDA(object):
 
     def __init__(self, file_list, feature_names, n_topics,alpha=0.1, beta=0.1):
@@ -1001,9 +1000,10 @@ class LDA(object):
         self.word_ranking = [[[topic, ranking, self.feature_names[idx], self.phi_set[0][topic][idx]] for ranking, idx in enumerate(word_idx)]
                                 for topic, word_idx in enumerate(temp)]
         
-        self.doc_ranking = [[[topic, ranking, self.file_list[doc_idx], self.doc_prob_set[0][topic][doc_idx]] for ranking, doc_idx in enumerate(docs_idx)]
+        self.doc_ranking = [[[topic, ranking, self.file_list[doc_idx], self.doc_prob_set[0].T[topic][doc_idx]] for ranking, doc_idx in enumerate(docs_idx)]
                     for topic, docs_idx in enumerate(temp2)]
-    
+        
+        
     # Show the document ranking over topic
     def show_doc_topic_ranking(self, rank=10):
 
