@@ -311,11 +311,11 @@ def main():
     with open("CLDA_result.pkl", "wb") as f:
         pickle.dump(t,f)
     
-##    
-#    data_dir = "../../CLDA_data_testing"
+#    
+#    data_dir = "../../CLDA_data_training"
 #    
 #    #The topic name (folder name containing the names)
-#    topic_name = "ForTest_c"
+#    topic_name = "Test108"
 ##    
 #    ##########################################################
 #    ######This region is for the test of CLDA methods...
@@ -353,12 +353,12 @@ def main():
 #    
 #    test_CLDA.show_normalized_concept_topic_ranking()
 #    
-#    test_CLDA.show_word_prob_under_concept_topic(4,'growth regulator herbicide', test_concept_prob)
-#    
-    ##########################################################
-    ######This region is for the test
-    ##########################################################
-#    list(test_CLDA.total_results)
+#    test_CLDA.show_word_prob_under_concept_topic(4,'linux based os', test_concept_prob)
+    
+    #########################################################
+    #####This region is for the test
+    #########################################################
+    list(test_CLDA.total_results)
     
 class CLDA(object):
     

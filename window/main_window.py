@@ -59,6 +59,9 @@ CLDA_suffix_pickle = "_CLDA.pkl"
 LDA_suffix_pickle = "_LDA.pkl"
 converted_xml_suffix = "_conv.txt"
 converted_folder = "converted_xml_files"
+default_K = 10
+default_smooth = 0.0001 
+default_ngram = 1
 delim = ","
 #K = 0
 #with open( "../../CLDA_data_testing" + '/' + "ForTest_c_prob.json", "r") as f:
@@ -126,9 +129,9 @@ def cab_tokenizer(document):
 # Create vectorise files
 # Define the function here
 # Generate vector for creating the data
-def generate_vector():
-    return CountVectorizer(tokenizer=cab_tokenizer, ngram_range=[1,2],
-                           min_df=0.02, max_df=0.98)
+def generate_vector(ngram_length):
+    return CountVectorizer(tokenizer=cab_tokenizer, ngram_range=[1,ngram_length],
+                           min_df=0.01, max_df=0.99)
 
 # Generate count vectorizer
 def vectorize(tf_vectorizer, df):
@@ -212,7 +215,7 @@ def read_test_files():
 
 
 # Asynchoronic feature vector retrieval
-def create_feature_vector_async(file_string, feature_list, dataset_dir):
+def create_feature_vector_async(file_string, feature_list, dataset_dir, ngram = default_ngram):
     
     file_string = os.path.splitext(os.path.basename(file_string))[0]
     if any(file_string in substring for substring in feature_list):
@@ -227,7 +230,7 @@ def create_feature_vector_async(file_string, feature_list, dataset_dir):
                     error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
         time.sleep(3)
         # Vectorise the document 
-        vect = generate_vector()
+        vect = generate_vector(ngram)
         vectorized_data, feature_names = vectorize(vect, datum)
         
         # Save array as the csv file
@@ -243,8 +246,8 @@ def create_feature_vector_async(file_string, feature_list, dataset_dir):
 
 # Later the value K, and smooth will allowed to be changed 
 # in GUI to generate CLDA
-        
-def create_concept_matrix_async(file_string, concept_list, dataset_dir, K = 20, smooth = 0.0001):
+# Used for lighten the burden of the calculation
+def create_concept_matrix_async(file_string, concept_list, dataset_dir, K = default_K, smooth = default_smooth):
         
         async def retrieve_word_concept_data(feature_names):
             with concurrent.futures.ThreadPoolExecutor(max_workers=150) as executor:
@@ -728,9 +731,28 @@ class Application():
         '''
         
         # Forming the button group for putting them together
-        self.button_groups = tk.Frame(self.main_listbox_and_buttons)
-        self.button_groups.pack()
+        self.values_to_input = tk.Frame(self.main_listbox_and_buttons)
+        self.values_to_input.pack()
         
+        
+        self.top_concept_label = tk.Label(self.values_to_input, text = "Top concept to retrieve (positive integer): ")
+        self.top_concept_label.grid(row = 0, column =0)
+        
+        self.top_concept_text = tk.Entry(self.values_to_input)
+        self.top_concept_text.grid(row = 0, column = 1)
+        
+        
+        self.smooth_label = tk.Label(self.values_to_input, text = "Smooth value (float): ")
+        self.smooth_label.grid(row = 1, column = 0)
+        
+        self.smooth_text = tk.Entry(self.values_to_input)
+        self.smooth_text.grid(row =1, column = 1)
+        
+        self.ngram_label = tk.Label(self.values_to_input, text = "ngram value (positive integer): ")
+        self.ngram_label.grid(row = 2, column = 0)
+        
+        self.ngram_text = tk.Entry(self.values_to_input)
+        self.ngram_text.grid(row = 2, column = 1)
         
         '''
         #######################################
@@ -845,6 +867,12 @@ class Application():
         ###Buttons
         ##########################################
         '''
+#        
+#        self.func_test = tk.Button(self.root, text = 'Function test')
+#        
+#        self.func_test.pack(side = tk.BOTTOM)
+#        self.func_test['command'] = self.test_all
+#        
         
         self.training_button = tk.Button(self.root, text = 'training_data_creation_xml')
         
@@ -915,6 +943,92 @@ class Application():
         ####End the main menu
         #######################################
         '''
+    def retrieve_top_concept(self):
+        
+        try:
+            if(self.top_concept_text.get() == ""):
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe default value is used: K = {}".format(default_K))
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                return default_K
+            else:
+                user_input_val = int(self.top_concept_text.get())
+                if(user_input_val < 1):
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nInput positive value!".format(user_input_val))
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    return 
+                else:
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe input top topic limit value {} is used".format(user_input_val))
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    return user_input_val
+        
+        except ValueError:
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError, input topic concept top limit value is invalid.")
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            return
+    
+    def retrieve_ngram(self):
+        try:
+            if(self.ngram_text.get() == ""):
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe default value is used: ngram = {}".format(default_ngram))
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                return default_ngram
+            else:
+                user_input_val = int(self.ngram_text.get())
+                if(user_input_val < 1):
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nInput positive value!".format(user_input_val))
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    return 
+                else:
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe input ngram value {} is used".format(user_input_val))
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    return user_input_val
+        
+        except ValueError:
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError, input ngram value is invalid.")
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            return
+        
+    def retrieve_smooth_value(self):
+        try:
+            if(self.smooth_text.get() == ""):
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe default value is used: smooth = {}".format(default_smooth))
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                return default_smooth
+            else:
+                user_input_val = float(self.smooth_text.get())
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe input ngram value {} is used".format(user_input_val))
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                return user_input_val
+        
+        except ValueError:
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError, input smooth is invalid.")
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            return
+    #Testing the function of all functions
+#    def test_all(self):
+#        top_concept_limit = self.retrieve_top_concept()
+#        if (top_concept_limit == None):
+#            return
+#        
+#        ngram_num = self.retrieve_ngram()
+#        if (ngram_num == None):
+#            return
+#        
+#        smooth_value = self.retrieve_smooth_value()
+#        if (smooth_value == None):
+#            return
+#    
     def move_to_CLDA_evaluation(self):
         
         
@@ -928,7 +1042,7 @@ class Application():
         
         CLDA_eval_screen.main()
         
-        
+    
         
         
     def retrieve_topic_feature_concept_list(self):
@@ -1141,6 +1255,18 @@ class Application():
             if len([x for x in files if x.endswith(file_type)]) != 0:
                 training_folders_tmp.append(dirpath) 
         
+        top_concept_limit = self.retrieve_top_concept()
+        if (top_concept_limit == None):
+            return
+        
+        ngram_num = self.retrieve_ngram()
+        if (ngram_num == None):
+            return
+        
+        smooth_value = self.retrieve_smooth_value()
+        if (smooth_value == None):
+            return
+        
         # training_folders_tmp.remove(train_folder_selection)
         
         if(test_or_training == 0):
@@ -1213,7 +1339,7 @@ class Application():
         # this method is applied to create massive amount of 
         # LDA model later on
         with Pool(cpu_count()-1) as p:
-            pool_async = p.starmap_async(create_feature_vector_async, [[i, feature_list, dataset_dir] for i in training_folders_tmp])
+            pool_async = p.starmap_async(create_feature_vector_async, [[i, feature_list, dataset_dir, ngram_num] for i in training_folders_tmp])
             features = pool_async.get()
         
 #        loop = asyncio.get_event_loop()
@@ -1255,7 +1381,7 @@ class Application():
 #                concept_vec.append(create_concept_matrix_async(i, concept_list, dataset_dir))
             
             with Pool(cpu_count()-1) as p:
-                pool_async = p.starmap_async(create_concept_matrix_async, [[i, concept_list, dataset_dir] for i in training_folders_tmp])
+                pool_async = p.starmap_async(create_concept_matrix_async, [[i, concept_list, dataset_dir,top_concept_limit,smooth_value] for i in training_folders_tmp])
                 concept_vec = pool_async.get()
             time.sleep(2)    #Sleep just in case...
             return concept_vec
