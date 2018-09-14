@@ -4,6 +4,57 @@ Created on Sat Sep  1 22:07:34 2018
 
 @author: Shotaro Baba
 """
+import datetime
+import time
+#from multiprocessing import Pool
+import pickle
+import csv
+import json
+import pandas as pd
+
+import sys
+sys.path.append("..\/models/")
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
+from multiprocessing import cpu_count
+from multiprocessing import Pool
+dataset_dir = "../../CLDA_data_training"
+dataset_test = "../../CLDA_data_testing"
+score_result_dir = "../../score_result"
+score_result_dataframe_suffix = "_score.csv"
+score_result_txt_suffix = "_score.txt"
+score_result_log_suffix = "_log.txt"
+stop_word_folder = "../stopwords"
+concept_prob_suffix_json = "_c_prob.json"
+concept_name_suffix_txt = "_c_name.txt"
+feature_matrix_suffix_csv = "_f_mat.csv"
+feature_name_suffix_txt = "_f_name.txt"
+file_name_df_suffix_csv = "_data.csv"
+tokenized_dataset_suffix= "_tokenized.csv"
+CLDA_suffix_pickle = "_CLDA.pkl"
+LDA_suffix_pickle = "_LDA.pkl"
+converted_xml_suffix = "_conv.txt"
+default_score_threshold = 0.10
+asterisk_len = 20
+
+stop_word_folder = "../stopwords"
+stop_word_smart_txt = "smart_stopword.txt"
+smart_stopwords = []
+
+with open(stop_word_folder + '/' + stop_word_smart_txt , "r") as f:
+    for line in f:
+    #Remove the \n
+        smart_stopwords.append(line.strip('\n'))
+
+# This will be run asynchronously to reduce
+# The time to calculate...
+        
+
+
+
 
 import tkinter as tk
 import gc
@@ -11,6 +62,128 @@ import os
 import main_window
 dataset_training = "../../CLDA_data_training"
 dataset_testing = "../../CLDA_data_testing"
+
+from nltk import wordpunct_tokenize, WordNetLemmatizer, sent_tokenize, pos_tag
+from nltk.corpus import stopwords, wordnet
+from string import punctuation
+# initialize constants
+lemmatizer = WordNetLemmatizer()
+def define_sw():
+    
+    # Use default english stopword     
+    return set(stopwords.words('english') + smart_stopwords)
+
+
+## Defining the lemmatizer
+#def lemmatize(token, tag):
+#    tag = {
+#        'N': wordnet.NOUN,
+#        'V': wordnet.VERB,
+#        'R': wordnet.ADV,
+#        'J': wordnet.ADJ
+#    }.get(tag[0], wordnet.NOUN)
+#
+#    return lemmatizer.lemmatize(token, tag)
+#
+## The tokenizer for the documents
+#def cab_tokenizer(document):
+#    tokens = []
+#    sw = define_sw()
+#    punct = set(punctuation)
+#
+#    # split the document into sentences
+#    for sent in sent_tokenize(document):
+#        # tokenize each sentence
+#        for token, tag in pos_tag(wordpunct_tokenize(sent)):
+#            # preprocess and remove unnecessary characters
+#            token = token.lower()
+#            token = token.strip()
+#            token = token.strip('_')
+#            token = token.strip('*')
+#
+#            # If punctuation, ignore token and continue
+#            if all(char in punct for char in token):
+#                continue
+#
+#            # If stopword, ignore token and continue
+#            if token in sw:
+#                continue
+#
+#            # Lemmatize the token and add back to the token
+#            lemma = lemmatize(token, tag)
+#
+#            # Append lemmatized token to list
+#            tokens.append(lemma)
+#    return tokens        
+
+##    for training_file_head in training_head:
+#def calculate_score_all_async(training_file_head):
+##      T_TP = T_TN =  T_FN =  T_FP = 0
+#      #Listing the score
+#    score_list = []
+#    files_test = []
+#    
+#    for dirpath, dirs, files in os.walk(dataset_test):
+#        files_test.extend(files)
+#      
+#    
+#    test_head = [x[:-len(file_name_df_suffix_csv)] for x in files_test if x.endswith(file_name_df_suffix_csv)]
+#      
+#
+#    print(training_file_head)
+#    
+#    
+#    test_concept_prob, test_concept_names = (None, [])
+#        
+#    with open(dataset_dir + '/' + training_file_head + concept_prob_suffix_json, "r") as f:
+#        test_concept_prob = json.load(f)
+#        
+#    
+#    with open(dataset_dir + '/' + training_file_head + concept_name_suffix_txt, "r") as f:
+#        for line in f:
+#            test_concept_names.append(line.strip('\n'))
+#    
+#    with open(dataset_dir + '/' + training_file_head + CLDA_suffix_pickle, "rb") as f:
+#        test_CLDA = pickle.load(f)
+#      
+#      
+#    doc_topic = test_CLDA.theta_set[0].sum(axis = 0)/test_CLDA.theta_set[0].shape[0]
+#    topic_concept = test_CLDA.show_and_construct_normalized_concept_topic_ranking()
+#    word_under_concept = test_CLDA.show_words_prob_under_concept(test_concept_prob)
+##        test_file_data = pd.read_csv(data_dir + '/' + test_name + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
+##                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
+#   
+#    training_head_number = ''.join(filter(str.isdigit, training_file_head))
+#    
+##      vector_analysis = generate_vector_for_analysis()
+#    for testing_file_head in test_head:
+#        print(testing_file_head)
+#        test_file_data = pd.read_csv(dataset_test + '/' + testing_file_head + file_name_df_suffix_csv,
+#                                      encoding='utf-8', sep=',', error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
+#        
+#        testing_head_number = ''.join(filter(str.isdigit, testing_file_head))
+#        for i in range(len(test_file_data)):
+#            score = 0
+#            test_files_feature_name  = cab_tokenizer(test_file_data.iloc[i]['Text'])
+#    #          _, test_files_feature_name   = vectorize_for_analysis(vector_analysis, test_file_data.iloc[i])
+#            for topic_num, topic_prob in enumerate(doc_topic):
+#                for concept, concept_prob in topic_concept[topic_num]:
+#                      for word, word_prob in [(x[0][0], x[1]) for x in word_under_concept.items() if x[0][1] == concept]:
+#                          if word in test_files_feature_name:
+#    #                          print('topic_num: {}, concept: "{}", word: "{}"'.format(topic_num, concept, word))
+#                              score += topic_prob * concept_prob * word_prob
+#        
+#            print('Score: {}, File name: "{}"'.format(score, test_file_data.iloc[i]['File']))
+#            score_list.append((test_file_data.iloc[i]['File'], training_head_number, testing_head_number, score))  
+#    
+#    return score_list      
+    
+    
+#        with open()
+
+
+
+
 
 class CLDA_evaluation_screen(object):
     
@@ -54,6 +227,7 @@ class CLDA_evaluation_screen(object):
         
         self.result_screen_text = tk.Text(self.result_frame)
         self.result_screen_text.pack(side = tk.LEFT)
+        self.result_screen_text.configure(state='disabled')
         
         self.result_screen_text_scroll = tk.Scrollbar(self.result_frame)
         self.result_screen_text_scroll.pack(side = tk.RIGHT, fill = 'y')
@@ -169,6 +343,10 @@ class CLDA_evaluation_screen(object):
         ####CLDA button
         ##########################################################
         '''
+        self.CLDA_evaluation_button = tk.Button(self.bottom_button_frame, text = "Eval CLDA")
+        self.CLDA_evaluation_button.pack()
+        self.CLDA_evaluation_button['command'] = self.asynchronous_CLDA_evaluation
+        
         self.change_to_model_creation = tk.Button(self.bottom_button_frame, text = "Return to model creation")
         self.change_to_model_creation.pack()
         self.change_to_model_creation['command'] = self.move_to_model_creation
@@ -210,6 +388,278 @@ class CLDA_evaluation_screen(object):
         
         for i in self.CLDA_list:
             self.CLDA_selection_listbox.insert(tk.END, i)
+            
+    def asynchronous_CLDA_evaluation(self):
+        # Initialize file_tmp list
+        self.result_screen_text.delete("1.0", tk.END)
+        files_training = []
+        for dirpath, dirs, files in os.walk(dataset_dir):
+                files_training.extend(files)
+
+#        score_list = []
+        files_test = []
+        
+        for dirpath, dirs, files in os.walk(dataset_test):
+            files_test.extend(files)
+        
+
+        #Tokenize all data in test dataset
+        def concurrent1():
+        #        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
+            
+            fm = Asynchronous_CLDA_evaluation_class()
+            
+            results = fm.asynchronous_tokenization()
+            
+            return results
+        
+        testing_dict = concurrent1()
+#        for testing_file_head in test_head:
+#            testing_dict[testing_file_head] = pd.read_csv(dataset_test + '/' + testing_file_head + file_name_df_suffix_csv,
+#                                          encoding='utf-8', sep=',', error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
+#            testing_dict[testing_file_head]['Text'] = testing_dict[testing_file_head]['Text'].apply(lambda x: cab_tokenizer(x))
+        
+        def concurrent2():
+        #        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
+            
+            fm = Asynchronous_CLDA_evaluation_class()
+            
+            results = fm.asynchronous_evaluation(testing_dict)
+            
+            return results
+        
+        score_result = concurrent2()
+            # Return processed result
+        score_result_total = []
+        for score_i, buffer_str in score_result:
+            score_result_total.extend(score_i)
+            self.result_screen_text.configure(state='normal')
+            self.result_screen_text.insert(tk.END, buffer_str.getvalue())
+            self.result_screen_text.configure(state='disabled')
+#        print(score_result_total)
+        ts = time.time()   
+        
+        
+        score_data_frame = pd.DataFrame(score_result_total, columns = ['File_name', 'Training_topic', 'Testing_topic', 'Score'])
+        storing_result_name_data = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + feature_matrix_suffix_csv
+        
+        storing_result_name_text = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_txt_suffix
+        score_data_frame_TP_FN = score_data_frame[score_data_frame['Training_topic'] == score_data_frame['Testing_topic']]
+        log_txt_name = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_log_suffix
+        
+        
+        Total_TP_count  = (score_data_frame_TP_FN['Score'] > default_score_threshold).sum()
+        Total_FN_count = (score_data_frame_TP_FN['Score'] < default_score_threshold).sum()
+        
+        score_data_frame_TN_FP = score_data_frame[score_data_frame['Training_topic'] != score_data_frame['Testing_topic']]
+        
+        Total_TN_count = (score_data_frame_TN_FP['Score'] < default_score_threshold).sum()
+        Total_FP_count = (score_data_frame_TN_FP['Score'] > default_score_threshold).sum()
+        
+        precision = Total_TP_count / (Total_TP_count + Total_FP_count)
+        recall = Total_TP_count / (Total_TP_count + Total_FN_count)
+        
+        score_data_frame.to_csv(storing_result_name_data,
+                              index=False, encoding='utf-8',
+                              quoting=csv.QUOTE_ALL)
+        
+        with open(storing_result_name_text, 'w') as f:
+            result_str = "Precision: {}, Recall: {}\n".format(precision, recall) + \
+            "Trup Positive: {}, False Positive: {}\n".format(Total_TP_count, Total_FP_count) + \
+            "Trup Negative: {}, False Negative: {}\n".format(Total_TN_count, Total_FN_count)
+            self.result_screen_text.configure(state='normal')
+            self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]) + '\n')
+            self.result_screen_text.insert(tk.END, result_str)
+            self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]))
+            self.result_screen_text.configure(state='disabled')
+            f.write(result_str)
+        
+        with open(log_txt_name, 'w') as f:
+            result_screen = self.result_screen_text.get("1.0", tk.END)
+            f.write(result_screen)
+            
+            
+class Asynchronous_CLDA_evaluation_class():
+    
+    def __init__(self):
+        pass
+    
+    from nltk import wordpunct_tokenize, WordNetLemmatizer, sent_tokenize, pos_tag
+    from nltk.corpus import stopwords, wordnet
+    from string import punctuation
+    import gc
+    
+    # initialize constants
+    lemmatizer = WordNetLemmatizer()
+    def define_sw(self):
+        
+        # Use default english stopword     
+        return set(stopwords.words('english') + smart_stopwords)
+
+
+    # Defining the lemmatizer
+    def lemmatize(self,token, tag):
+        tag = {
+            'N': wordnet.NOUN,
+            'V': wordnet.VERB,
+            'R': wordnet.ADV,
+            'J': wordnet.ADJ
+        }.get(tag[0], wordnet.NOUN)
+    
+        return lemmatizer.lemmatize(token, tag)
+    
+    # The tokenizer for the documents
+    def cab_tokenizer(self, document):
+        tokens = []
+        sw = self.define_sw()
+        punct = set(punctuation)
+    
+        # split the document into sentences
+        for sent in sent_tokenize(document):
+            # tokenize each sentence
+            for token, tag in pos_tag(wordpunct_tokenize(sent)):
+                # preprocess and remove unnecessary characters
+                token = token.lower()
+                token = token.strip()
+                token = token.strip('_')
+                token = token.strip('*')
+    
+                # If punctuation, ignore token and continue
+                if all(char in punct for char in token):
+                    continue
+    
+                # If stopword, ignore token and continue
+                if token in sw:
+                    continue
+    
+                # Lemmatize the token and add back to the token
+                lemma = self.lemmatize(token, tag)
+    
+                # Append lemmatized token to list
+                tokens.append(lemma)
+        return tokens        
+    
+    #    for training_file_head in training_head:
+    def calculate_score_all_async(self, training_file_head, testing_dict):
+#      T_TP = T_TN =  T_FN =  T_FP = 0
+      #Listing the score
+        sys.stdout = buffer = StringIO() 
+        score_list = []
+        files_test = []
+        
+        for dirpath, dirs, files in os.walk(dataset_test):
+            files_test.extend(files)
+          
+        
+        test_head = [x[:-len(file_name_df_suffix_csv)] for x in files_test if x.endswith(file_name_df_suffix_csv)]
+          
+        print("".join(['*' for m in range(asterisk_len)]))
+        print("Training_topic: {}".format(training_file_head))
+        print("".join(['*' for m in range(asterisk_len)]))
+        
+        test_concept_prob, test_concept_names = (None, [])
+            
+        with open(dataset_dir + '/' + training_file_head + concept_prob_suffix_json, "r") as f:
+            test_concept_prob = json.load(f)
+            
+        
+        with open(dataset_dir + '/' + training_file_head + concept_name_suffix_txt, "r") as f:
+            for line in f:
+                test_concept_names.append(line.strip('\n'))
+        
+        with open(dataset_dir + '/' + training_file_head + CLDA_suffix_pickle, "rb") as f:
+            test_CLDA = pickle.load(f)
+          
+          
+        doc_topic = test_CLDA.theta_set[0].sum(axis = 0)/test_CLDA.theta_set[0].shape[0]
+        topic_concept = test_CLDA.show_and_construct_normalized_concept_topic_ranking()
+        word_under_concept = test_CLDA.show_words_prob_under_concept(test_concept_prob)
+    #        test_file_data = pd.read_csv(data_dir + '/' + test_name + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
+    #                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
+       
+        training_head_number = ''.join(filter(str.isdigit, training_file_head))
+       
+    #      vector_analysis = generate_vector_for_analysis()
+        for testing_file_head in test_head:
+            print("".join(['*' for m in range(asterisk_len)]))
+            print("Test topic: {}".format(testing_file_head))
+            print("".join(['*' for m in range(asterisk_len)]))
+#            test_file_data = pd.read_csv(dataset_test + '/' + testing_file_head + file_name_df_suffix_csv,
+#                                          encoding='utf-8', sep=',', error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
+            test_file_data = testing_dict[testing_file_head]
+            testing_head_number = ''.join(filter(str.isdigit, testing_file_head))
+            for i in range(len(test_file_data)):
+                score = 0
+                test_files_feature_name  = test_file_data.iloc[i]['Text']
+        #          _, test_files_feature_name   = vectorize_for_analysis(vector_analysis, test_file_data.iloc[i])
+                for topic_num, topic_prob in enumerate(doc_topic):
+                    for concept, concept_prob in topic_concept[topic_num]:
+                          for word, word_prob in [(x[0][0], x[1]) for x in word_under_concept.items() if x[0][1] == concept]:
+                              if word in test_files_feature_name:
+#                                  print('topic_num: {}, concept: "{}", word: "{}"'.format(topic_num, concept, word))
+                                  score += topic_prob * concept_prob * word_prob
+            
+                print('Score: {}, File name: "{}"'.format(score, test_file_data.iloc[i]['File']))
+                score_list.append((test_file_data.iloc[i]['File'], training_head_number, testing_head_number, score))
+        print("".join(['*' for m in range(asterisk_len)]))
+        print("".join(['*' for m in range(asterisk_len)]))
+        sys.stdout = sys.__stdout__
+        return (score_list, buffer)
+    
+    def asynchronous_evaluation(self, testing_dict):
+        files_training = []
+        for dirpath, dirs, files in os.walk(dataset_dir):
+                files_training.extend(files)
+        
+        # Walk down the files to search for
+        # files to geenrate model
+        training_head = [x[:-len(file_name_df_suffix_csv)] for x in files_training if x.endswith(file_name_df_suffix_csv)]
+
+
+        
+        # Core use
+        # Asynchronically create the LDA object
+        with Pool(cpu_count()-1) as p:
+            pool_async = p.starmap_async(self.calculate_score_all_async, [[i, testing_dict] for i in training_head])
+            gc.collect()
+            # Return processed result
+            return pool_async.get()
+    
+    def tokenization_test(self, testing_file_head):
+        testing_dict = {}
+        testing_dict[testing_file_head] = pd.read_csv(dataset_test + '/' + testing_file_head + file_name_df_suffix_csv,
+                                          encoding='utf-8', sep=',', error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
+        testing_dict[testing_file_head]['Text'] = testing_dict[testing_file_head]['Text'].apply(lambda x: self.cab_tokenizer(x))
+        file_name = dataset_test + '/' + testing_file_head + tokenized_dataset_suffix
+        testing_dict[testing_file_head].to_csv(file_name,
+                              index=False, encoding='utf-8',
+                              quoting=csv.QUOTE_ALL)
+        return testing_dict
+    
+    def asynchronous_tokenization(self):
+        files_test = []
+        
+        for dirpath, dirs, files in os.walk(dataset_test):
+            files_test.extend(files)
+        
+        
+        
+        test_head = [x[:-len(file_name_df_suffix_csv)] for x in files_test if x.endswith(file_name_df_suffix_csv)]
+        
+        tokenized_result = None
+        with Pool(cpu_count()-1) as p:
+            pool_async = p.starmap_async(self.tokenization_test, [[i] for i in test_head])
+           
+            
+            tokenized_result = pool_async.get()
+        final_dict = {}
+        
+        
+        for i in tokenized_result:
+            final_dict.update(i)
+        gc.collect()    
+        return final_dict
+        
 def main():
     
     CLDA_evaluation_screen()

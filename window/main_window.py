@@ -48,6 +48,9 @@ import concurrent.futures
 import requests
 
 lemmatizer = WordNetLemmatizer()
+
+# Create default values
+# for experiment
 dataset_dir = "../../CLDA_data_training"
 dataset_test = "../../CLDA_data_testing"
 concept_prob_suffix_json = "_c_prob.json"
@@ -57,11 +60,28 @@ feature_name_suffix_txt = "_f_name.txt"
 file_name_df_suffix_csv = "_data.csv"
 CLDA_suffix_pickle = "_CLDA.pkl"
 LDA_suffix_pickle = "_LDA.pkl"
+
 converted_xml_suffix = "_conv.txt"
 converted_folder = "converted_xml_files"
+
+stop_word_folder = "../stopwords"
+stop_word_smart_txt = "smart_stopword.txt"
+
+#Define smart stopwords
+smart_stopwords = []
+with open(stop_word_folder + '/' + stop_word_smart_txt , "r") as f:
+    for line in f:
+    #Remove the \n
+        smart_stopwords.append(line.strip('\n'))
+
 default_K = 10
 default_smooth = 0.0001 
 default_ngram = 1
+default_min_df = 0.02
+default_max_df = 0.98
+default_topic_num = 5
+default_max_iter = 20
+
 delim = ","
 #K = 0
 #with open( "../../CLDA_data_testing" + '/' + "ForTest_c_prob.json", "r") as f:
@@ -82,7 +102,7 @@ core_use = 5
 #######Define stop words here...
 ######################################################
 def define_sw():
-    return set(stopwords.words('english'))# + stop_words)
+    return set(stopwords.words('english') + smart_stopwords)
 def lemmatize(token, tag):
     tag = {
         'N': wordnet.NOUN,
@@ -129,9 +149,9 @@ def cab_tokenizer(document):
 # Create vectorise files
 # Define the function here
 # Generate vector for creating the data
-def generate_vector(ngram_length):
+def generate_vector(ngram_length, min_df, max_df):
     return CountVectorizer(tokenizer=cab_tokenizer, ngram_range=[1,ngram_length],
-                           min_df=0.01, max_df=0.99)
+                           min_df=min_df, max_df=max_df)
 
 # Generate count vectorizer
 def vectorize(tf_vectorizer, df):
@@ -215,7 +235,7 @@ def read_test_files():
 
 
 # Asynchoronic feature vector retrieval
-def create_feature_vector_async(file_string, feature_list, dataset_dir, ngram = default_ngram):
+def create_feature_vector_async(file_string, feature_list, dataset_dir, ngram,  min_df, max_df):
     
     file_string = os.path.splitext(os.path.basename(file_string))[0]
     if any(file_string in substring for substring in feature_list):
@@ -230,7 +250,7 @@ def create_feature_vector_async(file_string, feature_list, dataset_dir, ngram = 
                     error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
         time.sleep(3)
         # Vectorise the document 
-        vect = generate_vector(ngram)
+        vect = generate_vector(ngram, min_df, max_df)
         vectorized_data, feature_names = vectorize(vect, datum)
         
         # Save array as the csv file
@@ -754,6 +774,31 @@ class Application():
         self.ngram_text = tk.Entry(self.values_to_input)
         self.ngram_text.grid(row = 2, column = 1)
         
+        self.min_df_label = tk.Label(self.values_to_input, text = "min doc freq. (float): ")
+        self.min_df_label.grid(row = 3, column = 0)
+        
+        self.min_df_text = tk.Entry(self.values_to_input)
+        self.min_df_text.grid(row = 3, column = 1)
+        
+        self.max_df_label = tk.Label(self.values_to_input, text = "max doc freq. (float): ")
+        self.max_df_label.grid(row = 4, column = 0)
+        
+        self.max_df_text = tk.Entry(self.values_to_input)
+        self.max_df_text.grid(row = 4, column = 1)
+        
+        self.topic_num_label = tk.Label(self.values_to_input, text = "Number of topics (positive integer): ")
+        self.topic_num_label.grid(row = 5, column = 0)
+        
+        self.topic_num_text = tk.Entry(self.values_to_input)
+        self.topic_num_text.grid(row = 5, column = 1)
+        
+        self.max_iter_label = tk.Label(self.values_to_input, text = "Max iteration (positive integer): ")
+        self.max_iter_label.grid(row = 6, column = 0)
+        
+        self.max_iter_text = tk.Entry(self.values_to_input)
+        self.max_iter_text.grid(row = 6, column = 1)
+        
+        
         '''
         #######################################
         ###Training data generation button
@@ -868,11 +913,11 @@ class Application():
         ##########################################
         '''
 #        
-#        self.func_test = tk.Button(self.root, text = 'Function test')
-#        
-#        self.func_test.pack(side = tk.BOTTOM)
-#        self.func_test['command'] = self.test_all
-#        
+        self.func_test = tk.Button(self.root, text = 'Function test')
+        
+        self.func_test.pack(side = tk.BOTTOM)
+        self.func_test['command'] = self.test_all
+        
         
         self.training_button = tk.Button(self.root, text = 'training_data_creation_xml')
         
@@ -943,6 +988,9 @@ class Application():
         ####End the main menu
         #######################################
         '''
+    #######################################################
+    ########## Input part
+    #######################################################
     def retrieve_top_concept(self):
         
         try:
@@ -966,7 +1014,7 @@ class Application():
         
         except ValueError:
             self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError, input topic concept top limit value is invalid.")
+            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input topic concept top limit value is invalid.")
             self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
             return
     
@@ -992,7 +1040,7 @@ class Application():
         
         except ValueError:
             self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError, input ngram value is invalid.")
+            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input ngram value is invalid.")
             self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
             return
         
@@ -1012,23 +1060,156 @@ class Application():
         
         except ValueError:
             self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError, input smooth is invalid.")
+            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input smooth is invalid.")
             self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
             return
-    #Testing the function of all functions
-#    def test_all(self):
-#        top_concept_limit = self.retrieve_top_concept()
-#        if (top_concept_limit == None):
-#            return
-#        
-#        ngram_num = self.retrieve_ngram()
-#        if (ngram_num == None):
-#            return
-#        
-#        smooth_value = self.retrieve_smooth_value()
-#        if (smooth_value == None):
-#            return
-#    
+    
+    def retrieve_max_df(self):
+        try:
+            if(self.max_df_text.get() == ""):
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe default value is used: max doc. freq. = {}".format(default_max_df))
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                return default_max_df
+            else:
+                user_input_val = float(self.max_df_text.get())
+                if (user_input_val > 1.0 or user_input_val < 0.0):
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nPlease input value between 0 < x < 1! (max doc. freq. {})".format(user_input_val))
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    return
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe input max doc. freq. {} is used".format(user_input_val))
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                return user_input_val
+        
+        except ValueError:
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input max doc. freq. is invalid.")
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+    
+    def retrieve_min_df(self):
+        try:
+            if(self.min_df_text.get() == ""):
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe default value is used: min doc. freq. = {}".format(default_min_df))
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                return default_min_df
+            else:
+                user_input_val = float(self.min_df_text.get())
+                if (user_input_val > 1.0 or user_input_val < 0.0):
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nPlease input value between 0 < x < 1! (min doc. freq. {})".format(user_input_val))
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    return
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe input min doc. freq. value {} is used".format(user_input_val))
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                return user_input_val
+        
+        except ValueError:
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input min doc. freq. is invalid.")
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            return
+        
+    def retrieve_topic_num(self):
+        try:
+            if(self.topic_num_text.get() == ""):
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe default value is used: topic num. = {}".format(default_topic_num))
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                return default_topic_num
+            else:
+                user_input_val = int(self.topic_num_text.get())
+                if(user_input_val < 2):
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nInput positive value!".format(user_input_val))
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    return 
+                else:
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe input topic num. value {} is used".format(user_input_val))
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    return user_input_val
+        
+        except ValueError:
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input topic num. is invalid.")
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            return 
+    def retrieve_max_iter(self):
+        try:
+            if(self.max_iter_text.get() == ""):
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe default value is used: max iter. = {}".format(default_max_iter))
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                return default_max_iter
+            else:
+                user_input_val = int(self.max_iter_text.get())
+                if(user_input_val < 1):
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nInput positive value!".format(user_input_val))
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    return 
+                else:
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe input max iter. value {} is used".format(user_input_val))
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    return user_input_val
+        
+        except ValueError:
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input max iter. is invalid.")
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+
+            return
+#    Testing the function of all functions
+    def test_all(self):
+        top_concept_limit = self.retrieve_top_concept()
+        if (top_concept_limit == None):
+            return
+        print(top_concept_limit)
+        ngram_num = self.retrieve_ngram()
+        if (ngram_num == None):
+            return
+        print(ngram_num)
+        smooth_value = self.retrieve_smooth_value()
+        if (smooth_value == None):
+            return
+        print(smooth_value)
+        max_df_value = self.retrieve_max_df()
+        if (max_df_value == None):
+            return
+        print(max_df_value)
+        min_df_value = self.retrieve_min_df()
+        if (min_df_value == None):
+            return
+        print(min_df_value)
+        
+        if(max_df_value <= min_df_value):
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: max_df <= min_df is not accepted")
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            print("Error")
+            return
+        
+        topic_num = self.retrieve_topic_num()
+        if(topic_num == None):
+            return
+            
+        print(topic_num)
+        
+        
+        max_iter = self.retrieve_max_iter()
+        if(max_iter == None):
+            return
+        print(max_iter)
+        
+
+        
+        
+        
     def move_to_CLDA_evaluation(self):
         
         
@@ -1249,6 +1430,12 @@ class Application():
         train_folder_selection = askdirectory()
         #train_folder_selection = "C:/Users/n9648852/Desktop/R8-Dataset/Dataset/R8/Testing"
         
+        if(train_folder_selection == ""):
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nFolder not selected. Abort.")
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            return
+        
         training_folders_tmp = []
         
         for dirpath, dirs, files in os.walk(train_folder_selection):
@@ -1265,6 +1452,22 @@ class Application():
         
         smooth_value = self.retrieve_smooth_value()
         if (smooth_value == None):
+            return
+        
+        max_df_value = self.retrieve_max_df()
+        if (max_df_value == None):
+            return
+        
+        min_df_value = self.retrieve_min_df()
+        if (min_df_value == None):
+            return
+        
+        
+        if(max_df_value <= min_df_value):
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: max_df <= min_df is not accepted")
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            print("Error")
             return
         
         # training_folders_tmp.remove(train_folder_selection)
@@ -1339,7 +1542,9 @@ class Application():
         # this method is applied to create massive amount of 
         # LDA model later on
         with Pool(cpu_count()-1) as p:
-            pool_async = p.starmap_async(create_feature_vector_async, [[i, feature_list, dataset_dir, ngram_num] for i in training_folders_tmp])
+            pool_async = p.starmap_async(create_feature_vector_async, [[i, feature_list, dataset_dir, 
+                                                                        ngram_num,  min_df_value,
+                                                                        max_df_value] for i in training_folders_tmp])
             features = pool_async.get()
         
 #        loop = asyncio.get_event_loop()
@@ -1426,11 +1631,19 @@ class Application():
         
     def asynchronous_CLDA_model_generation(self, dataset_dir, result_num):
         
+        topic_num = self.retrieve_topic_num()
+        if(topic_num == None):
+            return
+            
+        max_iter = self.retrieve_max_iter()
+        if(max_iter == None):
+            return
+        
         def concurrent():
             
             fm = Asynchrous_CLDA()
             
-            results = fm.asynchronous_CLDA_creation(dataset_dir)
+            results = fm.asynchronous_CLDA_creation(dataset_dir, topic_num, max_iter)
             
             return results
         
@@ -1438,7 +1651,7 @@ class Application():
         # Create CLDA object asynchronically.
         
         for i in results:
-            line = i[1]
+            line = i[1].getvalue()
             if line != "":
                 self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
                 self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, line)
@@ -1460,13 +1673,20 @@ class Application():
 
     def asynchronous_LDA_model_generation(self, dataset_dir, result_num):
         
+        topic_num = self.retrieve_topic_num()
+        if(topic_num == None):
+            return
 
+        max_iter = self.retrieve_max_iter()
+        if(max_iter == None):
+            return
+        
         def concurrent():
         #        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
             
             fm = Asynchrous_LDA
             
-            results = fm.asynchronous_LDA_creation(fm, dataset_dir)
+            results = fm.asynchronous_LDA_creation(fm, dataset_dir, topic_num, max_iter)
             
             return results
             
@@ -1475,7 +1695,7 @@ class Application():
         # Create CLDA object asynchronously
         
         for i in results:
-            line = i[1]
+            line = i[1].getvalue()
             if line != "":
                 self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
                 self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, line)
@@ -1504,7 +1724,7 @@ class Asynchrous_CLDA(object):
         self.dataset_dir = None
         
         
-    def create_CLDA_instance(self,i):
+    def create_CLDA_instance(self,i, topic_num, max_iter):
         # turn standard out into string IO...
         # to capture the standard output
         sys.stdout = buffer = StringIO()
@@ -1556,7 +1776,7 @@ class Asynchrous_CLDA(object):
         sys.stdout.flush()
         
         # Create CLDA instance
-        CLDA_instance = CLDA.CLDA(feature_names, concept_names, file_index_name, 5, 20)
+        CLDA_instance = CLDA.CLDA(feature_names, concept_names, file_index_name,topic_num, max_iter)
         
         # Run CLDA
         CLDA_instance.run(feature_matrix, concept_dict)
@@ -1572,7 +1792,7 @@ class Asynchrous_CLDA(object):
         # Return True if the process stops normally
         return (i + CLDA_suffix_pickle, buffer)
     
-    def asynchronous_CLDA_creation(self, dataset_dir):
+    def asynchronous_CLDA_creation(self, dataset_dir, topic_num, max_iter):
            
         self.dataset_dir = dataset_dir    
         files_tmp = []
@@ -1584,7 +1804,7 @@ class Asynchrous_CLDA(object):
         
         # Asynchronically create the CLDA object
         with Pool(cpu_count()-1) as p:
-            pool_async = p.starmap_async(self.create_CLDA_instance, [[i] for i in files_list_for_modelling_CLDA])
+            pool_async = p.starmap_async(self.create_CLDA_instance, [[i, topic_num, max_iter] for i in files_list_for_modelling_CLDA])
             
             # Return processed result
             return pool_async.get()
@@ -1597,7 +1817,7 @@ class Asynchrous_LDA(object):
         self.dataset_dir = None
         
         
-    def create_LDA_instance(self,i, dataset_dir):
+    def create_LDA_instance(self,i, dataset_dir, topic_num, max_iter):
         sys.stdout = buffer = StringIO()  
         files_tmp = []
         
@@ -1636,10 +1856,10 @@ class Asynchrous_LDA(object):
         sys.stdout.flush()
         
         # Create LDA instance
-        LDA_instance = CLDA.LDA(file_index_name, feature_names, 5)
+        LDA_instance = CLDA.LDA(file_index_name, feature_names, topic_num)
         
         # Fit LDA model to dataset
-        LDA_instance.run(feature_matrix, 20)
+        LDA_instance.run(feature_matrix, max_iter)
         
         # Save fitted LDA model
         with open(dataset_dir + '/' + i + LDA_suffix_pickle, "wb") as f:
@@ -1653,7 +1873,7 @@ class Asynchrous_LDA(object):
         sys.stdout = sys.__stdout__
         return (i + LDA_suffix_pickle, buffer)
     
-    def asynchronous_LDA_creation(self, dataset_dir):
+    def asynchronous_LDA_creation(self, dataset_dir, topic_num, max_iter):
            
           
         # Initialize file_tmp list
@@ -1672,7 +1892,7 @@ class Asynchrous_LDA(object):
         # Core use
         # Asynchronically create the LDA object
         with Pool(cpu_count()-1) as p:
-            pool_async = p.starmap_async(self.create_LDA_instance, [[self, i, dataset_dir] for i in files_list_for_modelling_LDA])
+            pool_async = p.starmap_async(self.create_LDA_instance, [[self, i, dataset_dir, topic_num, max_iter] for i in files_list_for_modelling_LDA])
             
             # Return processed result
             return pool_async.get()        
