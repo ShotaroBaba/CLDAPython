@@ -11,7 +11,7 @@ import pickle
 import csv
 import json
 import pandas as pd
-
+from nltk.corpus import wordnet as wn
 import sys
 sys.path.append("..\/models/")
 try:
@@ -27,6 +27,9 @@ score_result_dir = "../../score_result"
 score_result_dataframe_suffix = "_score.csv"
 score_result_txt_suffix = "_score.txt"
 score_result_log_suffix = "_log.txt"
+LDA_score_result_dataframe_suffix = "_LDA_score.csv"
+LDA_score_result_txt_suffix = "_LDA_score.txt"
+LDA_score_result_log_suffix = "_LDA_log.txt"
 stop_word_folder = "../stopwords"
 concept_prob_suffix_json = "_c_prob.json"
 concept_name_suffix_txt = "_c_name.txt"
@@ -343,6 +346,10 @@ class CLDA_evaluation_screen(object):
         ####CLDA button
         ##########################################################
         '''
+        self.LDA_evaluation_button = tk.Button(self.bottom_button_frame, text = "Eval LDA")
+        self.LDA_evaluation_button.pack()
+        self.LDA_evaluation_button['command'] = self.asynchronous_LDA_evaluation
+        
         self.CLDA_evaluation_button = tk.Button(self.bottom_button_frame, text = "Eval CLDA")
         self.CLDA_evaluation_button.pack()
         self.CLDA_evaluation_button['command'] = self.asynchronous_CLDA_evaluation
@@ -436,10 +443,109 @@ class CLDA_evaluation_screen(object):
             self.result_screen_text.configure(state='normal')
             self.result_screen_text.insert(tk.END, buffer_str.getvalue())
             self.result_screen_text.configure(state='disabled')
-#        print(score_result_total)
+#        print(score_result_total)  
+        
+        self._generate_score(score_result_total)
+#        score_data_frame = pd.DataFrame(score_result_total, columns = ['File_name', 'Training_topic', 'Testing_topic', 'Score'])
+#        storing_result_name_data = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + feature_matrix_suffix_csv
+#        
+#        storing_result_name_text = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_txt_suffix
+#        score_data_frame_TP_FN = score_data_frame[score_data_frame['Training_topic'] == score_data_frame['Testing_topic']]
+#        log_txt_name = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_log_suffix
+#        
+#        
+#        Total_TP_count  = (score_data_frame_TP_FN['Score'] > default_score_threshold).sum()
+#        Total_FN_count = (score_data_frame_TP_FN['Score'] < default_score_threshold).sum()
+#        
+#        score_data_frame_TN_FP = score_data_frame[score_data_frame['Training_topic'] != score_data_frame['Testing_topic']]
+#        
+#        Total_TN_count = (score_data_frame_TN_FP['Score'] < default_score_threshold).sum()
+#        Total_FP_count = (score_data_frame_TN_FP['Score'] > default_score_threshold).sum()
+#        
+#        precision = Total_TP_count / (Total_TP_count + Total_FP_count)
+#        recall = Total_TP_count / (Total_TP_count + Total_FN_count)
+#        
+#        score_data_frame.to_csv(storing_result_name_data,
+#                              index=False, encoding='utf-8',
+#                              quoting=csv.QUOTE_ALL)
+#        
+#        with open(storing_result_name_text, 'w') as f:
+#            result_str = "Precision: {}, Recall: {}\n".format(precision, recall) + \
+#            "Trup Positive: {}, False Positive: {}\n".format(Total_TP_count, Total_FP_count) + \
+#            "Trup Negative: {}, False Negative: {}\n".format(Total_TN_count, Total_FN_count)
+#            self.result_screen_text.configure(state='normal')
+#            self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]) + '\n')
+#            self.result_screen_text.insert(tk.END, result_str)
+#            self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]))
+#            self.result_screen_text.configure(state='disabled')
+#            f.write(result_str)
+        
+#        with open(log_txt_name, 'w') as f:
+#            result_screen = self.result_screen_text.get("1.0", tk.END)
+#            f.write(result_screen)
+    
+    def asynchronous_LDA_evaluation(self):
+        # Initialize file_tmp list
+        self.result_screen_text.delete("1.0", tk.END)
+        files_training = []
+        for dirpath, dirs, files in os.walk(dataset_dir):
+                files_training.extend(files)
+
+#        score_list = []
+        files_test = []
+        
+        for dirpath, dirs, files in os.walk(dataset_test):
+            files_test.extend(files)
+        
+
+        #Tokenize all data in test dataset
+        def concurrent1():
+        #        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
+            
+            fm = Asynchronous_CLDA_evaluation_class()
+            
+            results = fm.asynchronous_tokenization()
+            
+            return results
+        
+        testing_dict = concurrent1()
+#        for testing_file_head in test_head:
+#            testing_dict[testing_file_head] = pd.read_csv(dataset_test + '/' + testing_file_head + file_name_df_suffix_csv,
+#                                          encoding='utf-8', sep=',', error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
+#            testing_dict[testing_file_head]['Text'] = testing_dict[testing_file_head]['Text'].apply(lambda x: cab_tokenizer(x))
+        
+        def concurrent2():
+        #        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
+            
+            fm = Asynchronous_CLDA_evaluation_class()
+            
+            results = fm.asynchronous_evaluation_LDA(testing_dict)
+            
+            return results
+        
+        score_result = concurrent2()
+            # Return processed result
+        score_result_total = []
+        for score_i, buffer_str in score_result:
+            score_result_total.extend(score_i)
+            self.result_screen_text.configure(state='normal')
+            self.result_screen_text.insert(tk.END, buffer_str.getvalue())
+            self.result_screen_text.configure(state='disabled')
+#        print(score_result_total)  
+        
+        self._generate_score(score_result_total, 
+                             0.4,
+                             LDA_score_result_dataframe_suffix,
+                             LDA_score_result_txt_suffix, 
+                             LDA_score_result_log_suffix)
+        
+    
+    def _generate_score(self, score_result_total, 
+                        threshold = default_score_threshold, 
+                        feature_matrix_suffix_csv = feature_matrix_suffix_csv, 
+                        score_result_txt_suffix = score_result_txt_suffix, 
+                        score_result_log_suffix = score_result_log_suffix):
         ts = time.time()   
-        
-        
         score_data_frame = pd.DataFrame(score_result_total, columns = ['File_name', 'Training_topic', 'Testing_topic', 'Score'])
         storing_result_name_data = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + feature_matrix_suffix_csv
         
@@ -448,13 +554,13 @@ class CLDA_evaluation_screen(object):
         log_txt_name = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_log_suffix
         
         
-        Total_TP_count  = (score_data_frame_TP_FN['Score'] > default_score_threshold).sum()
-        Total_FN_count = (score_data_frame_TP_FN['Score'] < default_score_threshold).sum()
+        Total_TP_count  = (score_data_frame_TP_FN['Score'] > threshold).sum()
+        Total_FN_count = (score_data_frame_TP_FN['Score'] < threshold).sum()
         
         score_data_frame_TN_FP = score_data_frame[score_data_frame['Training_topic'] != score_data_frame['Testing_topic']]
         
-        Total_TN_count = (score_data_frame_TN_FP['Score'] < default_score_threshold).sum()
-        Total_FP_count = (score_data_frame_TN_FP['Score'] > default_score_threshold).sum()
+        Total_TN_count = (score_data_frame_TN_FP['Score'] < threshold).sum()
+        Total_FP_count = (score_data_frame_TN_FP['Score'] > threshold).sum()
         
         precision = Total_TP_count / (Total_TP_count + Total_FP_count)
         recall = Total_TP_count / (Total_TP_count + Total_FN_count)
@@ -477,7 +583,8 @@ class CLDA_evaluation_screen(object):
         with open(log_txt_name, 'w') as f:
             result_screen = self.result_screen_text.get("1.0", tk.END)
             f.write(result_screen)
-            
+        
+    
             
 class Asynchronous_CLDA_evaluation_class():
     
@@ -557,15 +664,12 @@ class Asynchronous_CLDA_evaluation_class():
         print("Training_topic: {}".format(training_file_head))
         print("".join(['*' for m in range(asterisk_len)]))
         
-        test_concept_prob, test_concept_names = (None, [])
+        test_concept_prob = None
             
         with open(dataset_dir + '/' + training_file_head + concept_prob_suffix_json, "r") as f:
             test_concept_prob = json.load(f)
             
         
-        with open(dataset_dir + '/' + training_file_head + concept_name_suffix_txt, "r") as f:
-            for line in f:
-                test_concept_names.append(line.strip('\n'))
         
         with open(dataset_dir + '/' + training_file_head + CLDA_suffix_pickle, "rb") as f:
             test_CLDA = pickle.load(f)
@@ -573,7 +677,7 @@ class Asynchronous_CLDA_evaluation_class():
           
         doc_topic = test_CLDA.theta_set[0].sum(axis = 0)/test_CLDA.theta_set[0].shape[0]
         topic_concept = test_CLDA.show_and_construct_normalized_concept_topic_ranking()
-        word_under_concept = test_CLDA.show_words_prob_under_concept(test_concept_prob)
+        word_under_concept = test_CLDA.construct_word_concept_prob_under_concept(test_concept_prob)
     #        test_file_data = pd.read_csv(data_dir + '/' + test_name + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
     #                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
        
@@ -594,10 +698,10 @@ class Asynchronous_CLDA_evaluation_class():
         #          _, test_files_feature_name   = vectorize_for_analysis(vector_analysis, test_file_data.iloc[i])
                 for topic_num, topic_prob in enumerate(doc_topic):
                     for concept, concept_prob in topic_concept[topic_num]:
-                          for word, word_prob in [(x[0][0], x[1]) for x in word_under_concept.items() if x[0][1] == concept]:
-                              if word in test_files_feature_name:
+                        for word, word_prob in [(x[0], x[2]) for x in word_under_concept if x[1] == concept]:
+                            if word in test_files_feature_name:
 #                                  print('topic_num: {}, concept: "{}", word: "{}"'.format(topic_num, concept, word))
-                                  score += topic_prob * concept_prob * word_prob
+                                score += topic_prob * concept_prob * word_prob
             
                 print('Score: {}, File name: "{}"'.format(score, test_file_data.iloc[i]['File']))
                 score_list.append((test_file_data.iloc[i]['File'], training_head_number, testing_head_number, score))
@@ -625,7 +729,77 @@ class Asynchronous_CLDA_evaluation_class():
             # Return processed result
             return pool_async.get()
     
+    def asynchronous_evaluation_LDA(self, testing_dict):
+        files_training = []
+        for dirpath, dirs, files in os.walk(dataset_dir):
+                files_training.extend(files)
+        
+        # Walk down the files to search for
+        # files to geenrate model
+        training_head = [x[:-len(file_name_df_suffix_csv)] for x in files_training if x.endswith(file_name_df_suffix_csv)]
+
+
+        
+        # Core use
+        # Asynchronically create the LDA object
+        with Pool(cpu_count()-1) as p:
+            pool_async = p.starmap_async(self.calculate_score_all_async_LDA, [[i, testing_dict] for i in training_head])
+            gc.collect()
+            # Return processed result
+            return pool_async.get()
+        
+    
+    def calculate_score_all_async_LDA(self, training_file_head, testing_dict):
+        sys.stdout = buffer = StringIO() 
+        score_list = []
+        files_test = []
+        for dirpath, dirs, files in os.walk(dataset_test):
+            files_test.extend(files)
+        test_head = [x[:-len(file_name_df_suffix_csv)] for x in files_test if x.endswith(file_name_df_suffix_csv)]
+        
+        print("".join(['*' for m in range(asterisk_len)]))
+        print("Training_topic: {}".format(training_file_head))
+        print("".join(['*' for m in range(asterisk_len)]))
+            
+        
+        with open(dataset_dir + '/' + training_file_head + LDA_suffix_pickle, "rb") as f:
+            test_LDA = pickle.load(f)
+          
+        doc_topic = test_LDA.doc_prob_set[0].sum(axis = 0)/test_LDA.doc_prob_set[0].shape[0]
+        # Extract rank  = 10
+        word_topic_prob = test_LDA.generate_word_prob()
+        
+        training_head_number = ''.join(filter(str.isdigit, training_file_head))
+        for testing_file_head in test_head:
+            test_file_data = pd.read_csv(dataset_test + '/' + testing_file_head + file_name_df_suffix_csv,
+                                         encoding='utf-8', sep=',', error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
+            test_file_data = testing_dict[testing_file_head]
+            testing_head_number = ''.join(filter(str.isdigit, testing_file_head))
+            print("".join(['*' for m in range(asterisk_len)]))
+            print("Test topic: {}".format(testing_file_head))
+            print("".join(['*' for m in range(asterisk_len)]))
+
+            for i in range(len(test_file_data)):
+                score = 0
+                test_files_feature_name  = test_file_data.iloc[i]['Text']
+    #          _, test_files_feature_name   = vectorize_for_analysis(vector_analysis, test_file_data.iloc[i])
+                for topic_num, topic_prob in enumerate(doc_topic):
+                    for word, word_prob in [(x[1], x[2]) for x in word_topic_prob if x[0] == topic_num]:
+                        if word in test_files_feature_name:
+                            score += topic_prob * word_prob
+                         
+                print('Score: {}, File name: "{}"'.format(score, test_file_data.iloc[i]['File']))
+                score_list.append((test_file_data.iloc[i]['File'], training_head_number, testing_head_number, score)) 
+        print("".join(['*' for m in range(asterisk_len)]))
+        print("".join(['*' for m in range(asterisk_len)]))    
+        sys.stdout = sys.__stdout__
+        
+        return (score_list, buffer)
+    
+    
     def tokenization_test(self, testing_file_head):
+        wn.ensure_loaded()
+        
         testing_dict = {}
         testing_dict[testing_file_head] = pd.read_csv(dataset_test + '/' + testing_file_head + file_name_df_suffix_csv,
                                           encoding='utf-8', sep=',', error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)

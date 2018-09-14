@@ -78,7 +78,7 @@ lemmatizer = WordNetLemmatizer()
 def define_sw():
     
     # Use default english stopword     
-    return set(stopwords.words('english'))
+    return set(stopwords.words('english') + smart_stopwords)
 
 
 # Defining the lemmatizer
@@ -308,7 +308,12 @@ def main():
     
     vectorised_data= vectorised_data.toarray()
     t.run(vectorised_data, p_e_c)
-    concept_word_list = t.show_word_concept_prob_under_concept(p_e_c)
+    # This list is unused but used for testing purpose...
+    concept_word_list = t.show_word_concept_prob(p_e_c)
+    
+#    for i in concept_word_list:
+#        print(i)
+# The below is done for testing purpose
 #    [x for x in t.document_topic_concept_word.values() if (x[3]) == (t.feature_names.index('humiliate'))]
     
 #    t.document_topic_concept_word
@@ -489,7 +494,7 @@ def main():
 ##    ##########################################################
 ###    ##########################################################
 ###    ##########################################################
-#    data_dir = "../../CLDA_data_training"
+#    data_dir = "../../CLDA_data_testing"
 #    
 #    #The topic name (folder name containing the names)
 #    topic_name = "Test104"
@@ -529,8 +534,49 @@ def main():
 ##    test_LDA.show_normalized_concept_topic_ranking()
 ##    test_LDA.show_word_topic_ranking(20)
 #    
-#    test_LDA.show_word_prob_under_concept_topic(4,'linux based os', test_concept_prob)
-
+#    #      T_TP = T_TN =  T_FN =  T_FP = 0
+#      #Listing the score\
+#    files_training = []
+#    files_test = []
+#    for dirpath, dirs, files in os.walk(data_dir):
+#            files_training.extend(files)
+#    
+#    for dirpath, dirs, files in os.walk(dataset_test):
+#            files_test.extend(files)
+#    score_list = []
+#    training_head = [x[:-len(file_name_df_suffix_csv)] for x in files_training if x.endswith(file_name_df_suffix_csv)]
+#    test_head = [x[:-len(file_name_df_suffix_csv)] for x in files_test if x.endswith(file_name_df_suffix_csv)]
+#      
+#    for training_file_head in training_head:
+#        print(training_file_head)
+#            
+#        
+#        with open(data_dir + '/' + training_file_head + LDA_suffix_pickle, "rb") as f:
+#            test_LDA = pickle.load(f)
+#          
+#        doc_topic = test_LDA.doc_prob_set[0].sum(axis = 0)/test_LDA.doc_prob_set[0].shape[0] 
+#        word_topic_prob = test_LDA.generate_word_prob()
+#        for testing_file_head in test_head:
+#            print(testing_file_head)
+#            test_file_data = pd.read_csv(dataset_test + '/' + testing_file_head + file_name_df_suffix_csv,
+#                                          encoding='utf-8', sep=',', error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
+#            
+#            testing_head_number = ''.join(filter(str.isdigit, testing_file_head))
+#            for i in range(len(test_file_data)):
+#                score = 0
+#                test_files_feature_name  = cab_tokenizer(test_file_data.iloc[i]['Text'])
+#        #          _, test_files_feature_name   = vectorize_for_analysis(vector_analysis, test_file_data.iloc[i])
+#                for topic_num, topic_prob in enumerate(doc_topic):
+#                      for word, word_prob in [(x[1], x[2]) for x in word_topic_prob if x[0] == topic_num]:
+#                          if word in test_files_feature_name:
+#                             score += topic_prob * word_prob
+#        
+#                print('Testing_topic: {}, Score: {}, File name: "{}"'.format(testing_head_number, score, test_file_data.iloc[i]['File']))
+#        #        test_file_data = pd.read_csv(data_dir + '/' + test_name + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
+#        #                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL) 
+#    
+#    
+#    doc_topic = test_LDA.doc_prob_set[0].sum(axis = 0)/test_LDA.doc_prob_set[0].shape[0]
     #########################################################
     #####This region is for the test
     #########################################################
@@ -872,8 +918,23 @@ class CLDA(object):
                 print(out_str)  
     
     # Show the word under concept(s)
-    def show_word_concept_prob_under_concept(self, word_under_concept_probability):
+    def construct_word_concept_prob_under_concept(self, word_under_concept_probability):
         
+        concept_word_list = []
+        concept_word = sorted(set([(self.feature_names[x[3]], self.concept_names[x[2]], 
+          word_under_concept_probability[self.feature_names[x[3]]][ self.concept_names[x[2]]]) if 
+            word_under_concept_probability[self.feature_names[x[3]]] != {} else 
+            (self.feature_names[x[3]], self.concept_names[x[2]], 1.0) for x 
+          in list(set(self.document_topic_concept_word.values()))]), key = (lambda x: x[2]), reverse = True)
+        
+        for word, concept, probability in concept_word:
+            concept_word_list.append((word, concept, probability)) 
+        
+
+        return concept_word_list
+    
+    # Done for reduce the object size...
+    def show_word_concept_prob(self, word_under_concept_probability):
         concept_word_list = []
         concept_word = sorted(set([(self.feature_names[x[3]], self.concept_names[x[2]], 
           word_under_concept_probability[self.feature_names[x[3]]][ self.concept_names[x[2]]]) if 
@@ -893,8 +954,8 @@ class CLDA(object):
                 print('\tWord "{}", Probability: {}'.format(word, probability))
             print("".join(['*' for x in range(20)]))
         
-        return concept_word_list
-                
+        return concept_word_list    
+            
 # Baseline method
 class LDA(object):
 
@@ -1057,7 +1118,18 @@ class LDA(object):
         
         self.doc_ranking = [[[topic, ranking, self.file_list[doc_idx], self.doc_prob_set[0].T[topic][doc_idx]] for ranking, doc_idx in enumerate(docs_idx)]
                     for topic, docs_idx in enumerate(temp2)]
+    
+    def generate_word_prob(self, rank = 10):
+        word_topic_list = []
         
+#        rank = min(self.phi_set[0].shape[1], rank)
+        for x in self.word_ranking:
+            rank = min(len(x), rank)
+            rank_for_normalization = sum(list(zip(*x))[3][:rank])
+            word_topic_list.extend([(j[0], j[2], j[3]/rank_for_normalization) for j in x[:rank]])
+            
+#            sum(list(zip(*word_topic_list))[2])
+        return word_topic_list
         
     # Show the document ranking over topic
     def show_doc_topic_ranking(self, rank=10):
@@ -1082,10 +1154,15 @@ class LDA(object):
             for j in range(rank):
                 print('Rank: {}, Word: "{}", Probability: {}'.format(self.word_ranking[i][j][1], self.word_ranking[i][j][2], self.word_ranking[i][j][3]))
             
-        
+#    def construct_word_list_with_ranking(self, rank = 10):
+#        for i in range(self.nzw.shape[0]):
+#            
+#            rank = min(self.phi_set[0].shape[1], rank)
+#            for j in range(rank):
+#                
             
 
 ##
-if __name__ == "__main__":
+if (__name__ == "__main__"):
 #    pass
     main()
