@@ -539,15 +539,16 @@ class CLDA_evaluation_screen(object):
                              LDA_score_result_txt_suffix, 
                              LDA_score_result_log_suffix)
         
-    
+    # Calculate the score from the
+    # obtained result
     def _generate_score(self, score_result_total, 
                         threshold = default_score_threshold, 
-                        feature_matrix_suffix_csv = feature_matrix_suffix_csv, 
+                        score_result_dataframe_suffix = score_result_dataframe_suffix, 
                         score_result_txt_suffix = score_result_txt_suffix, 
                         score_result_log_suffix = score_result_log_suffix):
         ts = time.time()   
         score_data_frame = pd.DataFrame(score_result_total, columns = ['File_name', 'Training_topic', 'Testing_topic', 'Score'])
-        storing_result_name_data = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + feature_matrix_suffix_csv
+        storing_result_name_data = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_dataframe_suffix
         
         storing_result_name_text = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_txt_suffix
         score_data_frame_TP_FN = score_data_frame[score_data_frame['Training_topic'] == score_data_frame['Testing_topic']]
@@ -569,10 +570,30 @@ class CLDA_evaluation_screen(object):
                               index=False, encoding='utf-8',
                               quoting=csv.QUOTE_ALL)
         
+        
+        local_result_str = ""
+        for i in score_data_frame.Training_topic.unique():
+            score_data_frame_TP_FN_local = score_data_frame[score_data_frame['Training_topic'] == score_data_frame['Testing_topic']]
+            score_data_frame_TP_FN_local = score_data_frame_TP_FN_local[score_data_frame_TP_FN_local['Training_topic'] == i]
+            score_data_frame_TN_FP_local = score_data_frame[score_data_frame['Training_topic'] != score_data_frame['Testing_topic']]
+            score_data_frame_TN_FP_local = score_data_frame_TN_FP_local[score_data_frame_TN_FP_local['Training_topic'] == i]
+        
+            local_TP_count = (score_data_frame_TP_FN_local['Score'] > threshold).sum()
+            local_FN_count = (score_data_frame_TP_FN_local['Score'] < threshold).sum()
+            
+            local_TN_count = (score_data_frame_TN_FP_local['Score'] < threshold).sum()
+            local_FP_count = (score_data_frame_TN_FP_local['Score'] > threshold).sum()
+            
+            local_precision = local_TP_count / (local_TP_count + local_FP_count)
+            local_recall = local_TP_count / (local_TP_count + local_FN_count)
+            local_result_str += "Topic {}: Precision: {}, Recall: {}\n".format(i, local_precision, local_recall) + \
+            "Trup Positive: {}, False Positive: {}\n".format(local_TP_count, local_FP_count) + \
+            "Trup Negative: {}, False Negative: {}\n\n".format(local_TN_count, local_FN_count)
+            
         with open(storing_result_name_text, 'w') as f:
-            result_str = "Precision: {}, Recall: {}\n".format(precision, recall) + \
+            result_str = "All: Precision: {}, Recall: {}\n".format(precision, recall) + \
             "Trup Positive: {}, False Positive: {}\n".format(Total_TP_count, Total_FP_count) + \
-            "Trup Negative: {}, False Negative: {}\n".format(Total_TN_count, Total_FN_count)
+            "Trup Negative: {}, False Negative: {}\n\n".format(Total_TN_count, Total_FN_count) + local_result_str
             self.result_screen_text.configure(state='normal')
             self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]) + '\n')
             self.result_screen_text.insert(tk.END, result_str)

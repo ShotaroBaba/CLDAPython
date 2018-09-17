@@ -8,7 +8,8 @@ Created on Fri Aug 24 21:45:47 2018
 
 # Import all necessary packages.import sys
 import sys
-sys.path.append("..\/models/")
+
+sys.path.append("../models/")
 try:
     from StringIO import StringIO
 except ImportError:
