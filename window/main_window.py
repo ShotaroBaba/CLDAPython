@@ -624,7 +624,7 @@ class Application():
         
         '''
         #######################################
-        ####Show the list of pre-existed CLDA model
+        ####Show the list of pre-existed LDA model
         #######################################
         '''
         self.LDA_generation_list_frame = tk.Frame(self.main_listbox_and_result)
@@ -696,29 +696,29 @@ class Application():
         #######################################
         '''
         
-        self.word_vector_generation_list_frame_test = tk.Frame(self.main_listbox_and_result_test)
-        self.word_vector_generation_list_frame_test.pack(side = tk.LEFT, anchor = tk.N)
-        
-        self.drop_down_list_word_vector_label_test = tk.Label(self.word_vector_generation_list_frame_test,
-                                                         text = "Word Vector\nCreated List (Test)")
-        self.drop_down_list_word_vector_label_test.pack()
-        
-        self.drop_down_list_word_vector_frame_test = tk.Frame(self.word_vector_generation_list_frame_test)
-        self.drop_down_list_word_vector_frame_test.pack()
-        
-        self.drop_down_list_word_vector_list_test = tk.Listbox(self.drop_down_list_word_vector_frame_test,
-                                                          exportselection = 0)
-        
-        self.drop_down_list_word_vector_list_test.pack(side = tk.LEFT, fill = 'y')
-        
-        self.drop_down_list_word_vector_bar_test = tk.Scrollbar(self.drop_down_list_word_vector_frame_test, orient = "vertical")
-        self.drop_down_list_word_vector_bar_test.pack(side = tk.RIGHT, fill = 'y')
-        
-        self.drop_down_list_word_vector_list_test['yscrollcommand'] = \
-        self.drop_down_list_word_vector_bar_test.set
-        
-        self.drop_down_list_word_vector_bar_test['command'] = \
-        self.drop_down_list_word_vector_list_test.yview
+#        self.word_vector_generation_list_frame_test = tk.Frame(self.main_listbox_and_result_test)
+#        self.word_vector_generation_list_frame_test.pack(side = tk.LEFT, anchor = tk.N)
+#        
+#        self.drop_down_list_word_vector_label_test = tk.Label(self.word_vector_generation_list_frame_test,
+#                                                         text = "Word Vector\nCreated List (Test)")
+#        self.drop_down_list_word_vector_label_test.pack()
+#        
+#        self.drop_down_list_word_vector_frame_test = tk.Frame(self.word_vector_generation_list_frame_test)
+#        self.drop_down_list_word_vector_frame_test.pack()
+#        
+#        self.drop_down_list_word_vector_list_test = tk.Listbox(self.drop_down_list_word_vector_frame_test,
+#                                                          exportselection = 0)
+#        
+#        self.drop_down_list_word_vector_list_test.pack(side = tk.LEFT, fill = 'y')
+#        
+#        self.drop_down_list_word_vector_bar_test = tk.Scrollbar(self.drop_down_list_word_vector_frame_test, orient = "vertical")
+#        self.drop_down_list_word_vector_bar_test.pack(side = tk.RIGHT, fill = 'y')
+#        
+#        self.drop_down_list_word_vector_list_test['yscrollcommand'] = \
+#        self.drop_down_list_word_vector_bar_test.set
+#        
+#        self.drop_down_list_word_vector_bar_test['command'] = \
+#        self.drop_down_list_word_vector_list_test.yview
     
         
         '''
@@ -726,30 +726,30 @@ class Application():
         ####Concpet-word vector extraction
         #######################################
         '''
-        
-        self.concept_prob_generation_list_frame_test = tk.Frame(self.main_listbox_and_result_test)
-        self.concept_prob_generation_list_frame_test.pack(side = tk.LEFT, anchor = tk.N)
-        
-        self.drop_down_concept_prob_vector_label_test = tk.Label(self.concept_prob_generation_list_frame_test,
-                                                         text = "Concept Prob\nCreated List (Test)")
-        self.drop_down_concept_prob_vector_label_test.pack()
-        
-        self.drop_down_concept_prob_vector_frame_test = tk.Frame(self.concept_prob_generation_list_frame_test)
-        self.drop_down_concept_prob_vector_frame_test.pack()
-        
-        self.drop_down_concept_prob_vector_list_test = tk.Listbox(self.drop_down_concept_prob_vector_frame_test,
-                                                          exportselection = 0)
-        
-        self.drop_down_concept_prob_vector_list_test.pack(side = tk.LEFT, fill = 'y')
-        
-        self.drop_down_concept_prob_vector_bar_test = tk.Scrollbar(self.drop_down_concept_prob_vector_frame_test, orient = "vertical")
-        self.drop_down_concept_prob_vector_bar_test.pack(side = tk.RIGHT, fill = 'y')
-        
-        self.drop_down_concept_prob_vector_list_test['yscrollcommand'] = \
-        self.drop_down_concept_prob_vector_bar_test.set
-        
-        self.drop_down_concept_prob_vector_bar_test['command'] = \
-        self.drop_down_concept_prob_vector_list_test.yview
+#        
+#        self.concept_prob_generation_list_frame_test = tk.Frame(self.main_listbox_and_result_test)
+#        self.concept_prob_generation_list_frame_test.pack(side = tk.LEFT, anchor = tk.N)
+#        
+#        self.drop_down_concept_prob_vector_label_test = tk.Label(self.concept_prob_generation_list_frame_test,
+#                                                         text = "Concept Prob\nCreated List (Test)")
+#        self.drop_down_concept_prob_vector_label_test.pack()
+#        
+#        self.drop_down_concept_prob_vector_frame_test = tk.Frame(self.concept_prob_generation_list_frame_test)
+#        self.drop_down_concept_prob_vector_frame_test.pack()
+#        
+#        self.drop_down_concept_prob_vector_list_test = tk.Listbox(self.drop_down_concept_prob_vector_frame_test,
+#                                                          exportselection = 0)
+#        
+#        self.drop_down_concept_prob_vector_list_test.pack(side = tk.LEFT, fill = 'y')
+#        
+#        self.drop_down_concept_prob_vector_bar_test = tk.Scrollbar(self.drop_down_concept_prob_vector_frame_test, orient = "vertical")
+#        self.drop_down_concept_prob_vector_bar_test.pack(side = tk.RIGHT, fill = 'y')
+#        
+#        self.drop_down_concept_prob_vector_list_test['yscrollcommand'] = \
+#        self.drop_down_concept_prob_vector_bar_test.set
+#        
+#        self.drop_down_concept_prob_vector_bar_test['command'] = \
+#        self.drop_down_concept_prob_vector_list_test.yview
         
         
         '''
@@ -860,58 +860,58 @@ class Application():
         ####Show the list of pre-existed CLDA model
         #######################################
         '''
-        self.CLDA_generation_list_frame_test = tk.Frame(self.main_listbox_and_result_test)
-        self.CLDA_generation_list_frame_test.pack(side = tk.LEFT, anchor = tk.N)
-        
-        self.drop_down_CLDA_label_test = tk.Label(self.CLDA_generation_list_frame_test,
-                                                         text = "CLDA\nCreated List (Test)")
-        self.drop_down_CLDA_label_test.pack()
-        
-        self.drop_down_CLDA_frame_test = tk.Frame(self.CLDA_generation_list_frame_test)
-        self.drop_down_CLDA_frame_test.pack()
-        
-        self.drop_down_CLDA_list_test = tk.Listbox(self.drop_down_CLDA_frame_test,
-                                                          exportselection = 0)
-        
-        self.drop_down_CLDA_list_test.pack(side = tk.LEFT, fill = 'y')
-        
-        self.drop_down_CLDA_bar_test = tk.Scrollbar(self.drop_down_CLDA_frame_test, orient = "vertical")
-        self.drop_down_CLDA_bar_test.pack(side = tk.RIGHT, fill = 'y')
-        
-        self.drop_down_CLDA_list_test['yscrollcommand'] = \
-        self.drop_down_CLDA_bar_test.set
-        
-        self.drop_down_CLDA_bar_test['command'] = \
-        self.drop_down_CLDA_list_test.yview
-        
+#        self.CLDA_generation_list_frame_test = tk.Frame(self.main_listbox_and_result_test)
+#        self.CLDA_generation_list_frame_test.pack(side = tk.LEFT, anchor = tk.N)
+#        
+#        self.drop_down_CLDA_label_test = tk.Label(self.CLDA_generation_list_frame_test,
+#                                                         text = "CLDA\nCreated List (Test)")
+#        self.drop_down_CLDA_label_test.pack()
+#        
+#        self.drop_down_CLDA_frame_test = tk.Frame(self.CLDA_generation_list_frame_test)
+#        self.drop_down_CLDA_frame_test.pack()
+#        
+#        self.drop_down_CLDA_list_test = tk.Listbox(self.drop_down_CLDA_frame_test,
+#                                                          exportselection = 0)
+#        
+#        self.drop_down_CLDA_list_test.pack(side = tk.LEFT, fill = 'y')
+#        
+#        self.drop_down_CLDA_bar_test = tk.Scrollbar(self.drop_down_CLDA_frame_test, orient = "vertical")
+#        self.drop_down_CLDA_bar_test.pack(side = tk.RIGHT, fill = 'y')
+#        
+#        self.drop_down_CLDA_list_test['yscrollcommand'] = \
+#        self.drop_down_CLDA_bar_test.set
+#        
+#        self.drop_down_CLDA_bar_test['command'] = \
+#        self.drop_down_CLDA_list_test.yview
+#        
         '''
         #########################################
         ####Show the list of pre-existed LDA model
         #########################################
         '''
-        self.LDA_generation_list_frame_test = tk.Frame(self.main_listbox_and_result_test)
-        self.LDA_generation_list_frame_test.pack(side = tk.LEFT, anchor = tk.N)
-        
-        self.drop_down_LDA_label_test = tk.Label(self.LDA_generation_list_frame_test,
-                                                         text = "LDA\nCreated List (Test)")
-        self.drop_down_LDA_label_test.pack()
-        
-        self.drop_down_LDA_frame_test = tk.Frame(self.LDA_generation_list_frame_test)
-        self.drop_down_LDA_frame_test.pack()
-        
-        self.drop_down_LDA_list_test = tk.Listbox(self.drop_down_LDA_frame_test,
-                                                          exportselection = 0)
-        
-        self.drop_down_LDA_list_test.pack(side = tk.LEFT, fill = 'y')
-        
-        self.drop_down_LDA_bar_test = tk.Scrollbar(self.drop_down_LDA_frame_test, orient = "vertical")
-        self.drop_down_LDA_bar_test.pack(side = tk.RIGHT, fill = 'y')
-        
-        self.drop_down_LDA_list_test['yscrollcommand'] = \
-        self.drop_down_LDA_bar_test.set
-        
-        self.drop_down_LDA_bar_test['command'] = \
-        self.drop_down_LDA_list_test.yview
+#        self.LDA_generation_list_frame_test = tk.Frame(self.main_listbox_and_result_test)
+#        self.LDA_generation_list_frame_test.pack(side = tk.LEFT, anchor = tk.N)
+#        
+#        self.drop_down_LDA_label_test = tk.Label(self.LDA_generation_list_frame_test,
+#                                                         text = "LDA\nCreated List (Test)")
+#        self.drop_down_LDA_label_test.pack()
+#        
+#        self.drop_down_LDA_frame_test = tk.Frame(self.LDA_generation_list_frame_test)
+#        self.drop_down_LDA_frame_test.pack()
+#        
+#        self.drop_down_LDA_list_test = tk.Listbox(self.drop_down_LDA_frame_test,
+#                                                          exportselection = 0)
+#        
+#        self.drop_down_LDA_list_test.pack(side = tk.LEFT, fill = 'y')
+#        
+#        self.drop_down_LDA_bar_test = tk.Scrollbar(self.drop_down_LDA_frame_test, orient = "vertical")
+#        self.drop_down_LDA_bar_test.pack(side = tk.RIGHT, fill = 'y')
+#        
+#        self.drop_down_LDA_list_test['yscrollcommand'] = \
+#        self.drop_down_LDA_bar_test.set
+#        
+#        self.drop_down_LDA_bar_test['command'] = \
+#        self.drop_down_LDA_list_test.yview
         
         
         
@@ -1265,24 +1265,24 @@ class Application():
         # Initialise the features_list
         # Extract feature files from the file lists
         # No need to sort the values as the files are already sorted by names
-        self.feature_list_test = [x for x in files_tmp_test if x.endswith(feature_matrix_suffix_csv)]
-        
-        for i in self.feature_list_test:
-            self.drop_down_list_word_vector_list_test.insert(tk.END, i)
-        
-        self.concept_list_test = [x for x in files_tmp_test if x.endswith(concept_prob_suffix_json)]
-        
-        for i in self.concept_list_test:
-            self.drop_down_concept_prob_vector_list_test.insert(tk.END, i)
-        
-        self.CLDA_list_test = [x for x in files_tmp_test if x.endswith(CLDA_suffix_pickle)]
-        for i in self.CLDA_list_test:
-            self.drop_down_CLDA_list_test.insert(tk.END, i)
-            
-        
-        self.LDA_list_test = [x for x in files_tmp_test if x.endswith('_LDA.pkl')]
-        for i in self.LDA_list_test:
-            self.drop_down_LDA_list_test.insert(tk.END, i)
+#        self.feature_list_test = [x for x in files_tmp_test if x.endswith(feature_matrix_suffix_csv)]
+#        
+#        for i in self.feature_list_test:
+#            self.drop_down_list_word_vector_list_test.insert(tk.END, i)
+#        
+#        self.concept_list_test = [x for x in files_tmp_test if x.endswith(concept_prob_suffix_json)]
+#        
+#        for i in self.concept_list_test:
+#            self.drop_down_concept_prob_vector_list_test.insert(tk.END, i)
+#        
+#        self.CLDA_list_test = [x for x in files_tmp_test if x.endswith(CLDA_suffix_pickle)]
+#        for i in self.CLDA_list_test:
+#            self.drop_down_CLDA_list_test.insert(tk.END, i)
+#            
+#        
+#        self.LDA_list_test = [x for x in files_tmp_test if x.endswith('_LDA.pkl')]
+#        for i in self.LDA_list_test:
+#            self.drop_down_LDA_list_test.insert(tk.END, i)
         
             
             

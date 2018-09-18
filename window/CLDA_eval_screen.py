@@ -6,6 +6,7 @@ Created on Sat Sep  1 22:07:34 2018
 """
 import datetime
 import time
+import ast
 #from multiprocessing import Pool
 import pickle
 import csv
@@ -376,34 +377,34 @@ class CLDA_evaluation_screen(object):
         #### LDA & CLDA word ranking
         ##########################################################
         '''
-        self.button_word_ranking_frame = tk.Frame(self.selection_of_frame, relief = tk.RAISED, borderwidth = 1)
-        self.button_word_ranking_frame.pack(side = tk.BOTTOM, padx = 10)
+        self.button_word_ranking_frame = tk.LabelFrame(self.selection_of_frame, relief = tk.RAISED, borderwidth = 1, text = "Model Evaluation Buttons")
+        self.button_word_ranking_frame.pack(side = tk.BOTTOM, padx = 10, ipadx = 10, ipady = 10)
+#        
+#        self.CLDA_ranking_input_label = tk.Label(self.button_word_ranking_frame, text = "CLDA concept ranking ")
+#        self.CLDA_ranking_input_label.grid(row = 0, column = 0)
+#        
+#        self.CLDA_ranking_input_entry = tk.Entry(self.button_word_ranking_frame)
+#        self.CLDA_ranking_input_entry.grid(row = 0, column = 1)
+#        
+#        self.LDA_ranking_input_label = tk.Label(self.button_word_ranking_frame, text = "LDA concept ranking ")
+#        self.LDA_ranking_input_label.grid(row = 1, column = 0)
+#        
+#        self.LDA_ranking_input_entry = tk.Entry(self.button_word_ranking_frame)
+#        self.LDA_ranking_input_entry.grid(row = 1, column = 1)
+#        
+        self.LDA_evaluation_button = tk.Button(self.button_word_ranking_frame, text = "Eval LDA")
+        self.LDA_evaluation_button.pack()
+        self.LDA_evaluation_button['command'] = self.asynchronous_LDA_evaluation
         
-        self.CLDA_ranking_input_label = tk.Label(self.button_word_ranking_frame, text = "CLDA concept ranking ")
-        self.CLDA_ranking_input_label.grid(row = 0, column = 0)
-        
-        self.CLDA_ranking_input_entry = tk.Entry(self.button_word_ranking_frame)
-        self.CLDA_ranking_input_entry.grid(row = 0, column = 1)
-        
-        self.LDA_ranking_input_label = tk.Label(self.button_word_ranking_frame, text = "LDA concept ranking ")
-        self.LDA_ranking_input_label.grid(row = 1, column = 0)
-        
-        self.LDA_ranking_input_entry = tk.Entry(self.button_word_ranking_frame)
-        self.LDA_ranking_input_entry.grid(row = 1, column = 1)
-        
-        
+        self.CLDA_evaluation_button = tk.Button(self.button_word_ranking_frame, text = "Eval CLDA")
+        self.CLDA_evaluation_button.pack()
+        self.CLDA_evaluation_button['command'] = self.asynchronous_CLDA_evaluation
         '''
         ##########################################################
         ####CLDA button
         ##########################################################
         '''
-        self.LDA_evaluation_button = tk.Button(self.bottom_button_frame, text = "Eval LDA")
-        self.LDA_evaluation_button.pack()
-        self.LDA_evaluation_button['command'] = self.asynchronous_LDA_evaluation
-        
-        self.CLDA_evaluation_button = tk.Button(self.bottom_button_frame, text = "Eval CLDA")
-        self.CLDA_evaluation_button.pack()
-        self.CLDA_evaluation_button['command'] = self.asynchronous_CLDA_evaluation
+
         
         self.change_to_model_creation = tk.Button(self.bottom_button_frame, text = "Return to model creation")
         self.change_to_model_creation.pack()
@@ -1016,13 +1017,21 @@ class Asynchronous_CLDA_evaluation_class():
         wn.ensure_loaded()
         
         testing_dict = {}
-        testing_dict[testing_file_head] = pd.read_csv(dataset_test + '/' + testing_file_head + file_name_df_suffix_csv,
-                                          encoding='utf-8', sep=',', error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
-        testing_dict[testing_file_head]['Text'] = testing_dict[testing_file_head]['Text'].apply(lambda x: self.cab_tokenizer(x))
-        file_name = dataset_test + '/' + testing_file_head + tokenized_dataset_suffix
-        testing_dict[testing_file_head].to_csv(file_name,
-                              index=False, encoding='utf-8',
-                              quoting=csv.QUOTE_ALL)
+        
+        if (os.path.isfile(dataset_test + '/' + testing_file_head + file_name_df_suffix_csv)):
+            testing_dict[testing_file_head] = pd.read_csv(dataset_test + '/' + testing_file_head + tokenized_dataset_suffix,
+                                          encoding='utf-8', sep=',', error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL
+                                          ,converters={'Text':ast.literal_eval})
+            
+        else:    
+            testing_dict[testing_file_head] = pd.read_csv(dataset_test + '/' + testing_file_head + file_name_df_suffix_csv,
+                                              encoding='utf-8', sep=',', error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
+            testing_dict[testing_file_head]['Text'] = testing_dict[testing_file_head]['Text'].apply(lambda x: self.cab_tokenizer(x))
+            
+            file_name = dataset_test + '/' + testing_file_head + tokenized_dataset_suffix
+            testing_dict[testing_file_head].to_csv(file_name,
+                                  index=False, encoding='utf-8',
+                                  quoting=csv.QUOTE_ALL)
         return testing_dict
     
     def asynchronous_tokenization(self):
