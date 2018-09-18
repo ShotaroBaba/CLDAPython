@@ -384,108 +384,10 @@ def main():
 #    with open(data_dir + '/' + topic_name + CLDA_suffix_pickle, "rb") as f:
 #        test_CLDA = pickle.load(f)
 #    test_CLDA.set_the_rankings()
-#    
-##    test_CLDA.show_and_construct_normalized_concept_topic_ranking()
-##    (test_CLDA.theta_set[0].sum(axis = 0)/test_CLDA.theta_set[0].shape[0]).sum()
-#    
-##    ttt = sorted(set([(test_CLDA.feature_names[x[3]], test_CLDA.concept_names[x[2]], 
-##          test_concept_prob[test_CLDA.feature_names[x[3]]][ test_CLDA.concept_names[x[2]]]) if 
-##            test_concept_prob[test_CLDA.feature_names[x[3]]] != {} else 
-##            (test_CLDA.feature_names[x[3]], test_CLDA.concept_names[x[2]], 1.0)for x 
-##          in list(set(test_CLDA.document_topic_concept_word.values()))]), key = (lambda x: (x[0], x[2])), reverse = True)
+
 #    
 #    
-#    
-##    (np.array([[2,3, 1], [4,5,2], [8,9, 3]]).sum(axis = 0))
-#    
-#    # Test the doucment
-#    # Store the result
-#    #
-#    def calculate_score_all():
-##      T_TP = T_TN =  T_FN =  T_FP = 0
-#      #Listing the score
-#      score_list = []
-#      training_head = [x[:-len(file_name_df_suffix_csv)] for x in files_training if x.endswith(file_name_df_suffix_csv)]
-#      test_head = [x[:-len(file_name_df_suffix_csv)] for x in files_test if x.endswith(file_name_df_suffix_csv)]
-#      
-#      for training_file_head in training_head:
-#        print(training_file_head)
-#        
-#        with open(data_dir + '/' + training_file_head + feature_name_suffix_txt, "r") as f: 
-#            for line in f:
-#                #Remove the \n
-#                test_feature_names.append(line.strip('\n'))
-#        
-#        test_concept_prob, test_concept_names = (None, [])
-#            
-#        with open(data_dir + '/' + training_file_head + concept_prob_suffix_json, "r") as f:
-#            test_concept_prob = json.load(f)
-#            
-#        
-#        with open(data_dir + '/' + training_file_head + concept_name_suffix_txt, "r") as f:
-#            for line in f:
-#                test_concept_names.append(line.strip('\n'))
-#        
-#        with open(data_dir + '/' + training_file_head + CLDA_suffix_pickle, "rb") as f:
-#            test_CLDA = pickle.load(f)
-#          
-#          
-#        doc_topic = test_CLDA.theta_set[0].sum(axis = 0)/test_CLDA.theta_set[0].shape[0]
-#        topic_concept = test_CLDA.show_and_construct_normalized_concept_topic_ranking()
-#        word_under_concept = test_CLDA.show_words_prob_under_concept(test_concept_prob)
-##        test_file_data = pd.read_csv(data_dir + '/' + test_name + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
-##                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
-#       
-#        training_head_number = ''.join(filter(str.isdigit, training_file_head))
-##      vector_analysis = generate_vector_for_analysis()
-#        for testing_file_head in test_head:
-#            print(testing_file_head)
-#            test_file_data = pd.read_csv(data_test_dir + '/' + testing_file_head + file_name_df_suffix_csv,
-#                                          encoding='utf-8', sep=',', error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
-#            
-#            testing_head_number = ''.join(filter(str.isdigit, testing_file_head))
-#            for i in range(len(test_file_data)):
-#                score = 0
-#                test_files_feature_name  = cab_tokenizer(test_file_data.iloc[i]['Text'])
-#        #          _, test_files_feature_name   = vectorize_for_analysis(vector_analysis, test_file_data.iloc[i])
-#                for topic_num, topic_prob in enumerate(doc_topic):
-#                    for concept, concept_prob in topic_concept[topic_num]:
-#                          for word, word_prob in [(x[0][0], x[1]) for x in word_under_concept.items() if x[0][1] == concept]:
-#                              if word in test_files_feature_name:
-#        #                          print('topic_num: {}, concept: "{}", word: "{}"'.format(topic_num, concept, word))
-#                                  score += topic_prob * concept_prob * word_prob
-#            
-#                print('Score: {}, File name: "{}"'.format(score, test_file_data.iloc[i]['File']))
-#                score_list.append((test_file_data.iloc[i]['File'], training_head_number, testing_head_number, score))  
-#                
-#        ts = time.time()    
-#        score_data_frame = pd.DataFrame(score_list, columns = ['File_name', 'Training_topic', 'Testing_topic', 'Score'])
-#        storing_result_name_data = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + feature_matrix_suffix_csv
-#        
-#        storing_result_name_text = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_txt_suffix
-#        score_data_frame_TP_FN = score_data_frame[score_data_frame['Training_topic'] == score_data_frame['Testing_topic']]
-#
-#        Total_TP_count  = (score_data_frame_TP_FN['Score'] > default_score_threshold).sum()
-#        Total_FN_count = (score_data_frame_TP_FN['Score'] < default_score_threshold).sum()
-#        
-#        score_data_frame_TN_FP = score_data_frame[score_data_frame['Training_topic'] != score_data_frame['Testing_topic']]
-#        
-#        Total_TN_count = (score_data_frame_TN_FP['Score'] < default_score_threshold).sum()
-#        Total_FP_count = (score_data_frame_TN_FP['Score'] > default_score_threshold).sum()
-#        
-#        precision = Total_TP_count / (Total_TP_count + Total_FP_count)
-#        recall = Total_TP_count / (Total_TP_count + Total_FN_count)
-#        
-##        with open()
-#        
-#        score_data_frame.to_csv(storing_result_name_data,
-#                              index=False, encoding='utf-8',
-#                              quoting=csv.QUOTE_ALL)
-#        
-#        with open(storing_result_name_text, 'w') as f:
-#            f.write("Precision: {}, Recall: {}".format(precision, recall))
-#        
-#                
+
 #    
 #    test_CLDA.show_doc_topic_ranking()
 ##    'social institution'
@@ -528,53 +430,7 @@ def main():
 #
 #    with open(data_dir + '/' + topic_name + LDA_suffix_pickle, "rb") as f:
 #        test_LDA = pickle.load(f)
-#    test_LDA.set_the_rankings()
-#    test_LDA.doc_ranking
-#    test_LDA.show_doc_topic_ranking(5)
-##    test_LDA.show_normalized_concept_topic_ranking()
-##    test_LDA.show_word_topic_ranking(20)
-#    
-#    #      T_TP = T_TN =  T_FN =  T_FP = 0
-#      #Listing the score\
-#    files_training = []
-#    files_test = []
-#    for dirpath, dirs, files in os.walk(data_dir):
-#            files_training.extend(files)
-#    
-#    for dirpath, dirs, files in os.walk(dataset_test):
-#            files_test.extend(files)
-#    score_list = []
-#    training_head = [x[:-len(file_name_df_suffix_csv)] for x in files_training if x.endswith(file_name_df_suffix_csv)]
-#    test_head = [x[:-len(file_name_df_suffix_csv)] for x in files_test if x.endswith(file_name_df_suffix_csv)]
-#      
-#    for training_file_head in training_head:
-#        print(training_file_head)
-#            
-#        
-#        with open(data_dir + '/' + training_file_head + LDA_suffix_pickle, "rb") as f:
-#            test_LDA = pickle.load(f)
-#          
-#        doc_topic = test_LDA.doc_prob_set[0].sum(axis = 0)/test_LDA.doc_prob_set[0].shape[0] 
-#        word_topic_prob = test_LDA.generate_word_prob()
-#        for testing_file_head in test_head:
-#            print(testing_file_head)
-#            test_file_data = pd.read_csv(dataset_test + '/' + testing_file_head + file_name_df_suffix_csv,
-#                                          encoding='utf-8', sep=',', error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
-#            
-#            testing_head_number = ''.join(filter(str.isdigit, testing_file_head))
-#            for i in range(len(test_file_data)):
-#                score = 0
-#                test_files_feature_name  = cab_tokenizer(test_file_data.iloc[i]['Text'])
-#        #          _, test_files_feature_name   = vectorize_for_analysis(vector_analysis, test_file_data.iloc[i])
-#                for topic_num, topic_prob in enumerate(doc_topic):
-#                      for word, word_prob in [(x[1], x[2]) for x in word_topic_prob if x[0] == topic_num]:
-#                          if word in test_files_feature_name:
-#                             score += topic_prob * word_prob
-#        
-#                print('Testing_topic: {}, Score: {}, File name: "{}"'.format(testing_head_number, score, test_file_data.iloc[i]['File']))
-#        #        test_file_data = pd.read_csv(data_dir + '/' + test_name + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
-#        #                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL) 
-#    
+
 #    
 #    doc_topic = test_LDA.doc_prob_set[0].sum(axis = 0)/test_LDA.doc_prob_set[0].shape[0]
     #########################################################
@@ -1121,7 +977,7 @@ class LDA(object):
     
     def generate_word_prob(self, rank = 10):
         word_topic_list = []
-        
+        # In this rank, all rank is normalised
 #        rank = min(self.phi_set[0].shape[1], rank)
         for x in self.word_ranking:
             rank = min(len(x), rank)

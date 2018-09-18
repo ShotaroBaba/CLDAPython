@@ -61,12 +61,14 @@ feature_name_suffix_txt = "_f_name.txt"
 file_name_df_suffix_csv = "_data.csv"
 CLDA_suffix_pickle = "_CLDA.pkl"
 LDA_suffix_pickle = "_LDA.pkl"
+label_text_suffix = ".txt"
 
 converted_xml_suffix = "_conv.txt"
 converted_folder = "converted_xml_files"
 
 stop_word_folder = "../stopwords"
 stop_word_smart_txt = "smart_stopword.txt"
+
 
 #Define smart stopwords
 smart_stopwords = []
@@ -83,6 +85,7 @@ default_max_df = 0.98
 default_topic_num = 5
 default_max_iter = 20
 
+label_delim = " "
 delim = ","
 #K = 0
 #with open( "../../CLDA_data_testing" + '/' + "ForTest_c_prob.json", "r") as f:
@@ -96,6 +99,9 @@ nltk.download('averaged_perceptron_tagger')
 nltk.download('wordnet')
 # Create main menu            
 # Defining the lemmatizer
+
+
+
 gc.enable()
 core_use = 5
 
@@ -381,6 +387,7 @@ class Application():
         self.linked_folders = []
         self.folder_directory = None
         self.document_data = []
+        self.labelling_dir = ""
         
         '''
         List all LDA and CLDA list to
@@ -937,19 +944,15 @@ class Application():
         
         self.test_button = tk.Button(self.root, text = 'test_data_creation_txt')
         self.test_button.pack(side = tk.BOTTOM)
-        self.test_button['command'] =partial(self.asynchronous_topic_concept_retrieval, 
-                        self.select_folder_and_extract_txt_async, '.txt', dataset_test,1)
+        self.test_button['command'] =partial(self.asynchronous_data_retrieval_test, 
+                        self.select_folder_and_extract_txt_async_test, '.txt', dataset_test)
         
         self.training_button_txt_test = tk.Button(self.root, text = 'test_data_creation_xml')
         self.training_button_txt_test.pack(side = tk.BOTTOM)
-        self.training_button_txt_test['command'] = partial(self.asynchronous_topic_concept_retrieval, 
-                                     self.select_folder_and_extract_xml_async, '.xml', dataset_test, 1)
+        self.training_button_txt_test['command'] = partial(self.asynchronous_data_retrieval_test, 
+                                     self.select_folder_and_extract_xml_async_test, '.xml', dataset_test)
         
         
-#        self.CLDA_button = tk.Button(self.root, text = 'CLDA_model_creation (training)')
-#        
-#        self.training_button_txt.pack(side = tk.BOTTOM)
-#        self.training_button_txt['command'] = partial(self.asynchronous_topic_concept_retrieval, self.select_folder_and_extract_txt_async, '.txt')
 #        
         self.LDA_button = tk.Button(self.root, text = 'LDA_model_creation (training)')
         
@@ -962,19 +965,7 @@ class Application():
         self.CLDA_button['command'] = partial(self.asynchronous_CLDA_model_generation, dataset_dir, 0)
         
         
-        
-        self.LDA_button_test = tk.Button(self.root, text = 'LDA_model_creation (test)')
-        
-        self.LDA_button_test.pack(side = tk.BOTTOM)
-        self.LDA_button_test['command'] = partial(self.asynchronous_LDA_model_generation, dataset_test, 1)
-        
-        
-        
-        self.CLDA_button_test = tk.Button(self.root, text = 'CLDA_model_creation (test)')
-        
-        self.CLDA_button_test.pack(side = tk.BOTTOM)
-        self.CLDA_button_test['command'] = partial(self.asynchronous_CLDA_model_generation, dataset_test, 1)
-        
+
         
         self.LDA_evaluation_screen = tk.Button(self.root, text = 'Go to CLDA evaluation')
         
@@ -990,7 +981,7 @@ class Application():
         #######################################
         '''
     #######################################################
-    ########## Input part
+    ########## Value input part
     #######################################################
     def retrieve_top_concept(self):
         
@@ -1295,7 +1286,6 @@ class Application():
         
             
             
-
     
     def select_folder_and_extract_xml_async(self,ask_folder, topic_list, dataset_dir):
   
@@ -1370,7 +1360,13 @@ class Application():
                               quoting=csv.QUOTE_ALL)
             
             return topic_name + file_name_df_suffix_csv
-
+    
+    
+    # Select the labelling folder to label the dataset....
+    def select_labelling_folder():
+        
+        
+        return
 
     def select_folder_and_extract_txt_async(self,ask_folder, topic_list, dataset_dir):
   
@@ -1418,6 +1414,220 @@ class Application():
                               quoting=csv.QUOTE_ALL)
             
             return topic_name + file_name_df_suffix_csv
+        
+        
+    def select_folder_and_extract_txt_async_test(self,ask_folder, topic_list, dataset_dir, label_dir):
+  
+        folder_directory = ask_folder
+        
+        print(folder_directory)
+        temp_substr = os.path.basename(folder_directory)
+            
+        # If the processed file has already exists, then the process of the
+        # topics will stop.
+        if any(temp_substr in string for string in topic_list):
+            print("topic already exist.")
+            return 
+        
+        for_test_purpose_data = pd.DataFrame([], columns=['File','Topic', 'Text'])
+        
+        training_path = []
+        for dirpath, dirs, files in os.walk(folder_directory):
+            training_path.extend(files)
+        
+        # Remove the files other than xml files
+        training_path = [x for x in training_path if x.endswith('.txt') and not x.startswith('._')]
+        
+        training_path = sorted(training_path)
+        topic_name = os.path.basename(folder_directory)
+        
+        name_of_the_label_text = os.path.basename(folder_directory) + label_text_suffix
+        
+        label_data = pd.read_csv(label_dir + '/' + name_of_the_label_text, 
+                        encoding='utf-8',
+                        delimiter = label_delim,
+                        quoting=csv.QUOTE_ALL, names = [''.join(filter(str.isdigit, name_of_the_label_text)), 'File', 'label'])
+        
+        label_data = label_data.sort_values(by = ['File'])
+#        dataframe_ = pd.DataFrame([], columns=['File','Topic', 'Text'])
+        labelling = list(label_data['label'])
+#        labelling = list(label_data['0'])
+        for_test_purpose_data = []
+        for path_to_file in training_path:
+            path_string = os.path.basename(os.path.normpath(path_to_file)) 
+            
+            file = folder_directory + '/' + path_string
+            f = open(file, "r")
+            result = f.read()
+            
+            name_of_the_file = (os.path.basename(path_string))
+            
+            for_test_purpose_data.append((name_of_the_file, topic_name,result))
+            
+            if not os.path.isdir(dataset_dir):
+                os.makedirs(dataset_dir)
+                
+                
+        a,b,c = zip(*for_test_purpose_data)
+        
+        framing = [(x,y,z,w) for x,y,z,w in zip(a,b,c,labelling)]
+        dataframe_ = pd.DataFrame(framing, columns=['File','Topic', 'Text','label'])        
+            
+        if(len(dataframe_) != 0):
+            dataframe_.to_csv(dataset_dir + '/' +
+                              topic_name + file_name_df_suffix_csv,
+                              index=False, encoding='utf-8',
+                              quoting=csv.QUOTE_ALL)
+            
+            return topic_name + file_name_df_suffix_csv
+    
+    
+    
+    def select_folder_and_extract_xml_async_test(self,ask_folder, topic_list, dataset_dir, label_dir):
+        
+        folder_directory = ask_folder
+        
+  #      folder_directory = "C:\Users\n9648852\Desktop\R8-Dataset\Dataset\R8\Training\Training101"
+
+        temp_substr = os.path.basename(folder_directory)
+            
+        # If the processed file has already exists, then the process of the
+        # topics will stop.
+        if any(temp_substr in string for string in topic_list):
+            print("topic already exist.")
+            return 
+        
+        
+            
+        training_path = []
+        for dirpath, dirs, files in os.walk(folder_directory):
+            training_path.extend(files)
+        
+        # Remove the files other than xml files
+        training_path = [x for x in training_path if x.endswith('xml')]
+        print(training_path)
+        topic_name = os.path.basename(folder_directory)
+        
+        # Create the folder
+        # if there is no directory storing the generated txt files
+        if not os.path.isdir(dataset_dir):
+                os.makedirs(dataset_dir)
+                
+        conv_folder = dataset_dir + '/' + converted_folder
+        if not os.path.isdir(conv_folder):
+            os.makedirs(conv_folder)
+            
+        topic_folder = conv_folder + '/' + topic_name 
+        if not os.path.isdir(topic_folder):
+            os.makedirs(topic_folder)
+        # Labelled data is automatically sought based on the 
+        # collection of data
+        training_path = sorted(training_path)
+        
+        name_of_the_label_text = os.path.basename(folder_directory) + label_text_suffix
+        # print(path_string)
+        
+        label_data = pd.read_csv(label_dir + '/' + name_of_the_label_text, 
+                        encoding='utf-8',
+                        delimiter = label_delim,
+                        quoting=csv.QUOTE_ALL, names = [''.join(filter(str.isdigit, name_of_the_label_text)), 'File', 'label'])
+        
+        
+        label_data = label_data.sort_values(by = ['File'])
+#        dataframe_ = pd.DataFrame([], columns=['File','Topic', 'Text'])
+        labelling = list(label_data['label'])
+#        labelling = list(label_data['0'])
+        for_test_purpose_data = []
+        for path_to_file in training_path:
+            path_string = os.path.basename(os.path.normpath(path_to_file)) 
+            
+            # Extract xml information from the files
+            # then it construct the information
+            file = folder_directory + '/' + path_string 
+            tree = ET.parse(file)
+            root = tree.getroot()
+            result = ''
+            for element in root.iter():
+                if(element.text != None):
+                    result += element.text + ' '
+            # Remove the remained data
+            result = result[:-1]
+            
+            name_of_the_file = (os.path.basename(path_string))            
+            
+            for_test_purpose_data.append((name_of_the_file, topic_name,result))
+            
+            
+            # Write the xml results as files    
+            with open(topic_folder + '/' + path_to_file[:-len('.xml')] + converted_xml_suffix, "w") as f:
+                f.write(result)
+        
+        # for_test_purpose_data.loc[:, 'label'] = label_data['label']
+        a,b,c = zip(*for_test_purpose_data)
+        
+        framing = [(x,y,z,w) for x,y,z,w in zip(a,b,c,labelling)]
+        dataframe_ = pd.DataFrame(framing, columns=['File','Topic', 'Text','label'])
+        
+        
+        if(len(dataframe_) != 0):
+            dataframe_.to_csv(dataset_dir + '/' +
+                              topic_name + file_name_df_suffix_csv,
+                              index=False, encoding='utf-8',
+                              quoting=csv.QUOTE_ALL)
+            
+            return topic_name + file_name_df_suffix_csv
+    
+    
+    def asynchronous_data_retrieval_test(self, fobj, file_type, dataset_dir):
+        
+        # Select the testing folder
+        train_folder_selection = askdirectory()
+        
+        label_folder_selection = askdirectory()
+        
+        training_folders_tmp = []
+        for dirpath, dirs, files in os.walk(train_folder_selection):
+            if len([x for x in files if x.endswith(file_type)]) != 0:
+                training_folders_tmp.append(dirpath)
+        
+        print(training_folders_tmp)
+        async def retrieve_file_data(training_folders_tmp, topic_list):
+        # Max worker set to 10
+           with concurrent.futures.ThreadPoolExecutor() as executor:
+            
+                loop = asyncio.get_event_loop()
+                futures = [
+                    loop.run_in_executor(
+                        executor, 
+#                        self.select_folder_and_extract_xml_async
+                        fobj, 
+                        folder_name,
+                        topic_list, dataset_dir, label_folder_selection
+                    )
+                    for folder_name in training_folders_tmp
+                ]
+                topics_vec = []
+                for i in await asyncio.gather(*futures):
+                    topics_vec.append(i)
+                    
+                return topics_vec
+        
+        topic_list = self.topic_list_test    
+        
+        loop = asyncio.get_event_loop()
+        future = asyncio.ensure_future(retrieve_file_data(training_folders_tmp, topic_list))
+        topics = loop.run_until_complete(future)  
+        
+        if type(topics) == list:
+            self.topic_list_test.extend(topics)
+            self.topic_list_test = sorted(self.topic_list)
+            
+        if type(topics) == list:
+            for i in topics:
+                    self.user_drop_down_select_folder_list_test.insert(tk.END, i)
+        
+    # Labelling test folder
+        
     # Retrieving topic list
     
     # Based on the files_tmp made by the vectors 
