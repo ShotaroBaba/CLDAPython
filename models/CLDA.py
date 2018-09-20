@@ -339,54 +339,54 @@ def main():
 #    data_test_dir = dataset_test
 #    #The topic name (folder name containing the names)
 #    topic_name = "Training105"
-#    test_name = "Test105"
-#    ''.join(filter(str.isdigit, test_name))
-#    #########################################################
-#    #####This region is for the test of CLDA methods...
-#    #########################################################
-#    files_training = []
-#    files_test = []
-#    for dirpath, dirs, files in os.walk(data_dir):
-#            files_training.extend(files)
-#    
-#    for dirpath, dirs, files in os.walk(data_test_dir):
-#            files_test.extend(files)
-##        print(files_tmp)
-#            # only retrieve the files_tmp which end with .csv
-#            # Initialise the topic list
-##    training_head = [x[:-len(file_name_df_suffix_csv)] for x in files_training if x.endswith(file_name_df_suffix_csv)]
-##    test_head = [x[:-len(file_name_df_suffix_csv)] for x in files_test if x.endswith(file_name_df_suffix_csv)]
-#    
-#    test_file_names = pd.read_csv(data_dir + '/' + topic_name + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
-#                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
-#    
-#    len(test_file_names)
-#    test_feature_vec, test_feature_names = (None, [])
-#        
-#    with open(data_dir + '/' + topic_name + feature_name_suffix_txt, "r") as f: 
-#        for line in f:
-#            #Remove the \n
-#            test_feature_names.append(line.strip('\n'))
-#    
-#    with open(data_dir + '/' + topic_name + feature_matrix_suffix_csv, "r") as f:
-#        test_feature_vec = np.loadtxt(f, delimiter = delim)
-#    
-#    test_concept_prob, test_concept_names = (None, [])
-#        
-#    with open(data_dir + '/' + topic_name + concept_prob_suffix_json, "r") as f:
-#        test_concept_prob = json.load(f)
-#        
-#    
-#    with open(data_dir + '/' + topic_name + concept_name_suffix_txt, "r") as f:
-#        for line in f:
-#            test_concept_names.append(line.strip('\n'))
-#
+##    test_name = "Test105"
+##    ''.join(filter(str.isdigit, test_name))
+##    #########################################################
+##    #####This region is for the test of CLDA methods...
+##    #########################################################
+##    files_training = []
+##    files_test = []
+##    for dirpath, dirs, files in os.walk(data_dir):
+##            files_training.extend(files)
+##    
+##    for dirpath, dirs, files in os.walk(data_test_dir):
+##            files_test.extend(files)
+###        print(files_tmp)
+##            # only retrieve the files_tmp which end with .csv
+##            # Initialise the topic list
+###    training_head = [x[:-len(file_name_df_suffix_csv)] for x in files_training if x.endswith(file_name_df_suffix_csv)]
+###    test_head = [x[:-len(file_name_df_suffix_csv)] for x in files_test if x.endswith(file_name_df_suffix_csv)]
+##    
+##    test_file_names = pd.read_csv(data_dir + '/' + topic_name + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
+##                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
+##    
+##    len(test_file_names)
+##    test_feature_vec, test_feature_names = (None, [])
+##        
+##    with open(data_dir + '/' + topic_name + feature_name_suffix_txt, "r") as f: 
+##        for line in f:
+##            #Remove the \n
+##            test_feature_names.append(line.strip('\n'))
+##    
+##    with open(data_dir + '/' + topic_name + feature_matrix_suffix_csv, "r") as f:
+##        test_feature_vec = np.loadtxt(f, delimiter = delim)
+##    
+##    test_concept_prob, test_concept_names = (None, [])
+##        
+##    with open(data_dir + '/' + topic_name + concept_prob_suffix_json, "r") as f:
+##        test_concept_prob = json.load(f)
+##        
+##    
+##    with open(data_dir + '/' + topic_name + concept_name_suffix_txt, "r") as f:
+##        for line in f:
+##            test_concept_names.append(line.strip('\n'))
+##
 #    with open(data_dir + '/' + topic_name + CLDA_suffix_pickle, "rb") as f:
 #        test_CLDA = pickle.load(f)
 #    test_CLDA.set_the_rankings()
-
-#    
-#    
+    
+#    test_CLDA.phi_set[0].shape[1]
+    
 
 #    
 #    test_CLDA.show_doc_topic_ranking()
@@ -774,35 +774,41 @@ class CLDA(object):
                 print(out_str)  
     
     # Show the word under concept(s)
-    def construct_word_concept_prob_under_concept(self, word_under_concept_probability):
+    def construct_word_concept_prob_under_concept(self, word_under_concept_probability, rank = 1):
         
         concept_word_list = []
         concept_word = sorted(set([(self.feature_names[x[3]], self.concept_names[x[2]], 
           word_under_concept_probability[self.feature_names[x[3]]][ self.concept_names[x[2]]]) if 
             word_under_concept_probability[self.feature_names[x[3]]] != {} else 
             (self.feature_names[x[3]], self.concept_names[x[2]], 1.0) for x 
-          in list(set(self.document_topic_concept_word.values()))]), key = (lambda x: x[2]), reverse = True)
+          in list(set(self.document_topic_concept_word.values()))]), key = (lambda x: (x[1], x[2])), reverse = True)
         
-        for word, concept, probability in concept_word:
-            concept_word_list.append((word, concept, probability)) 
+        concepts = sorted(list(set([x[1] for x in concept_word])))
         
-
+        for concept in concepts:
+            for word, concept, probability in sorted([x for x in concept_word if x[1] == concept], key = (lambda x: x[2]), reverse = True)[:rank]:
+                concept_word_list.append((word, concept, probability)) 
+#            concept_word_list[:rank]
         return concept_word_list
     
     # Done for reduce the object size...
-    def show_word_concept_prob(self, word_under_concept_probability):
+    def show_word_concept_prob(self, word_under_concept_probability, rank = 1):
         concept_word_list = []
         concept_word = sorted(set([(self.feature_names[x[3]], self.concept_names[x[2]], 
-          word_under_concept_probability[self.feature_names[x[3]]][ self.concept_names[x[2]]]) if 
+          word_under_concept_probability[self.feature_names[x[3]]][self.concept_names[x[2]]]) if 
             word_under_concept_probability[self.feature_names[x[3]]] != {} else 
             (self.feature_names[x[3]], self.concept_names[x[2]], 1.0) for x 
           in list(set(self.document_topic_concept_word.values()))]), key = (lambda x: x[2]), reverse = True)
         
-        for word, concept, probability in concept_word:
-            concept_word_list.append((word, concept, probability)) 
+#        for word, concept, probability in concept_word:
+#            concept_word_list.append((word, concept, probability)) 
         
-        concepts = sorted(list(set([x[1] for x in concept_word_list])))
-        
+        concepts = sorted(list(set([x[1] for x in concept_word])))
+         
+        for concept in concepts:
+            for word, concept, probability in sorted([x for x in concept_word if x[1] == concept], key = (lambda x: x[2]), reverse = True)[:rank]:
+                concept_word_list.append((word, concept, probability)) 
+                
         for concept in concepts:
             print("".join(['*' for x in range(20)]))
             print('Concept "{}":'.format(concept))
@@ -810,8 +816,14 @@ class CLDA(object):
                 print('\tWord "{}", Probability: {}'.format(word, probability))
             print("".join(['*' for x in range(20)]))
         
-        return concept_word_list    
-            
+        return concept_word_list
+    
+    def show_doc_topic_average_prob(self):
+        doc_topic = self.theta_set[0].sum(axis = 0)/self.theta_set[0].shape[0]
+        for idx, topic_prob in enumerate(doc_topic):
+            print("#############################")
+            print("Topic {}, Probability: {}".format(idx, topic_prob))
+            print("#############################")      
 # Baseline method
 class LDA(object):
 
@@ -1009,16 +1021,14 @@ class LDA(object):
             rank = min(self.phi_set[0].shape[1], rank)
             for j in range(rank):
                 print('Rank: {}, Word: "{}", Probability: {}'.format(self.word_ranking[i][j][1], self.word_ranking[i][j][2], self.word_ranking[i][j][3]))
-            
-#    def construct_word_list_with_ranking(self, rank = 10):
-#        for i in range(self.nzw.shape[0]):
-#            
-#            rank = min(self.phi_set[0].shape[1], rank)
-#            for j in range(rank):
-#                
-            
+    
+    def show_doc_topic_average_prob(self):
+        doc_topic = self.doc_prob_set[0].sum(axis = 0)/self.doc_prob_set[0].shape[0]
+        for idx, topic_prob in enumerate(doc_topic):
+            print("#############################")
+            print("Topic {}, Probability: {}".format(idx, topic_prob))
+            print("#############################")
 
-##
 if (__name__ == "__main__"):
 #    pass
     main()

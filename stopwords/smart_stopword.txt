@@ -1,4 +1,4 @@
-# StopwordList is shown in Salton, G. (1971). The SMART Retrieval System—;Experiments in Automatic Document Processing. 
+# StopwordList is shown in Salton, G. (1971). The SMART Retrieval System; Experiments in Automatic Document Processing. 
 # Upper Saddle River, NJ, USA: Prentice-Hall, Inc.
 # Stopword list is obtained from http://www.lextek.com/manuals/onix/stopwords2.html
 a
