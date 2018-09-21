@@ -820,10 +820,12 @@ class CLDA(object):
     
     def show_doc_topic_average_prob(self):
         doc_topic = self.theta_set[0].sum(axis = 0)/self.theta_set[0].shape[0]
+        print("#############################")
         for idx, topic_prob in enumerate(doc_topic):
-            print("#############################")
             print("Topic {}, Probability: {}".format(idx, topic_prob))
-            print("#############################")      
+            
+        print("#############################")
+    
 # Baseline method
 class LDA(object):
 
@@ -1024,10 +1026,10 @@ class LDA(object):
     
     def show_doc_topic_average_prob(self):
         doc_topic = self.doc_prob_set[0].sum(axis = 0)/self.doc_prob_set[0].shape[0]
+        print("#############################")
         for idx, topic_prob in enumerate(doc_topic):
-            print("#############################")
             print("Topic {}, Probability: {}".format(idx, topic_prob))
-            print("#############################")
+        print("#############################")
 
 if (__name__ == "__main__"):
 #    pass

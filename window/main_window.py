@@ -1388,7 +1388,7 @@ class Application():
             
         # Remove the files other than xml files
         training_path = [x for x in training_path if x.endswith('.txt') and not x.startswith('._')]
-        print(training_path)
+#        print(training_path)
         topic_name = os.path.basename(folder_directory)
        
         for path_to_file in training_path:
@@ -1419,7 +1419,7 @@ class Application():
   
         folder_directory = ask_folder
         
-        print(folder_directory)
+#        print(folder_directory)
         temp_substr = os.path.basename(folder_directory)
             
         # If the processed file has already exists, then the process of the
@@ -1504,7 +1504,7 @@ class Application():
         
         # Remove the files other than xml files
         training_path = [x for x in training_path if x.endswith('xml')]
-        print(training_path)
+#        print(training_path)
         topic_name = os.path.basename(folder_directory)
         
         # Create the folder
@@ -1578,7 +1578,7 @@ class Application():
     
     
     def asynchronous_data_retrieval_test(self, fobj, file_type, dataset_dir):
-        
+        sys.stdout = buffer = StringIO()
         # Select the testing folder
         train_folder_selection = askdirectory()
         
@@ -1589,7 +1589,7 @@ class Application():
             if len([x for x in files if x.endswith(file_type)]) != 0:
                 training_folders_tmp.append(dirpath)
         
-        print(training_folders_tmp)
+#        print(training_folders_tmp)
         async def retrieve_file_data(training_folders_tmp, topic_list):
         # Max worker set to 10
            with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -1624,7 +1624,12 @@ class Application():
         if type(topics) == list:
             for i in topics:
                     self.user_drop_down_select_folder_list_test.insert(tk.END, i)
+        print("Test data retrieval completed!")
         
+        sys.stdout = sys.__stdout__
+        self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+        self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, buffer.getvalue())
+        self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
     # Labelling test folder
         
     # Retrieving topic list
@@ -1637,6 +1642,8 @@ class Application():
     # Retrieve all test and training data asynchrously
     
     def asynchronous_topic_concept_retrieval(self, fobj, file_type, dataset_dir, test_or_training):
+        sys.stdout = buffer = StringIO()
+        
         train_folder_selection = askdirectory()
         #train_folder_selection = "C:/Users/n9648852/Desktop/R8-Dataset/Dataset/R8/Testing"
         
@@ -1717,11 +1724,11 @@ class Application():
         loop = asyncio.get_event_loop()
         future = asyncio.ensure_future(retrieve_file_data(training_folders_tmp, topic_list))
         topics = loop.run_until_complete(future)
-        
-        print(topics)
+        print("Data extraction completed!")
+#        print(topics)
         if None in topics:
             topics = list(filter((None).__ne__, topics))
-        print(topics)
+#        print(topics)
         if (test_or_training == 0):
             if type(topics) == list:
                 self.topic_list.extend(topics)
@@ -1786,7 +1793,7 @@ class Application():
         print("Feature extraction completed!!")
         
         time.sleep(2)
-        
+        sys.stdout = sys.__stdout__
         
         # Asynchrously retrieve the probability p(word|concept) from
         # Probase
@@ -1836,7 +1843,9 @@ class Application():
                 for i in concepts:
                     self.drop_down_concept_prob_vector_list_test.insert(tk.END, i)
         print("Concept graph retrieval completed!!")
-    
+        self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+        self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, buffer.getvalue())
+        self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
 
         
     def asynchronous_CLDA_model_generation(self, dataset_dir, result_num):
