@@ -43,6 +43,8 @@ CLDA_suffix_pickle = "_CLDA.pkl"
 LDA_suffix_pickle = "_LDA.pkl"
 converted_xml_suffix = "_conv.txt"
 all_score_suffix = "_all_score.csv"
+all_score_precision_etc_suffix = "_precision_recall_top.csv"
+
 delim = ","
 default_score_threshold = 0
 asterisk_len = 20
@@ -885,6 +887,7 @@ class CLDA_evaluation_screen(object):
         storing_result_name_data = ""
         storing_result_name_text = ""
         log_txt_name = ""
+        all_score_data_list = []
         
         if(any([x in file_name_for_result for x in illegal_file_characters]) or file_name_for_result == ""):
             self.result_screen_text.configure(state='normal')
@@ -896,13 +899,13 @@ class CLDA_evaluation_screen(object):
             storing_result_name_data = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_dataframe_suffix
             storing_result_name_text = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_txt_suffix
             log_txt_name = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_log_suffix
-            
+            all_score_file_name = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + all_score_precision_etc_suffix
         else:
             storing_result_name_data = score_result_dir + '/' + file_name_for_result + score_result_dataframe_suffix
         
             storing_result_name_text = score_result_dir + '/' + file_name_for_result + score_result_txt_suffix
             log_txt_name = score_result_dir + '/' + file_name_for_result + score_result_log_suffix
-        
+            all_score_file_name = score_result_dir + '/' + file_name_for_result + all_score_precision_etc_suffix
         
         
         Total_TP_count  = pd.Series(np.where((score_data_frame['Score'] > threshold) & (score_data_frame['Label'] == 1), True, False)).sum()
@@ -946,7 +949,19 @@ class CLDA_evaluation_screen(object):
             "Trup Positive: {}, False Positive: {}\n".format(local_TP_count, local_FP_count) + \
             "Trup Negative: {}, False Negative: {}\n".format(local_TN_count, local_FN_count) + \
             "Top 10 retrieval rate: {}, Top 20 retrieval rate: {}\n".format(top_10_rank_score, top_20_rank_score)
+            all_score_data_list.append((i, local_precision, local_recall, local_F1_value,  top_10_rank_score, top_20_rank_score))
         
+        all_score_data_list.append(("Total", precision,
+                                    recall,
+                                    Total_F1_value,
+                                    sum([x[4] for x in all_score_data_list])/len(all_score_data_list),
+                                    sum([x[5] for x in all_score_data_list])/len(all_score_data_list)))
+        
+        all_score_data = pd.DataFrame(all_score_data_list, columns= ["Topic", "Precision", "Recall", "F1", "Top10", "Top20"])
+        
+        all_score_data.to_csv(all_score_file_name,
+                              index=False, encoding='utf-8',
+                              quoting=csv.QUOTE_ALL)
         
         with open(storing_result_name_text, 'w') as f:
             result_str = "All average: Precision: {}, Recall: {}\n".format(precision, recall) + \
@@ -1039,7 +1054,8 @@ class Asynchronous_CLDA_evaluation_class():
             files_test.extend(files)
             
             
-        training_head_number = ''.join(filter(str.isdigit, training_file_head))  
+        training_head_number = ''.join(filter(str.isdigit, training_file_head))
+        
         testing_file_head = [x[:-len(file_name_df_suffix_csv)] for x in files_test if x.endswith(file_name_df_suffix_csv) and 
                        training_head_number == ''.join(filter(str.isdigit, x))][0]
 #        test_head = [x[:-len(file_name_df_suffix_csv)] for x in files_test if x.endswith(file_name_df_suffix_csv)]
@@ -1104,8 +1120,8 @@ class Asynchronous_CLDA_evaluation_class():
         # Walk down the files to search for
         # files to geenrate model
         training_head = [x[:-len(file_name_df_suffix_csv)] for x in files_training if x.endswith(file_name_df_suffix_csv)]
-
-
+        
+        
         
         # Core use
         # Asynchronically create the LDA object
@@ -1123,9 +1139,9 @@ class Asynchronous_CLDA_evaluation_class():
         # Walk down the files to search for
         # files to geenrate model
         training_head = [x[:-len(file_name_df_suffix_csv)] for x in files_training if x.endswith(file_name_df_suffix_csv)]
-
-
-        
+#        sys.stdout = sys.__stdout__
+#        print(training_head)
+#        
         # Core use
         # Asynchronically create the LDA object
         with Pool(cpu_count()-1) as p:
@@ -1134,7 +1150,7 @@ class Asynchronous_CLDA_evaluation_class():
             # Return processed result
             return pool_async.get()
         
-    
+#    training_file_head = "Training101"
     def calculate_score_all_async_LDA(self, training_file_head, testing_dict):
         sys.stdout = buffer = StringIO() 
         score_list = []
@@ -1143,9 +1159,12 @@ class Asynchronous_CLDA_evaluation_class():
             files_test.extend(files)
             
         training_head_number = ''.join(filter(str.isdigit, training_file_head))
+#        sys.stdout = sys.__stdout__
+#        print(training_head_number)
         testing_file_head = [x[:-len(file_name_df_suffix_csv)] for x in files_test if x.endswith(file_name_df_suffix_csv) and 
                        training_head_number == ''.join(filter(str.isdigit, x))][0]
         
+#        testing_file_head = training_head_number
         print("".join(['*' for m in range(asterisk_len)]))
         print("Training_topic: {}".format(training_file_head))
         print("".join(['*' for m in range(asterisk_len)]))
@@ -1194,7 +1213,7 @@ class Asynchronous_CLDA_evaluation_class():
         
         testing_dict = {}
         
-        if (os.path.isfile(dataset_test + '/' + testing_file_head + file_name_df_suffix_csv)):
+        if (os.path.isfile(dataset_test + '/' + testing_file_head + tokenized_dataset_suffix)):
             testing_dict[testing_file_head] = pd.read_csv(dataset_test + '/' + testing_file_head + tokenized_dataset_suffix,
                                           encoding='utf-8', sep=',', error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL
                                           ,converters={'Text':ast.literal_eval})
