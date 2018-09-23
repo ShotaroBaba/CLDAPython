@@ -45,6 +45,8 @@ converted_xml_suffix = "_conv.txt"
 all_score_suffix = "_all_score.csv"
 all_score_precision_etc_suffix = "_precision_recall_top.csv"
 
+default_ngram = 1
+
 delim = ","
 default_score_threshold = 0
 asterisk_len = 20
@@ -81,6 +83,7 @@ dataset_testing = "../../CLDA_data_testing"
 from nltk import wordpunct_tokenize, WordNetLemmatizer, sent_tokenize, pos_tag
 from nltk.corpus import stopwords, wordnet
 from string import punctuation
+from nltk.util import ngrams 
 # initialize constants
 lemmatizer = WordNetLemmatizer()
 def define_sw():
@@ -377,8 +380,10 @@ class CLDA_evaluation_screen(object):
         self.LDA_selection_word_ranking_button.grid(row = 3)
         self.LDA_selection_word_ranking_button['command']  = self.show_LDA_ranking
         
+        
+        
         self.LDA_topic_probability_button= tk.Button(self.LDA_selection_and_preference, text = "Topic probability")
-        self.LDA_topic_probability_button.grid(row = 4)
+        self.LDA_topic_probability_button.grid(row = 5)
         self.LDA_topic_probability_button['command']  = self.show_topic_ranking_LDA
         
         
@@ -433,11 +438,31 @@ class CLDA_evaluation_screen(object):
         self.ranking_number_word_textbox = tk.Entry(self.ranking_label_box_frame)
         self.ranking_number_word_textbox.grid(row = 1, column=1)
         
-        self.ranking_result_file_name_label = tk.Label(self.ranking_label_box_frame, text = "File_name to store the result: ")
-        self.ranking_result_file_name_label.grid(row = 2, column=0)
+        self.ranking_result_file_name_label = tk.Label(self.ranking_label_box_frame, text = "File name to store the result: ")
+        self.ranking_result_file_name_label.grid(row = 5, column=0)
         
         self.ranking_result_file_name_textbox = tk.Entry(self.ranking_label_box_frame)
-        self.ranking_result_file_name_textbox.grid(row = 2, column=1)
+        self.ranking_result_file_name_textbox.grid(row = 5, column=1)
+        
+        self.min_ngram_label = tk.Label(self.ranking_label_box_frame, text = "min_ngram: ")
+        self.min_ngram_label.grid(row = 3, column = 0)
+        
+        self.min_ngram_entry = tk.Entry(self.ranking_label_box_frame)
+        self.min_ngram_entry.grid(row = 3, column = 1)
+        
+        self.max_ngram_label = tk.Label(self.ranking_label_box_frame, text = "max_ngram: ")
+        self.max_ngram_label.grid(row = 4, column = 0)
+        
+        self.max_ngram_entry = tk.Entry(self.ranking_label_box_frame)
+        self.max_ngram_entry.grid(row = 4, column = 1)
+        
+        self.displaying_score_button = tk.Button(self.button_word_ranking_frame, text = "Display all score (Select score file)")
+        self.displaying_score_button.pack()
+        self.displaying_score_button["command"] = self.display_all_scores_in_file
+        
+        self.displaying_score_button = tk.Button(self.button_word_ranking_frame, text = "Display specific score (Select score file)")
+        self.displaying_score_button.pack()
+        self.displaying_score_button["command"] = self.display_specific_score
         
         '''
         ##########################################################
@@ -449,6 +474,7 @@ class CLDA_evaluation_screen(object):
         self.change_to_model_creation = tk.Button(self.bottom_button_frame, text = "Return to model creation")
         self.change_to_model_creation.pack()
         self.change_to_model_creation['command'] = self.move_to_model_creation
+        
         
         
         '''
@@ -504,6 +530,59 @@ class CLDA_evaluation_screen(object):
             self.result_screen_text.insert(tk.END, "\nError: The input min doc. freq. is invalid.")
             self.result_screen_text.configure(state='disabled')
             return
+        
+    def retrieve_ngram_min(self):
+        try:
+            if(self.min_ngram_entry.get() == ""):
+                self.result_screen_text.configure(state='normal')
+                self.result_screen_text.insert(tk.END, "\nThe default value is used: ngram = {}".format(default_ngram))
+                self.result_screen_text.configure(state='disabled')
+                return default_ngram
+            else:
+                user_input_val = int(self.min_ngram_entry.get())
+                if(user_input_val < 1):
+                    self.result_screen_text.configure(state='normal')
+                    self.result_screen_text.insert(tk.END, "\nInput positive value!".format(user_input_val))
+                    self.result_screen_text.configure(state='disabled')
+                    return 
+                else:
+                    self.result_screen_text.configure(state='normal')
+                    self.result_screen_text.insert(tk.END, "\nThe input ngram value {} is used".format(user_input_val))
+                    self.result_screen_text.configure(state='disabled')
+                    return user_input_val
+        
+        except ValueError:
+            self.result_screen_text.configure(state='normal')
+            self.result_screen_text.insert(tk.END, "\nError: The input ngram value is invalid.")
+            self.result_screen_text.configure(state='disabled')
+            return
+    
+    def retrieve_ngram_max(self):
+        try:
+            if(self.max_ngram_entry.get() == ""):
+                self.result_screen_text.configure(state='normal')
+                self.result_screen_text.insert(tk.END, "\nThe default value is used: ngram_max = {}".format(default_ngram))
+                self.result_screen_text.configure(state='disabled')
+                return default_ngram
+            else:
+                user_input_val = int(self.max_ngram_entry.get())
+                if(user_input_val < 1):
+                    self.result_screen_text.configure(state='normal')
+                    self.result_screen_text.insert(tk.END, "\nInput positive value!".format(user_input_val))
+                    self.result_screen_text.configure(state='disabled')
+                    return 
+                else:
+                    self.result_screen_text.configure(state='normal')
+                    self.result_screen_text.insert(tk.END, "\nThe input ngram value {} is used".format(user_input_val))
+                    self.result_screen_text.configure(state='disabled')
+                    return user_input_val
+        
+        except ValueError:
+            self.result_screen_text.configure(state='normal')
+            self.result_screen_text.insert(tk.END, "\nError: The input ngram value is invalid.")
+            self.result_screen_text.configure(state='disabled')
+            return
+    
     
     def move_to_model_creation(self):
         
@@ -739,6 +818,16 @@ class CLDA_evaluation_screen(object):
             
     def asynchronous_CLDA_evaluation(self):
         # Initialize file_tmp list
+        # Putting ngram value
+        ngram_num_min = self.retrieve_ngram_min()
+        if (ngram_num_min == None):
+            return
+        
+        ngram_num_max = self.retrieve_ngram_max()
+        if (ngram_num_max == None):
+            return
+        
+        
         self.result_screen_text.delete("1.0", tk.END)
         
         top_word_number = self.retrieve_top_word_number()
@@ -750,6 +839,15 @@ class CLDA_evaluation_screen(object):
         if top_concept_number == None:
             return
         print(top_concept_number)
+        
+        if(ngram_num_max <  ngram_num_min):
+            self.result_screen_text.configure(state='normal')
+            self.result_screen_text.insert(tk.END, "\nError: max_ngram < min_ngram is not accepted")
+            self.result_screen_text.configure(state='disabled')
+            return
+        
+  
+        
         
         files_training = []
         for dirpath, dirs, files in os.walk(dataset_dir):
@@ -768,7 +866,7 @@ class CLDA_evaluation_screen(object):
             
             fm = Asynchronous_CLDA_evaluation_class(rank_concept = top_concept_number, rank_word = top_word_number)
             
-            results = fm.asynchronous_tokenization()
+            results = fm.asynchronous_tokenization(ngram_num_min, ngram_num_max)
             
             return results
         
@@ -804,13 +902,26 @@ class CLDA_evaluation_screen(object):
         top_word_number = self.retrieve_top_word_number()
         if top_word_number == None:
             return
-        print(top_word_number)
+
+        
+        ngram_num_min = self.retrieve_ngram_min()
+        if (ngram_num_min == None):
+            return
+        
+        ngram_num_max = self.retrieve_ngram_max()
+        if (ngram_num_max == None):
+            return
         
         self.result_screen_text.delete("1.0", tk.END)
         files_training = []
         for dirpath, dirs, files in os.walk(dataset_dir):
                 files_training.extend(files)
-
+        
+        if(ngram_num_max <  ngram_num_min):
+            self.result_screen_text.configure(state='normal')
+            self.result_screen_text.insert(tk.END, "\nError: max_ngram < min_ngram is not accepted")
+            self.result_screen_text.configure(state='disabled')
+            return
 #        score_list = []
         files_test = []
         
@@ -824,7 +935,7 @@ class CLDA_evaluation_screen(object):
             
             fm = Asynchronous_CLDA_evaluation_class(rank_word = top_word_number)
             
-            results = fm.asynchronous_tokenization()
+            results = fm.asynchronous_tokenization(ngram_num_min, ngram_num_max)
             
             return results
         
@@ -978,20 +1089,99 @@ class CLDA_evaluation_screen(object):
         with open(log_txt_name, 'w') as f:
             f.write(result_log)
         
-    
+    def display_all_scores_in_file(self):
+#        tk.tkFileDialog.askopenfilename(initialdir = "/",title = "Select file",filetypes = (("jpeg files","*.jpg"),("all files","*.*")))
+        # ,filetypes = (("Score file","*.csv"))
+        file_name = tk.filedialog.askopenfilename(title = "Select file")
+        score_data_frame = pd.read_csv(file_name,
+                                       encoding='utf-8',
+                                       quoting=csv.QUOTE_ALL)
+#        print(file_name)
+        try:
+            for i in range(len(score_data_frame)):
+                result_str = "Topic {}: Precision: {}, Recall: {}\n".format(score_data_frame.iloc[i,0], score_data_frame.iloc[i,1], score_data_frame.iloc[i,2]) + \
+                "F1 value: {}\n".format(score_data_frame.iloc[i,3]) + \
+                "Top 10 retrieval rate: {}, Top 20 retrieval rate: {}\n".format(score_data_frame.iloc[i,4], score_data_frame.iloc[i,5])
+                self.result_screen_text.configure(state='normal')
+                self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]) + '\n')
+                self.result_screen_text.insert(tk.END, result_str)
+                self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]) + '\n\n')
+                self.result_screen_text.configure(state='disabled')
+        except IndexError  or pd.errors.ParserError:
+            self.result_screen_text.configure(state='normal')
+            self.result_screen_text.insert(tk.END, "Illegal file format.")
+            self.result_screen_text.configure(state='disabled')
+        except KeyError:
+            self.result_screen_text.configure(state='normal')
+            self.result_screen_text.insert(tk.END, "The selected model with the topic does not exist.")
+            self.result_screen_text.configure(state='disabled')
+            
+    def display_specific_score(self):
+        self.result_screen_text.configure(state='normal')
+        topic_name = ""
+        
+        # Check whether either file is selected...
+        # make sure that the correct file storing the result
+        # is selected.
+        try:
+            topic_name = self.CLDA_selection_listbox.get(self.CLDA_selection_listbox.curselection())
+            self.result_screen_text.insert(tk.END, "CLDA_selected.\n")
+        except:
+            try:
+                topic_name = self.CLDA_selection_listbox.get(self.CLDA_selection_listbox.curselection())
+                self.result_screen_text.insert(tk.END, "LDA_selected.\n")
+            except:
+                self.result_screen_text.insert(tk.END, "Model is not selected.\n")
+                return
+        
+        topic_head_number = ''.join(filter(str.isdigit, topic_name))
+        
+        
+        file_name = tk.filedialog.askopenfilename(title = "Select file")
+        
+        
+        score_data_frame = pd.read_csv(file_name,
+                                       encoding='utf-8',
+                                       quoting=csv.QUOTE_ALL)
+        
+        score_data_frame = score_data_frame[score_data_frame['Topic'] == topic_head_number]
+        
+        self.result_screen_text.configure(state='disabled')
+        
+        try:
+            for i in range(len(score_data_frame)):
+                result_str = "Topic {}: Precision: {}, Recall: {}\n".format(score_data_frame.iloc[i,0], score_data_frame.iloc[i,1], score_data_frame.iloc[i,2]) + \
+                "F1 value: {}\n".format(score_data_frame.iloc[i,3]) + \
+                "Top 10 retrieval rate: {}, Top 20 retrieval rate: {}\n".format(score_data_frame.iloc[i,4], score_data_frame.iloc[i,5])
+                self.result_screen_text.configure(state='normal')
+                self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]) + '\n')
+                self.result_screen_text.insert(tk.END, result_str)
+                self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]) + '\n\n')
+                self.result_screen_text.configure(state='disabled')
+        except IndexError or KeyError or pd.errors.ParserError:
+            self.result_screen_text.configure(state='normal')
+            self.result_screen_text.insert(tk.END, "Illegal file format.")
+            self.result_screen_text.configure(state='disabled')
+            
+        except KeyError:
+            self.result_screen_text.configure(state='normal')
+            self.result_screen_text.insert(tk.END, "The selected model with the topic does not exist.")
+            self.result_screen_text.configure(state='disabled')
             
 class Asynchronous_CLDA_evaluation_class():
+    from nltk import wordpunct_tokenize, WordNetLemmatizer, sent_tokenize, pos_tag
+    from nltk.corpus import stopwords, wordnet
+    from string import punctuation
+    from nltk.util import ngrams 
+    import gc
     
     def __init__(self, rank_concept = default_rank_concept, rank_word = default_rank_word):
         self.rank_concept = rank_concept
         self.rank_word = rank_word
         pass
     
-    from nltk import wordpunct_tokenize, WordNetLemmatizer, sent_tokenize, pos_tag
-    from nltk.corpus import stopwords, wordnet
-    from string import punctuation
-    import gc
     
+    # The tokenization method must be the same!
     # initialize constants
     lemmatizer = WordNetLemmatizer()
     def define_sw(self):
@@ -1012,11 +1202,11 @@ class Asynchronous_CLDA_evaluation_class():
         return lemmatizer.lemmatize(token, tag)
     
     # The tokenizer for the documents
-    def cab_tokenizer(self, document):
+    def cab_tokenizer(self, document, min_ngram, max_ngram):
         tokens = []
         sw = self.define_sw()
         punct = set(punctuation)
-    
+        final_tokens = []
         # split the document into sentences
         for sent in sent_tokenize(document):
             # tokenize each sentence
@@ -1040,7 +1230,17 @@ class Asynchronous_CLDA_evaluation_class():
     
                 # Append lemmatized token to list
                 tokens.append(lemma)
-        return tokens        
+        
+        if(min_ngram == 1 and max_ngram == 1):
+            return list(set(tokens))
+        
+        for i in range(min_ngram, max_ngram + 1):
+            final_tokens.extend([' '.join(x) for x in list(ngrams(tokens, i))])
+            
+        final_tokens = list(set(final_tokens))
+        # Eliminate duplicates
+        return final_tokens
+    
     
     #    for training_file_head in training_head:
     def calculate_score_all_async(self, training_file_head, testing_dict):
@@ -1208,7 +1408,7 @@ class Asynchronous_CLDA_evaluation_class():
         return (score_list, buffer)
     
     
-    def tokenization_test(self, testing_file_head):
+    def tokenization_test(self, testing_file_head, min_ngram, max_ngram):
         wn.ensure_loaded()
         
         testing_dict = {}
@@ -1221,7 +1421,7 @@ class Asynchronous_CLDA_evaluation_class():
         else:    
             testing_dict[testing_file_head] = pd.read_csv(dataset_test + '/' + testing_file_head + file_name_df_suffix_csv,
                                               encoding='utf-8', sep=',', error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
-            testing_dict[testing_file_head]['Text'] = testing_dict[testing_file_head]['Text'].apply(lambda x: self.cab_tokenizer(x))
+            testing_dict[testing_file_head]['Text'] = testing_dict[testing_file_head]['Text'].apply(lambda x: self.cab_tokenizer(x, min_ngram, max_ngram))
             
             file_name = dataset_test + '/' + testing_file_head + tokenized_dataset_suffix
             testing_dict[testing_file_head].to_csv(file_name,
@@ -1229,7 +1429,7 @@ class Asynchronous_CLDA_evaluation_class():
                                   quoting=csv.QUOTE_ALL)
         return testing_dict
     
-    def asynchronous_tokenization(self):
+    def asynchronous_tokenization(self, min_ngram, max_ngram):
         files_test = []
         
         for dirpath, dirs, files in os.walk(dataset_test):
@@ -1241,7 +1441,7 @@ class Asynchronous_CLDA_evaluation_class():
         
         tokenized_result = None
         with Pool(cpu_count()-1) as p:
-            pool_async = p.starmap_async(self.tokenization_test, [[i] for i in test_head])
+            pool_async = p.starmap_async(self.tokenization_test, [[i, min_ngram, max_ngram] for i in test_head])
            
             
             tokenized_result = pool_async.get()

@@ -13,6 +13,7 @@ try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
+    
 from nltk.corpus import wordnet as wn
 import CLDA_eval_screen
 import CLDA
@@ -156,7 +157,7 @@ def cab_tokenizer(document):
 # Define the function here
 # Generate vector for creating the data
 def generate_vector(ngram_length, min_df, max_df):
-    return CountVectorizer(tokenizer=cab_tokenizer, ngram_range=[1,ngram_length],
+    return CountVectorizer(tokenizer=cab_tokenizer, ngram_range=[ngram_length[0], ngram_length[1]],
                            min_df=min_df, max_df=max_df)
 
 # Generate count vectorizer
@@ -672,7 +673,7 @@ class Application():
         self.frame_for_folder_selection_test = tk.Frame(self.main_listbox_and_result_test )
         self.frame_for_folder_selection_test.pack(side = tk.LEFT)
         
-        self.user_drop_down_select_folder_label_test = tk.Label(self.frame_for_folder_selection_test , text = "Folder (Topic)\nSelection")
+        self.user_drop_down_select_folder_label_test = tk.Label(self.frame_for_folder_selection_test , text = "Created \nTest Data")
         self.user_drop_down_select_folder_label_test.pack()
         
         self.frame_for_drop_down_menu_folder_test = tk.Frame(self.frame_for_folder_selection_test)
@@ -770,40 +771,46 @@ class Application():
         
         
         self.smooth_label = tk.Label(self.values_to_input, text = "Smooth value (float): ")
-        self.smooth_label.grid(row = 1, column = 0)
+        self.smooth_label.grid(row = 0, column = 2)
         
         self.smooth_text = tk.Entry(self.values_to_input)
-        self.smooth_text.grid(row =1, column = 1)
+        self.smooth_text.grid(row =0, column = 3)
         
-        self.ngram_label = tk.Label(self.values_to_input, text = "ngram value (positive integer): ")
-        self.ngram_label.grid(row = 2, column = 0)
+        self.ngram_label = tk.Label(self.values_to_input, text = "min_ngram value (positive integer): ")
+        self.ngram_label.grid(row = 1, column = 0)
         
         self.ngram_text = tk.Entry(self.values_to_input)
-        self.ngram_text.grid(row = 2, column = 1)
+        self.ngram_text.grid(row = 1, column = 1)
+        
+        self.ngram_max_label = tk.Label(self.values_to_input, text = "max_ngram value (positive integer): ")
+        self.ngram_max_label.grid(row = 1, column = 2)
+        
+        self.ngram_max_text = tk.Entry(self.values_to_input)
+        self.ngram_max_text.grid(row = 1, column = 3)
         
         self.min_df_label = tk.Label(self.values_to_input, text = "min doc freq. (float): ")
-        self.min_df_label.grid(row = 3, column = 0)
+        self.min_df_label.grid(row = 2, column = 0)
         
         self.min_df_text = tk.Entry(self.values_to_input)
-        self.min_df_text.grid(row = 3, column = 1)
+        self.min_df_text.grid(row = 2, column = 1)
         
         self.max_df_label = tk.Label(self.values_to_input, text = "max doc freq. (float): ")
-        self.max_df_label.grid(row = 4, column = 0)
+        self.max_df_label.grid(row = 2, column = 2)
         
         self.max_df_text = tk.Entry(self.values_to_input)
-        self.max_df_text.grid(row = 4, column = 1)
+        self.max_df_text.grid(row = 2, column = 3)
         
         self.topic_num_label = tk.Label(self.values_to_input, text = "Number of topics (positive integer): ")
-        self.topic_num_label.grid(row = 5, column = 0)
+        self.topic_num_label.grid(row = 3, column = 0)
         
         self.topic_num_text = tk.Entry(self.values_to_input)
-        self.topic_num_text.grid(row = 5, column = 1)
+        self.topic_num_text.grid(row = 3, column = 1)
         
         self.max_iter_label = tk.Label(self.values_to_input, text = "Max iteration (positive integer): ")
-        self.max_iter_label.grid(row = 6, column = 0)
+        self.max_iter_label.grid(row = 3, column = 2)
         
         self.max_iter_text = tk.Entry(self.values_to_input)
-        self.max_iter_text.grid(row = 6, column = 1)
+        self.max_iter_text.grid(row = 3, column = 3)
         
         
         '''
@@ -919,56 +926,59 @@ class Application():
         ###Buttons
         ##########################################
         '''
+#       
+        
+        self.buttons_frame = tk.Frame(self.root)
+        self.buttons_frame.pack()
+#        self.func_test = tk.Button(self.buttons_frame, text = 'Function test')
 #        
-        self.func_test = tk.Button(self.root, text = 'Function test')
-        
-        self.func_test.pack(side = tk.BOTTOM)
-        self.func_test['command'] = self.test_all
+#        self.func_test.pack(side = tk.BOTTOM)
+#        self.func_test['command'] = self.test_all
         
         
-        self.training_button = tk.Button(self.root, text = 'training_data_creation_xml')
+        self.training_button = tk.Button(self.buttons_frame, text = 'training_data_creation_xml')
         
-        self.training_button.pack(side = tk.BOTTOM)
+        self.training_button.grid(row = 0, column = 0)
         self.training_button['command'] = partial(self.asynchronous_topic_concept_retrieval,
                             self.select_folder_and_extract_xml_async, '.xml', dataset_dir, 0)
 
         
-        self.training_button_txt = tk.Button(self.root, text = 'training_data_creation_text')
+        self.training_button_txt = tk.Button(self.buttons_frame, text = 'training_data_creation_text')
         
-        self.training_button_txt.pack(side = tk.BOTTOM)
+        self.training_button_txt.grid(row = 0, column = 1)
         self.training_button_txt['command'] = partial(self.asynchronous_topic_concept_retrieval,
                                 self.select_folder_and_extract_txt_async, '.txt', dataset_dir, 0)
         
         
         
-        self.test_button = tk.Button(self.root, text = 'test_data_creation_txt')
-        self.test_button.pack(side = tk.BOTTOM)
+        self.test_button = tk.Button(self.buttons_frame, text = 'test_data_creation_txt')
+        self.test_button.grid(row = 1, column = 0)
         self.test_button['command'] =partial(self.asynchronous_data_retrieval_test, 
                         self.select_folder_and_extract_txt_async_test, '.txt', dataset_test)
         
-        self.training_button_txt_test = tk.Button(self.root, text = 'test_data_creation_xml')
-        self.training_button_txt_test.pack(side = tk.BOTTOM)
+        self.training_button_txt_test = tk.Button(self.buttons_frame, text = 'test_data_creation_xml')
+        self.training_button_txt_test.grid(row = 1, column = 1)
         self.training_button_txt_test['command'] = partial(self.asynchronous_data_retrieval_test, 
                                      self.select_folder_and_extract_xml_async_test, '.xml', dataset_test)
         
         
 #        
-        self.LDA_button = tk.Button(self.root, text = 'LDA_model_creation (training)')
+        self.LDA_button = tk.Button(self.buttons_frame, text = 'LDA_model_creation (training)')
         
-        self.LDA_button.pack(side = tk.BOTTOM)
+        self.LDA_button.grid(row = 2, column = 0)
         self.LDA_button['command'] = partial(self.asynchronous_LDA_model_generation, dataset_dir, 0)
         
-        self.CLDA_button = tk.Button(self.root, text = 'CLDA_model_creation (training)')
+        self.CLDA_button = tk.Button(self.buttons_frame, text = 'CLDA_model_creation (training)')
         
-        self.CLDA_button.pack(side = tk.BOTTOM)
+        self.CLDA_button.grid(row = 2, column = 1)
         self.CLDA_button['command'] = partial(self.asynchronous_CLDA_model_generation, dataset_dir, 0)
         
         
 
         
-        self.LDA_evaluation_screen = tk.Button(self.root, text = 'Go to CLDA evaluation')
+        self.LDA_evaluation_screen = tk.Button(self.buttons_frame, text = 'Go to CLDA evaluation')
         
-        self.LDA_evaluation_screen.pack(side = tk.BOTTOM)
+        self.LDA_evaluation_screen.grid(row = 3,columnspan = 3)
         self.LDA_evaluation_screen['command'] = self.move_to_CLDA_evaluation
         
         
@@ -1009,7 +1019,7 @@ class Application():
             self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
             return
     
-    def retrieve_ngram(self):
+    def retrieve_ngram_min(self):
         try:
             if(self.ngram_text.get() == ""):
                 self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
@@ -1034,7 +1044,33 @@ class Application():
             self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input ngram value is invalid.")
             self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
             return
+    
+    def retrieve_ngram_max(self):
+        try:
+            if(self.ngram_max_text.get() == ""):
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe default value is used: ngram_max = {}".format(default_ngram))
+                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                return default_ngram
+            else:
+                user_input_val = int(self.ngram_max_text.get())
+                if(user_input_val < 1):
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nInput positive value!".format(user_input_val))
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    return 
+                else:
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe input ngram value {} is used".format(user_input_val))
+                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    return user_input_val
         
+        except ValueError:
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input ngram value is invalid.")
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            return
+    
     def retrieve_smooth_value(self):
         try:
             if(self.smooth_text.get() == ""):
@@ -1103,7 +1139,7 @@ class Application():
             self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input min doc. freq. is invalid.")
             self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
             return
-        
+   
     def retrieve_topic_num(self):
         try:
             if(self.topic_num_text.get() == ""):
@@ -1161,10 +1197,12 @@ class Application():
         if (top_concept_limit == None):
             return
         print(top_concept_limit)
-        ngram_num = self.retrieve_ngram()
+        ngram_num = self.retrieve_ngram_min()
         if (ngram_num == None):
             return
         print(ngram_num)
+        
+        
         smooth_value = self.retrieve_smooth_value()
         if (smooth_value == None):
             return
@@ -1261,28 +1299,7 @@ class Application():
         for i in self.topic_list_test:
             self.user_drop_down_select_folder_list_test.insert(tk.END, i)
             
-        # Initialise the features_list
-        # Extract feature files from the file lists
-        # No need to sort the values as the files are already sorted by names
-#        self.feature_list_test = [x for x in files_tmp_test if x.endswith(feature_matrix_suffix_csv)]
-#        
-#        for i in self.feature_list_test:
-#            self.drop_down_list_word_vector_list_test.insert(tk.END, i)
-#        
-#        self.concept_list_test = [x for x in files_tmp_test if x.endswith(concept_prob_suffix_json)]
-#        
-#        for i in self.concept_list_test:
-#            self.drop_down_concept_prob_vector_list_test.insert(tk.END, i)
-#        
-#        self.CLDA_list_test = [x for x in files_tmp_test if x.endswith(CLDA_suffix_pickle)]
-#        for i in self.CLDA_list_test:
-#            self.drop_down_CLDA_list_test.insert(tk.END, i)
-#            
-#        
-#        self.LDA_list_test = [x for x in files_tmp_test if x.endswith('_LDA.pkl')]
-#        for i in self.LDA_list_test:
-#            self.drop_down_LDA_list_test.insert(tk.END, i)
-        
+
             
             
     
@@ -1362,10 +1379,10 @@ class Application():
     
     
     # Select the labelling folder to label the dataset....
-    def select_labelling_folder():
-        
-        
-        return
+#    def select_labelling_folder():
+#        
+#        
+#        return
 
     def select_folder_and_extract_txt_async(self,ask_folder, topic_list, dataset_dir):
   
@@ -1485,8 +1502,6 @@ class Application():
     def select_folder_and_extract_xml_async_test(self,ask_folder, topic_list, dataset_dir, label_dir):
         
         folder_directory = ask_folder
-        
-  #      folder_directory = "C:\Users\n9648852\Desktop\R8-Dataset\Dataset\R8\Training\Training101"
 
         temp_substr = os.path.basename(folder_directory)
             
@@ -1663,8 +1678,12 @@ class Application():
         if (top_concept_limit == None):
             return
         
-        ngram_num = self.retrieve_ngram()
-        if (ngram_num == None):
+        ngram_num_min = self.retrieve_ngram_min()
+        if (ngram_num_min == None):
+            return
+        
+        ngram_num_max = self.retrieve_ngram_max()
+        if (ngram_num_max == None):
             return
         
         smooth_value = self.retrieve_smooth_value()
@@ -1687,6 +1706,15 @@ class Application():
             print("Error")
             return
         
+        if(ngram_num_max <  ngram_num_min):
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
+            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: max_ngram < min_ngram is not accepted")
+            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            print("Error")
+            return
+        
+        
+        ngram_list = (ngram_num_min, ngram_num_max)
         # training_folders_tmp.remove(train_folder_selection)
         
         if(test_or_training == 0):
@@ -1760,7 +1788,7 @@ class Application():
         # LDA model later on
         with Pool(cpu_count()-1) as p:
             pool_async = p.starmap_async(create_feature_vector_async, [[i, feature_list, dataset_dir, 
-                                                                        ngram_num,  min_df_value,
+                                                                        ngram_list,  min_df_value,
                                                                         max_df_value] for i in training_folders_tmp])
             features = pool_async.get()
         
