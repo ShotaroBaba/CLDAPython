@@ -84,6 +84,9 @@ default_min_df = 0.02
 default_max_df = 0.98
 default_topic_num = 5
 default_max_iter = 20
+default_alpha = 0.1
+default_beta = 0.1
+
 
 label_delim = " "
 delim = ","
@@ -510,15 +513,15 @@ class Application():
         tk.Scrollbar(self.user_drop_down_folder_selection_results_frame, orient = "vertical")
         self.user_drop_down_folder_selection_results_scroll_bar.pack(side = tk.RIGHT, fill = 'y')
         
-        self.user_drop_down_folder_selection_results_scroll_list = tk.Text(self.user_drop_down_folder_selection_results_frame)
-        self.user_drop_down_folder_selection_results_scroll_list.pack(side = tk.LEFT, fill = 'y')
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+        self.result_screen = tk.Text(self.user_drop_down_folder_selection_results_frame)
+        self.result_screen.pack(side = tk.LEFT, fill = 'y')
+        self.result_screen.configure(state='disabled')
         
-        self.user_drop_down_folder_selection_results_scroll_list['yscrollcommand'] = \
+        self.result_screen['yscrollcommand'] = \
         self.user_drop_down_folder_selection_results_scroll_bar.set
         
         self.user_drop_down_folder_selection_results_scroll_bar['command'] = \
-        self.user_drop_down_folder_selection_results_scroll_list.yview
+        self.result_screen.yview
         '''
         #######################################
         ####Result screen END
@@ -813,6 +816,20 @@ class Application():
         self.max_iter_text.grid(row = 3, column = 3)
         
         
+        self.alpha_label = tk.Label(self.values_to_input, text = "alpha (positive float): ")
+        self.alpha_label.grid(row = 4, column = 0)
+        
+        self.alpha_text = tk.Entry(self.values_to_input)
+        self.alpha_text.grid(row = 4, column = 1)
+        
+        self.beta_label = tk.Label(self.values_to_input, text = "beta (positive float): ")
+        self.beta_label.grid(row = 4, column = 2)
+        
+        self.beta_text = tk.Entry(self.values_to_input)
+        self.beta_text.grid(row = 4, column = 3)
+        
+        
+        
         '''
         #######################################
         ###Training data generation button
@@ -930,10 +947,10 @@ class Application():
         
         self.buttons_frame = tk.Frame(self.root)
         self.buttons_frame.pack()
-#        self.func_test = tk.Button(self.buttons_frame, text = 'Function test')
-#        
-#        self.func_test.pack(side = tk.BOTTOM)
-#        self.func_test['command'] = self.test_all
+        self.func_test = tk.Button(self.root, text = 'Function test')
+        
+        self.func_test.pack(side = tk.BOTTOM)
+        self.func_test['command'] = self.test_all
         
         
         self.training_button = tk.Button(self.buttons_frame, text = 'training_data_creation_xml')
@@ -996,199 +1013,254 @@ class Application():
         
         try:
             if(self.top_concept_text.get() == ""):
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe default value is used: K = {}".format(default_K))
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                self.result_screen.configure(state='normal')
+                self.result_screen.insert(tk.END, "\nThe default value is used: K = {}".format(default_K))
+                self.result_screen.configure(state='disabled')
                 return default_K
             else:
                 user_input_val = int(self.top_concept_text.get())
                 if(user_input_val < 1):
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nInput positive value!".format(user_input_val))
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nInput positive value!".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
                     return 
                 else:
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe input top topic limit value {} is used".format(user_input_val))
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nThe input top topic limit value {} is used".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
                     return user_input_val
         
         except ValueError:
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input topic concept top limit value is invalid.")
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            self.result_screen.configure(state='normal')
+            self.result_screen.insert(tk.END, "\nError: The input topic concept top limit value is invalid.")
+            self.result_screen.configure(state='disabled')
             return
     
     def retrieve_ngram_min(self):
         try:
             if(self.ngram_text.get() == ""):
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe default value is used: ngram = {}".format(default_ngram))
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                self.result_screen.configure(state='normal')
+                self.result_screen.insert(tk.END, "\nThe default value is used: ngram = {}".format(default_ngram))
+                self.result_screen.configure(state='disabled')
                 return default_ngram
             else:
                 user_input_val = int(self.ngram_text.get())
                 if(user_input_val < 1):
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nInput positive value!".format(user_input_val))
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nInput positive value!".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
                     return 
                 else:
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe input ngram value {} is used".format(user_input_val))
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nThe input ngram value {} is used".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
                     return user_input_val
         
         except ValueError:
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input ngram value is invalid.")
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            self.result_screen.configure(state='normal')
+            self.result_screen.insert(tk.END, "\nError: The input ngram value is invalid.")
+            self.result_screen.configure(state='disabled')
             return
     
     def retrieve_ngram_max(self):
         try:
             if(self.ngram_max_text.get() == ""):
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe default value is used: ngram_max = {}".format(default_ngram))
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                self.result_screen.configure(state='normal')
+                self.result_screen.insert(tk.END, "\nThe default value is used: ngram_max = {}".format(default_ngram))
+                self.result_screen.configure(state='disabled')
                 return default_ngram
             else:
                 user_input_val = int(self.ngram_max_text.get())
                 if(user_input_val < 1):
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nInput positive value!".format(user_input_val))
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nInput positive value!".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
                     return 
                 else:
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe input ngram value {} is used".format(user_input_val))
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nThe input ngram value {} is used".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
                     return user_input_val
         
         except ValueError:
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input ngram value is invalid.")
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            self.result_screen.configure(state='normal')
+            self.result_screen.insert(tk.END, "\nError: The input ngram value is invalid.")
+            self.result_screen.configure(state='disabled')
             return
     
     def retrieve_smooth_value(self):
         try:
             if(self.smooth_text.get() == ""):
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe default value is used: smooth = {}".format(default_smooth))
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                self.result_screen.configure(state='normal')
+                self.result_screen.insert(tk.END, "\nThe default value is used: smooth = {}".format(default_smooth))
+                self.result_screen.configure(state='disabled')
                 return default_smooth
             else:
                 user_input_val = float(self.smooth_text.get())
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe input ngram value {} is used".format(user_input_val))
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                self.result_screen.configure(state='normal')
+                self.result_screen.insert(tk.END, "\nThe input ngram value {} is used".format(user_input_val))
+                self.result_screen.configure(state='disabled')
                 return user_input_val
         
         except ValueError:
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input smooth is invalid.")
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            self.result_screen.configure(state='normal')
+            self.result_screen.insert(tk.END, "\nError: The input smooth is invalid.")
+            self.result_screen.configure(state='disabled')
             return
     
     def retrieve_max_df(self):
         try:
             if(self.max_df_text.get() == ""):
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe default value is used: max doc. freq. = {}".format(default_max_df))
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                self.result_screen.configure(state='normal')
+                self.result_screen.insert(tk.END, "\nThe default value is used: max doc. freq. = {}".format(default_max_df))
+                self.result_screen.configure(state='disabled')
                 return default_max_df
             else:
                 user_input_val = float(self.max_df_text.get())
                 if (user_input_val > 1.0 or user_input_val < 0.0):
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nPlease input value between 0 < x < 1! (max doc. freq. {})".format(user_input_val))
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nPlease input value between 0 < x < 1! (max doc. freq. {})".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
                     return
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe input max doc. freq. {} is used".format(user_input_val))
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                self.result_screen.configure(state='normal')
+                self.result_screen.insert(tk.END, "\nThe input max doc. freq. {} is used".format(user_input_val))
+                self.result_screen.configure(state='disabled')
                 return user_input_val
         
         except ValueError:
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input max doc. freq. is invalid.")
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            self.result_screen.configure(state='normal')
+            self.result_screen.insert(tk.END, "\nError: The input max doc. freq. is invalid.")
+            self.result_screen.configure(state='disabled')
     
     def retrieve_min_df(self):
         try:
             if(self.min_df_text.get() == ""):
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe default value is used: min doc. freq. = {}".format(default_min_df))
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                self.result_screen.configure(state='normal')
+                self.result_screen.insert(tk.END, "\nThe default value is used: min doc. freq. = {}".format(default_min_df))
+                self.result_screen.configure(state='disabled')
                 return default_min_df
             else:
                 user_input_val = float(self.min_df_text.get())
                 if (user_input_val > 1.0 or user_input_val < 0.0):
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nPlease input value between 0 < x < 1! (min doc. freq. {})".format(user_input_val))
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nPlease input value between 0 < x < 1! (min doc. freq. {})".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
                     return
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe input min doc. freq. value {} is used".format(user_input_val))
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                self.result_screen.configure(state='normal')
+                self.result_screen.insert(tk.END, "\nThe input min doc. freq. value {} is used".format(user_input_val))
+                self.result_screen.configure(state='disabled')
                 return user_input_val
         
         except ValueError:
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input min doc. freq. is invalid.")
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            self.result_screen.configure(state='normal')
+            self.result_screen.insert(tk.END, "\nError: The input min doc. freq. is invalid.")
+            self.result_screen.configure(state='disabled')
             return
    
     def retrieve_topic_num(self):
         try:
             if(self.topic_num_text.get() == ""):
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe default value is used: topic num. = {}".format(default_topic_num))
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                self.result_screen.configure(state='normal')
+                self.result_screen.insert(tk.END, "\nThe default value is used: topic num. = {}".format(default_topic_num))
+                self.result_screen.configure(state='disabled')
                 return default_topic_num
             else:
                 user_input_val = int(self.topic_num_text.get())
                 if(user_input_val < 2):
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nInput positive value!".format(user_input_val))
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nInput positive value!".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
                     return 
                 else:
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe input topic num. value {} is used".format(user_input_val))
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nThe input topic num. value {} is used".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
                     return user_input_val
         
         except ValueError:
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input topic num. is invalid.")
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            self.result_screen.configure(state='normal')
+            self.result_screen.insert(tk.END, "\nError: The input topic num. is invalid.")
+            self.result_screen.configure(state='disabled')
             return 
     def retrieve_max_iter(self):
         try:
             if(self.max_iter_text.get() == ""):
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe default value is used: max iter. = {}".format(default_max_iter))
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                self.result_screen.configure(state='normal')
+                self.result_screen.insert(tk.END, "\nThe default value is used: max iter. = {}".format(default_max_iter))
+                self.result_screen.configure(state='disabled')
                 return default_max_iter
             else:
                 user_input_val = int(self.max_iter_text.get())
                 if(user_input_val < 1):
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nInput positive value!".format(user_input_val))
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nInput positive value!".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
                     return 
                 else:
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                    self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nThe input max iter. value {} is used".format(user_input_val))
-                    self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nThe input max iter. value {} is used".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
                     return user_input_val
         
         except ValueError:
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: The input max iter. is invalid.")
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            self.result_screen.configure(state='normal')
+            self.result_screen.insert(tk.END, "\nError: The input max iter. is invalid.")
+            self.result_screen.configure(state='disabled')
+
+            return
+        
+    def retrieve_alpha(self):
+        try:
+            if(self.alpha_text.get() == ""):
+                self.result_screen.configure(state='normal')
+                self.result_screen.insert(tk.END, "\nThe default value is used: alpha = {}".format(default_alpha))
+                self.result_screen.configure(state='disabled')
+                return default_alpha
+            else:
+                user_input_val = float(self.alpha_text.get())
+                if(user_input_val <= 0):
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nInput positive value!".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
+                    return 
+                else:
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nThe input alpha value {} is used".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
+                    return user_input_val
+        
+        except ValueError:
+            self.result_screen.configure(state='normal')
+            self.result_screen.insert(tk.END, "\nError: The input max iter. is invalid.")
+            self.result_screen.configure(state='disabled')
+
+            return
+        
+        
+    def retrieve_beta(self):
+        try:
+            if(self.beta_text.get() == ""):
+                self.result_screen.configure(state='normal')
+                self.result_screen.insert(tk.END, "\nThe default value is used: beta = {}".format(default_beta))
+                self.result_screen.configure(state='disabled')
+                return default_beta
+            else:
+                user_input_val = float(self.beta_text.get())
+                if(user_input_val <= 0):
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nInput positive value!".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
+                    return 
+                else:
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nThe input beta value {} is used".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
+                    return user_input_val
+        
+        except ValueError:
+            self.result_screen.configure(state='normal')
+            self.result_screen.insert(tk.END, "\nError: The input max iter. is invalid.")
+            self.result_screen.configure(state='disabled')
 
             return
 #    Testing the function of all functions
@@ -1217,9 +1289,9 @@ class Application():
         print(min_df_value)
         
         if(max_df_value <= min_df_value):
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: max_df <= min_df is not accepted")
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            self.result_screen.configure(state='normal')
+            self.result_screen.insert(tk.END, "\nError: max_df <= min_df is not accepted")
+            self.result_screen.configure(state='disabled')
             print("Error")
             return
         
@@ -1235,8 +1307,14 @@ class Application():
             return
         print(max_iter)
         
-
-        
+        alpha = self.retrieve_alpha()
+        if(alpha == None):
+            return
+        print(alpha)
+        beta = self.retrieve_beta()
+        if(beta == None):
+            return
+        print(beta)
         
         
     def move_to_CLDA_evaluation(self):
@@ -1642,9 +1720,9 @@ class Application():
         print("Test data retrieval completed!")
         
         sys.stdout = sys.__stdout__
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-        self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, buffer.getvalue())
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+        self.result_screen.configure(state='normal')
+        self.result_screen.insert(tk.END, buffer.getvalue())
+        self.result_screen.configure(state='disabled')
     # Labelling test folder
         
     # Retrieving topic list
@@ -1663,9 +1741,9 @@ class Application():
         #train_folder_selection = "C:/Users/n9648852/Desktop/R8-Dataset/Dataset/R8/Testing"
         
         if(train_folder_selection == ""):
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nFolder not selected. Abort.")
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            self.result_screen.configure(state='normal')
+            self.result_screen.insert(tk.END, "\nFolder not selected. Abort.")
+            self.result_screen.configure(state='disabled')
             return
         
         training_folders_tmp = []
@@ -1700,16 +1778,16 @@ class Application():
         
         
         if(max_df_value <= min_df_value):
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: max_df <= min_df is not accepted")
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            self.result_screen.configure(state='normal')
+            self.result_screen.insert(tk.END, "\nError: max_df <= min_df is not accepted")
+            self.result_screen.configure(state='disabled')
             print("Error")
             return
         
         if(ngram_num_max <  ngram_num_min):
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-            self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, "\nError: max_ngram < min_ngram is not accepted")
-            self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+            self.result_screen.configure(state='normal')
+            self.result_screen.insert(tk.END, "\nError: max_ngram < min_ngram is not accepted")
+            self.result_screen.configure(state='disabled')
             print("Error")
             return
         
@@ -1871,9 +1949,9 @@ class Application():
                 for i in concepts:
                     self.drop_down_concept_prob_vector_list_test.insert(tk.END, i)
         print("Concept graph retrieval completed!!")
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-        self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, buffer.getvalue())
-        self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+        self.result_screen.configure(state='normal')
+        self.result_screen.insert(tk.END, buffer.getvalue())
+        self.result_screen.configure(state='disabled')
 
         
     def asynchronous_CLDA_model_generation(self, dataset_dir, result_num):
@@ -1886,11 +1964,20 @@ class Application():
         if(max_iter == None):
             return
         
+        alpha = self.retrieve_alpha()
+        if(alpha == None):
+            return
+        
+        beta = self.retrieve_beta()
+        if(beta == None):
+            return
+        
+        
         def concurrent():
             
             fm = Asynchrous_CLDA()
             
-            results = fm.asynchronous_CLDA_creation(dataset_dir, topic_num, max_iter)
+            results = fm.asynchronous_CLDA_creation(dataset_dir, topic_num, max_iter, alpha, beta)
             
             return results
         
@@ -1900,9 +1987,9 @@ class Application():
         for i in results:
             line = i[1].getvalue()
             if line != "":
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, line)
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                self.result_screen.configure(state='normal')
+                self.result_screen.insert(tk.END, line)
+                self.result_screen.configure(state='disabled')
         # If result num is equal to 1, then the result can be put into 1
         
         if(result_num == 0):
@@ -1928,12 +2015,21 @@ class Application():
         if(max_iter == None):
             return
         
+        alpha = self.retrieve_alpha()
+        if(alpha == None):
+            return
+        
+        beta = self.retrieve_beta()
+        if(beta == None):
+            return
+        
+        
         def concurrent():
         #        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
             
             fm = Asynchrous_LDA
             
-            results = fm.asynchronous_LDA_creation(fm, dataset_dir, topic_num, max_iter)
+            results = fm.asynchronous_LDA_creation(fm, dataset_dir, topic_num, max_iter, alpha, beta)
             
             return results
             
@@ -1944,9 +2040,9 @@ class Application():
         for i in results:
             line = i[1].getvalue()
             if line != "":
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='normal')
-                self.user_drop_down_folder_selection_results_scroll_list.insert(tk.END, line)
-                self.user_drop_down_folder_selection_results_scroll_list.configure(state='disabled')
+                self.result_screen.configure(state='normal')
+                self.result_screen.insert(tk.END, line)
+                self.result_screen.configure(state='disabled')
         # If result num is equal to 1, then the result can be put into 1
         
         if(result_num == 0):
@@ -1971,10 +2067,10 @@ class Asynchrous_CLDA(object):
         self.dataset_dir = None
         
         
-    def create_CLDA_instance(self,i, topic_num, max_iter):
+    def create_CLDA_instance(self,i, topic_num, max_iter, alpha, beta):
         # turn standard out into string IO...
         # to capture the standard output
-        sys.stdout = buffer = StringIO()
+        
         # Read CLDA files 
         files_tmp = []
         for dirpath, dirs, files in os.walk(self.dataset_dir):
@@ -2016,14 +2112,13 @@ class Asynchrous_CLDA(object):
             for line in f:
                 concept_names.append(line.strip('\n'))
             
-            
-        print("file reading {}: complete!".format(i))
+        
         
         # Forcefully create standard output
         sys.stdout.flush()
         
         # Create CLDA instance
-        CLDA_instance = CLDA.CLDA(feature_names, concept_names, file_index_name,topic_num, max_iter)
+        CLDA_instance = CLDA.CLDA(feature_names, concept_names, file_index_name,topic_num, max_iter, alpha, beta)
         
         # Run CLDA
         CLDA_instance.run(feature_matrix, concept_dict)
@@ -2032,6 +2127,8 @@ class Asynchrous_CLDA(object):
         with open(self.dataset_dir + '/' + i + CLDA_suffix_pickle, "wb") as f:
             pickle.dump(CLDA_instance, f)
         
+        sys.stdout = buffer = StringIO()    
+        print("CLDA model  {}: complete!".format(i))
         # Sleep just in case...
         time.sleep(0.5)
         sys.stdout = sys.__stdout__
@@ -2039,7 +2136,7 @@ class Asynchrous_CLDA(object):
         # Return True if the process stops normally
         return (i + CLDA_suffix_pickle, buffer)
     
-    def asynchronous_CLDA_creation(self, dataset_dir, topic_num, max_iter):
+    def asynchronous_CLDA_creation(self, dataset_dir, topic_num, max_iter, alpha, beta):
            
         self.dataset_dir = dataset_dir    
         files_tmp = []
@@ -2051,7 +2148,7 @@ class Asynchrous_CLDA(object):
         
         # Asynchronically create the CLDA object
         with Pool(cpu_count()-1) as p:
-            pool_async = p.starmap_async(self.create_CLDA_instance, [[i, topic_num, max_iter] for i in files_list_for_modelling_CLDA])
+            pool_async = p.starmap_async(self.create_CLDA_instance, [[i, topic_num, max_iter, alpha, beta] for i in files_list_for_modelling_CLDA])
             
             # Return processed result
             return pool_async.get()
@@ -2064,8 +2161,8 @@ class Asynchrous_LDA(object):
         self.dataset_dir = None
         
         
-    def create_LDA_instance(self,i, dataset_dir, topic_num, max_iter):
-        sys.stdout = buffer = StringIO()  
+    def create_LDA_instance(self,i, dataset_dir, topic_num, max_iter, alpha, beta):
+#        sys.stdout = buffer = StringIO()  
         files_tmp = []
         
         # Looking around the file with topic name i
@@ -2103,7 +2200,7 @@ class Asynchrous_LDA(object):
         sys.stdout.flush()
         
         # Create LDA instance
-        LDA_instance = CLDA.LDA(file_index_name, feature_names, topic_num)
+        LDA_instance = CLDA.LDA(file_index_name, feature_names, topic_num, alpha, beta)
         
         # Fit LDA model to dataset
         LDA_instance.run(feature_matrix, max_iter)
@@ -2111,16 +2208,18 @@ class Asynchrous_LDA(object):
         # Save fitted LDA model
         with open(dataset_dir + '/' + i + LDA_suffix_pickle, "wb") as f:
             pickle.dump(LDA_instance, f)
-        
+            
+        sys.stdout = buffer = StringIO()    
+        print("CLDA model {}: complete!".format(i))
         # Sleep just in case...
-        print("Model generation complete!: {}".format(dataset_dir + '/' + i + LDA_suffix_pickle))
+#        print("Model generation complete!: {}".format(dataset_dir + '/' + i + LDA_suffix_pickle))
         time.sleep(0.5)
         
         # Return True if the process stops normally
         sys.stdout = sys.__stdout__
         return (i + LDA_suffix_pickle, buffer)
     
-    def asynchronous_LDA_creation(self, dataset_dir, topic_num, max_iter):
+    def asynchronous_LDA_creation(self, dataset_dir, topic_num, max_iter, alpha, beta):
            
           
         # Initialize file_tmp list
@@ -2139,7 +2238,7 @@ class Asynchrous_LDA(object):
         # Core use
         # Asynchronically create the LDA object
         with Pool(cpu_count()-1) as p:
-            pool_async = p.starmap_async(self.create_LDA_instance, [[self, i, dataset_dir, topic_num, max_iter] for i in files_list_for_modelling_LDA])
+            pool_async = p.starmap_async(self.create_LDA_instance, [[self, i, dataset_dir, topic_num, max_iter, alpha, beta] for i in files_list_for_modelling_LDA])
             
             # Return processed result
             return pool_async.get()        

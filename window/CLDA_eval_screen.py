@@ -841,7 +841,7 @@ class CLDA_evaluation_screen(object):
             result_log += "\nalpha: {}".format(alpha) + "\nbeta: {}".format(beta) + buffer_str.getvalue()
 #        print(score_result_total)  
         
-        self._generate_score(score_result_total, result_log, model_name = "CLDA")
+        self._generate_score(score_result_total, result_log)
 
     
     def asynchronous_LDA_evaluation(self):
