@@ -10,7 +10,7 @@ import os
 
 import requests
 import itertools
-#import pickle
+import pickle
 import sys
 #import json
 #import csv
@@ -40,7 +40,14 @@ import asyncio
 import concurrent.futures
 
 
-
+#sys.path.append("../models/")
+#try:
+#    from StringIO import StringIO
+#except ImportError:
+#    from io import StringIO
+#    
+#
+#import CLDA
 
 #import nltk
 from nltk import wordpunct_tokenize, WordNetLemmatizer, sent_tokenize, pos_tag
@@ -339,51 +346,62 @@ def main():
 #    data_test_dir = dataset_test
 #    #The topic name (folder name containing the names)
 #    topic_name = "Training105"
-##    test_name = "Test105"
-##    ''.join(filter(str.isdigit, test_name))
-##    #########################################################
-##    #####This region is for the test of CLDA methods...
-##    #########################################################
-##    files_training = []
-##    files_test = []
-##    for dirpath, dirs, files in os.walk(data_dir):
-##            files_training.extend(files)
-##    
-##    for dirpath, dirs, files in os.walk(data_test_dir):
-##            files_test.extend(files)
-###        print(files_tmp)
-##            # only retrieve the files_tmp which end with .csv
-##            # Initialise the topic list
-###    training_head = [x[:-len(file_name_df_suffix_csv)] for x in files_training if x.endswith(file_name_df_suffix_csv)]
-###    test_head = [x[:-len(file_name_df_suffix_csv)] for x in files_test if x.endswith(file_name_df_suffix_csv)]
-##    
-##    test_file_names = pd.read_csv(data_dir + '/' + topic_name + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
-##                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
-##    
-##    len(test_file_names)
-##    test_feature_vec, test_feature_names = (None, [])
-##        
-##    with open(data_dir + '/' + topic_name + feature_name_suffix_txt, "r") as f: 
-##        for line in f:
-##            #Remove the \n
-##            test_feature_names.append(line.strip('\n'))
-##    
-##    with open(data_dir + '/' + topic_name + feature_matrix_suffix_csv, "r") as f:
-##        test_feature_vec = np.loadtxt(f, delimiter = delim)
-##    
-##    test_concept_prob, test_concept_names = (None, [])
-##        
-##    with open(data_dir + '/' + topic_name + concept_prob_suffix_json, "r") as f:
-##        test_concept_prob = json.load(f)
-##        
-##    
-##    with open(data_dir + '/' + topic_name + concept_name_suffix_txt, "r") as f:
-##        for line in f:
-##            test_concept_names.append(line.strip('\n'))
-##
-#    with open(data_dir + '/' + topic_name + CLDA_suffix_pickle, "rb") as f:
+#    test_name = "Test105"
+#    ''.join(filter(str.isdigit, test_name))
+#    #########################################################
+#    #####This region is for the test of CLDA methods...
+#    #########################################################
+#    files_training = []
+#    files_test = []
+#    for dirpath, dirs, files in os.walk(data_dir):
+#            files_training.extend(files)
+#    
+#    for dirpath, dirs, files in os.walk(data_test_dir):
+#            files_test.extend(files)
+##        print(files_tmp)
+#            # only retrieve the files_tmp which end with .csv
+#            # Initialise the topic list
+##    training_head = [x[:-len(file_name_df_suffix_csv)] for x in files_training if x.endswith(file_name_df_suffix_csv)]
+##    test_head = [x[:-len(file_name_df_suffix_csv)] for x in files_test if x.endswith(file_name_df_suffix_csv)]
+#    
+#    test_file_names = pd.read_csv(data_dir + '/' + topic_name + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
+#                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
+#    
+#    len(test_file_names)
+#    test_feature_vec, test_feature_names = (None, [])
+#        
+#    with open(data_dir + '/' + topic_name + feature_name_suffix_txt, "r") as f: 
+#        for line in f:
+#            #Remove the \n
+#            test_feature_names.append(line.strip('\n'))
+#    
+#    with open(data_dir + '/' + topic_name + feature_matrix_suffix_csv, "r") as f:
+#        test_feature_vec = np.loadtxt(f, delimiter = delim)
+#    
+#    test_concept_prob, test_concept_names = (None, [])
+#        
+#    with open(data_dir + '/' + topic_name + concept_prob_suffix_json, "r") as f:
+#        test_concept_prob = json.load(f)
+#        
+#    
+#    with open(data_dir + '/' + topic_name + concept_name_suffix_txt, "r") as f:
+#        for line in f:
+#            test_concept_names.append(line.strip('\n'))
+#
+#    test_CLDA = None
+#    with open(data_dir + '/' + topic_name + LDA_suffix_pickle, "rb") as f:
 #        test_CLDA = pickle.load(f)
-#    test_CLDA.set_the_rankings()
+     
+#    num = self.nzc + self.beta # Calculate the counts of the number, the beta is the adjust ment value for the calcluation
+#    num /= np.sum(num, axis=1)[:, np.newaxis]   
+#    
+#    num = test_CLDA.nmz + test_CLDA.alpha #Cal
+#    num /= np.sum(num, axis=1)[:, np.newaxis]
+##    test_CLDA.set_the_rankings()
+#    num = test_CLDA.nmz.sum(axis = 0) + test_CLDA.alpha
+#    num /= np.sum(num)
+#    
+#    doc_topic = test_CLDA.doc_prob_set[0].sum(axis = 0)/test_CLDA.doc_prob_set[0].shape[0]
     
 #    test_CLDA.phi_set[0].shape[1]
     
@@ -396,10 +414,10 @@ def main():
 ##    ##########################################################
 ###    ##########################################################
 ###    ##########################################################
-#    data_dir = "../../CLDA_data_testing"
+#    data_dir = "../../CLDA_data_training"
 #    
 #    #The topic name (folder name containing the names)
-#    topic_name = "Test104"
+#    topic_name = "Training104"
 ##    
 #    ##########################################################
 #    ##########################################################
@@ -427,15 +445,21 @@ def main():
 #    with open(data_dir + '/' + topic_name + concept_name_suffix_txt, "r") as f:
 #        for line in f:
 #            test_concept_names.append(line.strip('\n'))
-#
+
 #    with open(data_dir + '/' + topic_name + LDA_suffix_pickle, "rb") as f:
 #        test_LDA = pickle.load(f)
-
+#    
+#    test_LDA.nzw
+#    num = test_LDA.nzw + test_LDA.beta # Calculate the counts of the number, the beta is the adjust ment value for the calcluation
+#    num /= np.sum(num, axis=1)[:, np.newaxis] # Summation of all value and then, but weight should be calculated in this case....
+#    
+#    test_LDA.nzw[0].sum()
+    
 #    
 #    doc_topic = test_LDA.doc_prob_set[0].sum(axis = 0)/test_LDA.doc_prob_set[0].shape[0]
     #########################################################
     #####This region is for the test
-    #########################################################
+    ########################################################
 #    list(test_CLDA.total_results)
     
 #    for topic in test_CLDA
@@ -585,7 +609,7 @@ class CLDA(object):
         self._initialize(matrix, concept_dict)
 #        matrix = matrix.toarray().copy()
         for it in range(self.maxiter):
-            print(it)
+#            print(it)
             sys.stdout.flush()
             for m in range(n_docs):
                 # Asynchronisation can make the progress faster
@@ -613,15 +637,7 @@ class CLDA(object):
                     self.document_topic_concept_word[(m,i)] = (m,z,c,w)
 #                     self.document_topic_concept_word[i][2] = c
                     
-            # Print the time of the iteration                    
-            print("Iteration: {}".format(it))
-            # Print phi value(s)
-            print("Phi: {}".format(self.phi()))
-            # Print the document probability value
-            print("Doc_prob: {}".format(self.doc_prob()))
-            # Print theta value
-            print("Theta: {}".format(self.theta()))
-        
+
         #Storing newest phi value and theta value for calculating word, concept and topic ranking
         self.phi_set.append(self.phi())
         self.theta_set.append(self.doc_prob())
@@ -634,7 +650,7 @@ class CLDA(object):
         # Not necessary values for the calculation
         # V = nzw.shape[1]
         num = self.nzc + self.beta # Calculate the counts of the number, the beta is the adjust ment value for the calcluation
-        num /= np.sum(num, axis=1)[:, np.newaxis] # Summation of all value and then, but weight should be calculated in this case....
+        num /= np.sum(num, axis=1)[:, np.newaxis] # Summation of all values in phi value
         return num
     
     # This is actually theta value...
@@ -819,7 +835,9 @@ class CLDA(object):
         return concept_word_list
     
     def show_doc_topic_average_prob(self):
-        doc_topic = self.theta_set[0].sum(axis = 0)/self.theta_set[0].shape[0]
+#        doc_topic = self.theta_set[0].sum(axis = 0)/self.theta_set[0].shape[0]
+        doc_topic = self.nmz.sum(axis = 0) + self.alpha
+        doc_topic /= np.sum(doc_topic)
         print("#############################")
         for idx, topic_prob in enumerate(doc_topic):
             print("Topic {}, Probability: {}".format(idx, topic_prob))
@@ -926,7 +944,7 @@ class LDA(object):
         self._initialize(matrix)
         
         for it in range(maxiter):
-            print(it)
+#            print(it)
             sys.stdout.flush()
             for m in range(n_docs):
                 
@@ -947,12 +965,6 @@ class LDA(object):
                     self.nz[z] += 1 # Count the number of the occureences
                     self.topics[(m,i)] = z # Re=assignm the topic
 
-            # Retrieve the phi, theta and document topic co-occurrence probability
-            # values
-            print('\n' + "iteration: {}".format(it) + '\n')
-            print("phi: {}".format(self.phi()))
-            print("Theta: {}".format(self.theta()))
-            print("doc_prob: {}".format(self.doc_prob()))
             
         self.phi_set.append(self.phi())
         
@@ -1025,7 +1037,9 @@ class LDA(object):
                 print('Rank: {}, Word: "{}", Probability: {}'.format(self.word_ranking[i][j][1], self.word_ranking[i][j][2], self.word_ranking[i][j][3]))
     
     def show_doc_topic_average_prob(self):
-        doc_topic = self.doc_prob_set[0].sum(axis = 0)/self.doc_prob_set[0].shape[0]
+#        doc_topic = self.doc_prob_set[0].sum(axis = 0)/self.doc_prob_set[0].shape[0]
+        doc_topic = self.nmz.sum(axis = 0) + self.alpha
+        doc_topic /= np.sum(doc_topic)
         print("#############################")
         for idx, topic_prob in enumerate(doc_topic):
             print("Topic {}, Probability: {}".format(idx, topic_prob))

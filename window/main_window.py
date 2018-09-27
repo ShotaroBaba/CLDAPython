@@ -369,12 +369,16 @@ class Application():
     
         
     def __init__(self):
+        
+        #Generate main frame
         self.root = tk.Tk()
         self.root.title("File Pre Processing & Model Creation")
-
+        
+        
+        # Construct main menu bar
         self.menubar = tk.Menu(self.root)
         self.menubar.add_command(label="Quit", command= self.root.destroy)
-        self.menubar.add_command(label="Help", command=None)
+        #self.menubar.add_command(label="Help", command=None)
         
         self.root.config(menu=self.menubar)
         
@@ -437,7 +441,7 @@ class Application():
         
         
         self.retrieve_topic_feature_concept_list()
-        
+        self.display_default_values()
         self.root.mainloop()
         
         
@@ -497,6 +501,8 @@ class Application():
         ####Result screen
         #######################################
         '''
+        
+        #Result selection menu
         self.folder_selection_result_frame = tk.Frame(self.result_box)
         self.folder_selection_result_frame.pack(side = tk.LEFT, anchor = tk.N)
         
@@ -535,6 +541,9 @@ class Application():
         ####Already created list part
         #######################################
         '''
+        
+        # List of generated feature vector
+        # is shown here
         self.word_vector_generation_list_frame = tk.Frame(self.main_listbox_and_result)
         self.word_vector_generation_list_frame.pack(side = tk.LEFT, anchor = tk.N)
         
@@ -571,6 +580,8 @@ class Application():
         ####
         #######################################
         '''
+        
+        # Show the list of files containing word-concept probability
         self.concept_prob_generation_list_frame = tk.Frame(self.main_listbox_and_result)
         self.concept_prob_generation_list_frame.pack(side = tk.LEFT, anchor = tk.N)
         
@@ -601,6 +612,8 @@ class Application():
         ####Show the list of pre-existed CLDA model
         #######################################
         '''
+        
+        # Created CLDA lists.
         self.CLDA_generation_list_frame = tk.Frame(self.main_listbox_and_result)
         self.CLDA_generation_list_frame.pack(side = tk.LEFT, anchor = tk.N)
         
@@ -630,6 +643,8 @@ class Application():
         ####Show the list of pre-existed LDA model
         #######################################
         '''
+        
+        # Showing created LDA lists
         self.LDA_generation_list_frame = tk.Frame(self.main_listbox_and_result)
         self.LDA_generation_list_frame.pack(side = tk.LEFT, anchor = tk.N)
         
@@ -662,6 +677,8 @@ class Application():
         #######################################################################################
 
         '''
+        
+        
         self.main_listbox_and_result_test = tk.Frame(self.main_listbox_and_buttons)
         self.main_listbox_and_result_test.pack()
         
@@ -1006,6 +1023,19 @@ class Application():
         ####End the main menu
         #######################################
         '''
+        
+
+    def display_default_values(self):
+        self.top_concept_text.insert(tk.END,"{}".format(default_K)) 
+        self.ngram_text.insert(tk.END,"{}".format(default_ngram)) 
+        self.ngram_max_text.insert(tk.END,"{}".format(default_ngram))  
+        self.smooth_text.insert(tk.END,"{}".format(default_smooth))
+        self.max_df_text.insert(tk.END,"{}".format(default_max_df))
+        self.min_df_text.insert(tk.END,"{}".format(default_min_df))
+        self.topic_num_text.insert(tk.END,"{}".format(default_topic_num))
+        self.max_iter_text.insert(tk.END,"{}".format(default_max_iter))
+        self.alpha_text.insert(tk.END,"{}".format(default_alpha))
+        self.beta_text.insert(tk.END,"{}".format(default_beta))
     #######################################################
     ########## Value input part
     #######################################################

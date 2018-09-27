@@ -44,8 +44,10 @@ LDA_suffix_pickle = "_LDA.pkl"
 converted_xml_suffix = "_conv.txt"
 all_score_suffix = "_all_score.csv"
 all_score_precision_etc_suffix_LDA = "_LDA_precision_recall_top.csv"
-all_score_precision_etc_suffix_CLDA = "_LDA_precision_recall_top.csv"
+all_score_precision_etc_suffix_CLDA = "_CLDA_precision_recall_top.csv"
 default_ngram = 1
+
+
 
 delim = ","
 default_score_threshold = 0
@@ -54,8 +56,8 @@ default_ranking_show_value = 10
 
 illegal_file_characters = ['+', ',', ';', '=', '[', ']', '\'', '"', '*', '<', '>', '|', '?', '/']
 
-default_rank_concept = 1
-default_rank_word = 1
+default_rank_concept = 10
+default_rank_word = 10
 stop_word_folder = "../stopwords"
 stop_word_smart_txt = "smart_stopword.txt"
 top_10_rank = 10
@@ -108,9 +110,20 @@ class CLDA_evaluation_screen(object):
         self.start_menu()
         
         self.listing_all_model_and_result()
+        self.input_the_value_first()
         
         self.root.mainloop()
-        
+    
+    def input_the_value_first(self):
+        self.ranking_number_word_textbox.insert(tk.END, "{}".format(default_rank_word))
+        self.ranking_number_concept_textbox.insert(tk.END, "{}".format(default_rank_concept))
+        self.max_ngram_entry.insert(tk.END, "{}".format(default_ngram))
+        self.min_ngram_entry.insert(tk.END, "{}".format(default_ngram))
+        self.threshold_entry.insert(tk.END, "{}".format(default_score_threshold))
+        self.CLDA_selection_word_ranking_box.insert(tk.END, "{}".format(default_ranking_show_value))
+        self.LDA_selection_word_ranking_box.insert(tk.END, "{}".format(default_ranking_show_value))
+#        self.
+    
     def start_menu(self):
         self.main_frame = tk.Frame(self.root)
         self.main_frame.pack()
@@ -332,12 +345,6 @@ class CLDA_evaluation_screen(object):
         self.ranking_number_word_textbox = tk.Entry(self.ranking_label_box_frame)
         self.ranking_number_word_textbox.grid(row = 1, column=1)
         
-        self.ranking_result_file_name_label = tk.Label(self.ranking_label_box_frame, text = "File name to store the result: ")
-        self.ranking_result_file_name_label.grid(row = 5, column=0)
-        
-        self.ranking_result_file_name_textbox = tk.Entry(self.ranking_label_box_frame)
-        self.ranking_result_file_name_textbox.grid(row = 5, column=1)
-        
         self.min_ngram_label = tk.Label(self.ranking_label_box_frame, text = "min_ngram: ")
         self.min_ngram_label.grid(row = 3, column = 0)
         
@@ -349,6 +356,18 @@ class CLDA_evaluation_screen(object):
         
         self.max_ngram_entry = tk.Entry(self.ranking_label_box_frame)
         self.max_ngram_entry.grid(row = 4, column = 1)
+        
+        self.threshold_label = tk.Label(self.ranking_label_box_frame, text = "threshold (positive value): ")
+        self.threshold_label.grid(row = 5, column = 0)
+        
+        self.threshold_entry = tk.Entry(self.ranking_label_box_frame)
+        self.threshold_entry.grid(row = 5, column = 1)
+        
+        self.ranking_result_file_name_label = tk.Label(self.ranking_label_box_frame, text = "File name to store the result: ")
+        self.ranking_result_file_name_label.grid(row = 6, column=0)
+        
+        self.ranking_result_file_name_textbox = tk.Entry(self.ranking_label_box_frame)
+        self.ranking_result_file_name_textbox.grid(row = 6, column=1)
         
 #        self.displaying_score_button_all = tk.Button(self.button_word_ranking_frame, text = "Display all score (Select score file)")
 #        self.displaying_score_button_all.pack()
@@ -420,23 +439,23 @@ class CLDA_evaluation_screen(object):
         try:
             if(self.ranking_number_word_textbox.get() == ""):
                 self.result_screen_text.configure(state='normal')
-                self.result_screen_text.insert(tk.END, "\nThe default value is used: min doc. freq. = {}".format(default_rank_concept))
+                self.result_screen_text.insert(tk.END, "\nThe default value is used: top rank word num. = {}".format(default_rank_concept))
                 self.result_screen_text.configure(state='disabled')
                 return default_rank_concept
             else:
                 user_input_val = int(self.ranking_number_word_textbox.get())
                 if (user_input_val < 1):
                     self.result_screen_text.configure(state='normal')
-                    self.result_screen_text.insert(tk.END, "\nPlease input value between 0 < x < 1! (min doc. freq. {})".format(user_input_val))
+                    self.result_screen_text.insert(tk.END, "\nPlease input value between 0 < x < 1! (top rank word num. {})".format(user_input_val))
                     self.result_screen_text.configure(state='disabled')
                     return
                 self.result_screen_text.configure(state='normal')
-                self.result_screen_text.insert(tk.END, "\nThe input min doc. freq. value {} is used".format(user_input_val))
+                self.result_screen_text.insert(tk.END, "\nThe input top rank word num. value {} is used".format(user_input_val))
                 self.result_screen_text.configure(state='disabled')
                 return user_input_val
         except ValueError:
             self.result_screen_text.configure(state='normal')
-            self.result_screen_text.insert(tk.END, "\nError: The input min doc. freq. is invalid.")
+            self.result_screen_text.insert(tk.END, "\nError: The input top rank word num. is invalid.")
             self.result_screen_text.configure(state='disabled')
             return
     
@@ -444,23 +463,23 @@ class CLDA_evaluation_screen(object):
         try:
             if(self.ranking_number_concept_textbox.get() == ""):
                 self.result_screen_text.configure(state='normal')
-                self.result_screen_text.insert(tk.END, "\nThe default value is used: min doc. freq. = {}".format(default_rank_concept))
+                self.result_screen_text.insert(tk.END, "\nThe default value is used: top rank concept num.  = {}".format(default_rank_concept))
                 self.result_screen_text.configure(state='disabled')
                 return default_rank_concept
             else:
                 user_input_val = int(self.ranking_number_concept_textbox.get())
                 if (user_input_val < 1):
                     self.result_screen_text.configure(state='normal')
-                    self.result_screen_text.insert(tk.END, "\nPlease input value between 0 < x < 1! (min doc. freq. {})".format(user_input_val))
+                    self.result_screen_text.insert(tk.END, "\nPlease input value between 0 < x < 1! (top rank concept num.  {})".format(user_input_val))
                     self.result_screen_text.configure(state='disabled')
                     return
                 self.result_screen_text.configure(state='normal')
-                self.result_screen_text.insert(tk.END, "\nThe input min doc. freq. value {} is used".format(user_input_val))
+                self.result_screen_text.insert(tk.END, "\nThe input min top rank concept num.\ value {} is used".format(user_input_val))
                 self.result_screen_text.configure(state='disabled')
                 return user_input_val
         except ValueError:
             self.result_screen_text.configure(state='normal')
-            self.result_screen_text.insert(tk.END, "\nError: The input min doc. freq. is invalid.")
+            self.result_screen_text.insert(tk.END, "\nError: The input top rank concept num. is invalid.")
             self.result_screen_text.configure(state='disabled')
             return
         
@@ -492,13 +511,13 @@ class CLDA_evaluation_screen(object):
     
     def retrieve_ngram_max(self):
         try:
-            if(self.max_ngram_entry.get() == ""):
+            if(self.threshold_entry.get() == ""):
                 self.result_screen_text.configure(state='normal')
-                self.result_screen_text.insert(tk.END, "\nThe default value is used: ngram_max = {}".format(default_ngram))
+                self.result_screen_text.insert(tk.END, "\nThe default value is used: threshold = {}".format(default_ngram))
                 self.result_screen_text.configure(state='disabled')
                 return default_ngram
             else:
-                user_input_val = int(self.max_ngram_entry.get())
+                user_input_val = int(self.threshold_entry.get())
                 if(user_input_val < 1):
                     self.result_screen_text.configure(state='normal')
                     self.result_screen_text.insert(tk.END, "\nInput positive value!".format(user_input_val))
@@ -506,17 +525,41 @@ class CLDA_evaluation_screen(object):
                     return 
                 else:
                     self.result_screen_text.configure(state='normal')
-                    self.result_screen_text.insert(tk.END, "\nThe input ngram value {} is used".format(user_input_val))
+                    self.result_screen_text.insert(tk.END, "\nThe input threshold value {} is used".format(user_input_val))
                     self.result_screen_text.configure(state='disabled')
                     return user_input_val
         
         except ValueError:
             self.result_screen_text.configure(state='normal')
-            self.result_screen_text.insert(tk.END, "\nError: The input ngram value is invalid.")
+            self.result_screen_text.insert(tk.END, "\nError: The input threshold value is invalid.")
             self.result_screen_text.configure(state='disabled')
             return
     
-    
+    def retrieve_threshold(self):
+        try:
+            if(self.beta_text.get() == ""):
+                self.result_screen.configure(state='normal')
+                self.result_screen.insert(tk.END, "\nThe default value is used: beta = {}".format(default_score_threshold))
+                self.result_screen.configure(state='disabled')
+                return default_score_threshold
+            else:
+                user_input_val = float(self.beta_text.get())
+                if(user_input_val <= 0):
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nInput positive value!".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
+                    return 
+                else:
+                    self.result_screen.configure(state='normal')
+                    self.result_screen.insert(tk.END, "\nThe input beta value {} is used".format(user_input_val))
+                    self.result_screen.configure(state='disabled')
+                    return user_input_val
+        
+        except ValueError:
+            self.result_screen.configure(state='normal')
+            self.result_screen.insert(tk.END, "\nError: The input max iter. is invalid.")
+            self.result_screen.configure(state='disabled')
+            
     def move_to_model_creation(self):
         
         #Erase all the display in the directory
@@ -772,6 +815,9 @@ class CLDA_evaluation_screen(object):
         if (ngram_num_max == None):
             return
         
+        threshold_value = self.threshold_entry()
+        if(threshold_value == None):
+            return
         
         self.result_screen_text.delete("1.0", tk.END)
         
@@ -841,7 +887,7 @@ class CLDA_evaluation_screen(object):
             result_log += "\nalpha: {}".format(alpha) + "\nbeta: {}".format(beta) + buffer_str.getvalue()
 #        print(score_result_total)  
         
-        self._generate_score(score_result_total, result_log)
+        self._generate_score(score_result_total, result_log, threshold = threshold_value)
 
     
     def asynchronous_LDA_evaluation(self):
@@ -857,6 +903,10 @@ class CLDA_evaluation_screen(object):
         
         ngram_num_max = self.retrieve_ngram_max()
         if (ngram_num_max == None):
+            return
+        
+        threshold_value = self.threshold_entry()
+        if(threshold_value == None):
             return
         
         self.result_screen_text.delete("1.0", tk.END)
@@ -907,16 +957,11 @@ class CLDA_evaluation_screen(object):
         result_log = ""
         for score_i, buffer_str, alpha, beta in score_buffers_alpha_beta:
             score_result_total.extend(score_i)
-#            self.result_screen_text.configure(state='normal')
-#            self.result_screen_text.insert(tk.END, "\nalpha: {}".format(alpha))
-#            self.result_screen_text.insert(tk.END, "\nbeta: {}".format(beta))
-#            self.result_screen_text.insert(tk.END, buffer_str.getvalue())
-#            self.result_screen_text.configure(state='disabled')
             result_log += "\nalpha: {}".format(alpha) + "\nbeta: {}".format(beta) + buffer_str.getvalue()
 #        print(score_result_total)  
         
         self._generate_score(score_result_total,result_log, 
-                             default_score_threshold,
+                             threshold_value,
                              LDA_score_result_dataframe_suffix,
                              LDA_score_result_txt_suffix, 
                              LDA_score_result_log_suffix, all_score_precision_etc_suffix_LDA)
@@ -1013,6 +1058,9 @@ class CLDA_evaluation_screen(object):
             local_F1_value = 2 * (local_precision * local_recall) / (local_precision + local_recall)
             
             score_data_frame_local =  score_data_frame_local.sort_values(by = ['Score'], ascending = False)
+            with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                print(score_data_frame_local.to_string(index=False))
+            
             top_10_rank_score = score_data_frame_local.head(top_10_rank)['Label'].sum() / float(top_10_rank)
             top_20_rank_score = score_data_frame_local.head(top_20_rank)['Label'].sum() / float(top_20_rank)
             local_result_str += "Topic {}: Precision: {}, Recall: {}\n".format(i, local_precision, local_recall) + \
@@ -1058,7 +1106,7 @@ class CLDA_evaluation_screen(object):
 #            self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]) + '\n')
 #            self.result_screen_text.insert(tk.END, result_str)
 #            self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]))
-            self.result_screen_text.configure(state='disabled')
+#            self.result_screen_text.configure(state='disabled')
             f.write(result_str)
         
         with open(log_txt_name, 'w') as f:
@@ -1073,7 +1121,7 @@ class CLDA_evaluation_screen(object):
     
     def display_all_scores_in_file(self):
 #        tk.tkFileDialog.askopenfilename(initialdir = "/",title = "Select file",filetypes = (("jpeg files","*.jpg"),("all files","*.*")))
-        # ,filetypes = (("Score file","*.csv"))
+#         ,filetypes = (("Score file","*.csv"))
 #        file_name = tk.filedialog.askopenfilename(title = "Select file")
         
         try:
@@ -1220,7 +1268,8 @@ class Asynchronous_CLDA_evaluation_class():
             test_CLDA = pickle.load(f)
           
           
-        doc_topic = test_CLDA.theta_set[0].sum(axis = 0)/test_CLDA.theta_set[0].shape[0]
+        doc_topic = test_CLDA.nmz.sum(axis = 0) + test_CLDA.alpha
+        doc_topic /= np.sum(doc_topic)
         topic_concept = test_CLDA.show_and_construct_normalized_concept_topic_ranking(self.rank_concept)
         word_under_concept = test_CLDA.construct_word_concept_prob_under_concept(test_concept_prob, self.rank_word)
     #        test_file_data = pd.read_csv(data_dir + '/' + test_name + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
@@ -1238,20 +1287,18 @@ class Asynchronous_CLDA_evaluation_class():
         for i in range(len(test_file_data)):
             score = 0
             test_files_feature_name  = test_file_data.iloc[i]['Text']
-            found_concept = []
-            found_word = []
+            found_topic_concept_word = []
             for topic_num, topic_prob in enumerate(doc_topic):
-                
                 for concept, concept_prob in topic_concept[topic_num]:
                     for word, word_prob in [(x[0], x[2]) for x in word_under_concept if x[1] == concept]:
                         if word in test_files_feature_name:
                             score += topic_prob * concept_prob * word_prob
-                            found_concept.append(concept)
-                            found_word.append(word)
-            print('File name: "{}", Training_Topic {}, Test_topic {}, Score: {}, Label: {}, Found word: {}, Related Concept: {}'.format(test_file_data.iloc[i]['File'],
+                            found_topic_concept_word.append((topic_num, concept, word))
+                            
+            print('File name: "{}", Training_Topic {}, Test_topic {}, Score: {}, Label: {}, topic, word and concept: {}'.format(test_file_data.iloc[i]['File'],
                   training_head_number,
                   testing_head_number,
-                  score, test_file_data.iloc[i]['label'], found_word, found_concept))
+                  score, test_file_data.iloc[i]['label'], found_topic_concept_word))
             score_list.append((test_file_data.iloc[i]['File'], training_head_number, testing_head_number, score, test_file_data.iloc[i]['label'], alpha, beta))
         print("".join(['*' for m in range(asterisk_len)]))
         print("".join(['*' for m in range(asterisk_len)]))
@@ -1319,7 +1366,8 @@ class Asynchronous_CLDA_evaluation_class():
         with open(dataset_dir + '/' + training_file_head + LDA_suffix_pickle, "rb") as f:
             test_LDA = pickle.load(f)
           
-        doc_topic = test_LDA.doc_prob_set[0].sum(axis = 0)/test_LDA.doc_prob_set[0].shape[0]
+        doc_topic = test_LDA.nmz.sum(axis = 0) + test_LDA.alpha
+        doc_topic /= np.sum(doc_topic)
         # Extract rank  = 10
         word_topic_prob = test_LDA.generate_word_prob(self.rank_word)
         
@@ -1341,8 +1389,8 @@ class Asynchronous_CLDA_evaluation_class():
                 for word, word_prob in [(x[1], x[2]) for x in word_topic_prob if x[0] == topic_num]:
                     if word in test_files_feature_name:
                         score += topic_prob * word_prob
-                        found_word.append(word)
-            print('File name: "{}", Training_Topic {}, Test_topic {}, Score: {}, Label: {}, Found word: {}'.format(test_file_data.iloc[i]['File'],
+                        found_word.append((topic_num, word))
+            print('File name: "{}", Training_Topic {}, Test_topic {}, Score: {}, Label: {}, Found topic and word: {}'.format(test_file_data.iloc[i]['File'],
                   training_head_number,
                   testing_head_number,
                   score, test_file_data.iloc[i]['label'], found_word))
