@@ -962,14 +962,16 @@ class Application():
         '''
 #       
         
+        # This is test purpose only
         self.buttons_frame = tk.Frame(self.root)
         self.buttons_frame.pack()
-        self.func_test = tk.Button(self.root, text = 'Function test')
+#        self.func_test = tk.Button(self.root, text = 'Function test')
+#        
+#        self.func_test.pack(side = tk.BOTTOM)
+#        self.func_test['command'] = self.test_all
+#        
         
-        self.func_test.pack(side = tk.BOTTOM)
-        self.func_test['command'] = self.test_all
-        
-        
+        # Training button
         self.training_button = tk.Button(self.buttons_frame, text = 'training_data_creation_xml')
         
         self.training_button.grid(row = 0, column = 0)
@@ -1024,7 +1026,7 @@ class Application():
         #######################################
         '''
         
-
+    # Displaying default values to the input entries
     def display_default_values(self):
         self.top_concept_text.insert(tk.END,"{}".format(default_K)) 
         self.ngram_text.insert(tk.END,"{}".format(default_ngram)) 
@@ -1293,7 +1295,7 @@ class Application():
             self.result_screen.configure(state='disabled')
 
             return
-#    Testing the function of all functions
+    # Testing the function of all functions
     def test_all(self):
         top_concept_limit = self.retrieve_top_concept()
         if (top_concept_limit == None):
@@ -1346,7 +1348,8 @@ class Application():
             return
         print(beta)
         
-        
+    # Change to CLDA evaluation screen
+    # and destroy the current object
     def move_to_CLDA_evaluation(self):
         
         
@@ -1362,7 +1365,8 @@ class Application():
         
     
         
-        
+    # Retrieve the file name lists from the 
+    # CLDA_training folder
     def retrieve_topic_feature_concept_list(self):
         files_tmp = []
         files_tmp_test = []
@@ -1379,20 +1383,22 @@ class Application():
         # No need to sort the values as the files are already sorted by names
         self.feature_list = [x for x in files_tmp if x.endswith(feature_matrix_suffix_csv)]
         
+        # Listing the files containing features
         for i in self.feature_list:
             self.drop_down_list_word_vector_list.insert(tk.END, i)
         
         self.concept_list = [x for x in files_tmp if x.endswith(concept_prob_suffix_json)]
         
+        # Listing the files containing concepts in files
         for i in self.concept_list:
             self.drop_down_concept_prob_vector_list.insert(tk.END, i)
         
-           
+        # Listing CLDA pickle files on ListBox
         self.CLDA_list = [x for x in files_tmp if x.endswith(CLDA_suffix_pickle)]
         for i in self.CLDA_list:
             self.drop_down_CLDA_list.insert(tk.END, i)
             
-        
+        # Listing LDA pickle files on ListBox
         self.LDA_list = [x for x in files_tmp if x.endswith('_LDA.pkl')]
         for i in self.LDA_list:
             self.drop_down_LDA_list.insert(tk.END, i)
@@ -1400,8 +1406,7 @@ class Application():
         for dirpath, dirs, files in os.walk(dataset_test):
             files_tmp_test.extend(files)
 
-            # only retrieve the files_tmp_test which end with .csv
-            # Initialise the topic list
+        # Listing test files on ListBox
         self.topic_list_test = [x for x in files_tmp_test if x.endswith(file_name_df_suffix_csv)]
         
         for i in self.topic_list_test:
@@ -1439,15 +1444,18 @@ class Application():
         # if there is no directory storing the generated txt files
         if not os.path.isdir(dataset_dir):
                 os.makedirs(dataset_dir)
-                
+        
+        # Create folder for storing topic folders
         conv_folder = dataset_dir + '/' + converted_folder
         if not os.path.isdir(conv_folder):
             os.makedirs(conv_folder)
-            
+        
+        # Create the folder containing convereted text files
         topic_folder = conv_folder + '/' + topic_name 
         if not os.path.isdir(topic_folder):
             os.makedirs(topic_folder)
         
+        # Accumulate 
         for path_to_file in training_path:
             path_string = os.path.basename(os.path.normpath(path_to_file)) 
             
@@ -1460,11 +1468,13 @@ class Application():
             for element in root.iter():
                 if(element.text != None):
                     result += element.text + ' '
-            # Remove the remained data
+            # Remove the remained space
             result = result[:-1]
             
+            # Extract the name of file from path_string
             name_of_the_file = (os.path.basename(path_string))
             
+            # 
             for_test_purpose_data = for_test_purpose_data.append(pd.DataFrame([(name_of_the_file, 
                                                                                topic_name,
                                                                                result)], 
@@ -1487,16 +1497,12 @@ class Application():
     
     
     # Select the labelling folder to label the dataset....
-#    def select_labelling_folder():
-#        
-#        
-#        return
-
     def select_folder_and_extract_txt_async(self,ask_folder, topic_list, dataset_dir):
-  
+        
+        # Set the selected folder directory
         folder_directory = ask_folder
         
-
+        # Take the base training folder name from path string
         temp_substr = os.path.basename(folder_directory)
             
         # If the processed file has already exists, then the process of the
@@ -1516,21 +1522,33 @@ class Application():
 #        print(training_path)
         topic_name = os.path.basename(folder_directory)
        
+        # For all files in training folder....
         for path_to_file in training_path:
             path_string = os.path.basename(os.path.normpath(path_to_file)) 
             
+            # Open the file and 
+            # read the contents
             file = folder_directory + '/' + path_string
             f = open(file, "r")
             result = f.read()
             
+            # The name of the files are assigned to
+            # "Name of file"
             name_of_the_file = (os.path.basename(path_string))
             
+            # Converted to DataFrame
             for_test_purpose_data = for_test_purpose_data.append(pd.DataFrame([(name_of_the_file, 
                                                                                topic_name,
                                                                                result)], 
             columns=['File','Topic', 'Text']))
+                        
+            # If the directory is not created 
+            # then the directory will be created
             if not os.path.isdir(dataset_dir):
                 os.makedirs(dataset_dir)
+        
+        # If the test purpose data is not zero, then
+        # it will be stored as .csv file
         if(len(for_test_purpose_data) != 0):
             for_test_purpose_data.to_csv(dataset_dir + '/' +
                               topic_name + file_name_df_suffix_csv,
@@ -1544,7 +1562,8 @@ class Application():
   
         folder_directory = ask_folder
         
-#        print(folder_directory)
+        # The selected folder name is extracted from 
+        # the raw path string
         temp_substr = os.path.basename(folder_directory)
             
         # If the processed file has already exists, then the process of the
@@ -1552,10 +1571,14 @@ class Application():
         if any(temp_substr in string for string in topic_list):
             print("topic already exist.")
             return 
-        
+        # Creating empty string
         for_test_purpose_data = pd.DataFrame([], columns=['File','Topic', 'Text'])
         
+        
         training_path = []
+        
+        # All training folder path are extracted from 
+        # the folders containg training folders
         for dirpath, dirs, files in os.walk(folder_directory):
             training_path.extend(files)
         
@@ -1565,18 +1588,23 @@ class Application():
         training_path = sorted(training_path)
         topic_name = os.path.basename(folder_directory)
         
+        
         name_of_the_label_text = os.path.basename(folder_directory) + label_text_suffix
         
+        # The data is read from files to obtain
+        # tokens 
         label_data = pd.read_csv(label_dir + '/' + name_of_the_label_text, 
                         encoding='utf-8',
                         delimiter = label_delim,
                         quoting=csv.QUOTE_ALL, names = [''.join(filter(str.isdigit, name_of_the_label_text)), 'File', 'label'])
         
         label_data = label_data.sort_values(by = ['File'])
-#        dataframe_ = pd.DataFrame([], columns=['File','Topic', 'Text'])
         labelling = list(label_data['label'])
-#        labelling = list(label_data['0'])
         for_test_purpose_data = []
+        
+        # Extracting the text from text file 
+        # and they are stored into the 
+        # folders
         for path_to_file in training_path:
             path_string = os.path.basename(os.path.normpath(path_to_file)) 
             
@@ -1703,16 +1731,19 @@ class Application():
     def asynchronous_data_retrieval_test(self, fobj, file_type, dataset_dir):
         sys.stdout = buffer = StringIO()
         # Select the testing folder
-        train_folder_selection = askdirectory()
-        
-        label_folder_selection = askdirectory()
+        train_folder_selection = askdirectory(title = "Select folder containing test collections")
+        # Select the folder containing labels of
+        # each documents in testing folder 
+        label_folder_selection = askdirectory(title = "Select folder containing test label texts")
         
         training_folders_tmp = []
+        
+        # Extracting all testing folders
         for dirpath, dirs, files in os.walk(train_folder_selection):
             if len([x for x in files if x.endswith(file_type)]) != 0:
                 training_folders_tmp.append(dirpath)
         
-#        print(training_folders_tmp)
+        # Retireve the file data
         async def retrieve_file_data(training_folders_tmp, topic_list):
         # Max worker set to 10
            with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -1721,7 +1752,7 @@ class Application():
                 futures = [
                     loop.run_in_executor(
                         executor, 
-#                        self.select_folder_and_extract_xml_async
+                        
                         fobj, 
                         folder_name,
                         topic_list, dataset_dir, label_folder_selection
@@ -1767,7 +1798,7 @@ class Application():
     def asynchronous_topic_concept_retrieval(self, fobj, file_type, dataset_dir, test_or_training):
         sys.stdout = buffer = StringIO()
         
-        train_folder_selection = askdirectory()
+        train_folder_selection = askdirectory(title = "Select folder containing training collections")
         #train_folder_selection = "C:/Users/n9648852/Desktop/R8-Dataset/Dataset/R8/Testing"
         
         if(train_folder_selection == ""):
@@ -1782,38 +1813,49 @@ class Application():
             if len([x for x in files if x.endswith(file_type)]) != 0:
                 training_folders_tmp.append(dirpath) 
         
+        # If the input is illegal
+        # then the process aborted
         top_concept_limit = self.retrieve_top_concept()
         if (top_concept_limit == None):
             return
-        
+        # If the input is illegal
+        # then the process aborted
         ngram_num_min = self.retrieve_ngram_min()
         if (ngram_num_min == None):
             return
-        
+        # If the input is illegal
+        # then the process aborted
         ngram_num_max = self.retrieve_ngram_max()
         if (ngram_num_max == None):
             return
-        
+        # If the input is illegal
+        # then the process aborted
         smooth_value = self.retrieve_smooth_value()
         if (smooth_value == None):
             return
-        
+        # If the input is illegal
+        # then the process aborted
         max_df_value = self.retrieve_max_df()
         if (max_df_value == None):
             return
-        
+        # If the input is illegal
+        # then the process aborted
         min_df_value = self.retrieve_min_df()
         if (min_df_value == None):
             return
         
-        
+        # If the min df value is larger than 
+        # max df value, then it returns the 
+        # error messages, and abort the process
         if(max_df_value <= min_df_value):
             self.result_screen.configure(state='normal')
             self.result_screen.insert(tk.END, "\nError: max_df <= min_df is not accepted")
             self.result_screen.configure(state='disabled')
             print("Error")
             return
-        
+        # If the min ngram value is larger than 
+        # max ngram value, then it returns the 
+        # error messages, and abort the process
         if(ngram_num_max <  ngram_num_min):
             self.result_screen.configure(state='normal')
             self.result_screen.insert(tk.END, "\nError: max_ngram < min_ngram is not accepted")
@@ -1837,6 +1879,7 @@ class Application():
         # Each row corresponds to the file
         # which this method have retrieved from the folder
         async def retrieve_file_data(training_folders_tmp, topic_list):
+        
         # Max worker set to 10
            with concurrent.futures.ThreadPoolExecutor() as executor:
             
@@ -1856,15 +1899,19 @@ class Application():
                     topics_vec.append(i)
                     
                 return topics_vec 
-            
+        
+        # Conduct teh asynchrous data creation
+        
         loop = asyncio.get_event_loop()
         future = asyncio.ensure_future(retrieve_file_data(training_folders_tmp, topic_list))
         topics = loop.run_until_complete(future)
         print("Data extraction completed!")
-#        print(topics)
+        
+        # Eliminate the None values in the list
         if None in topics:
             topics = list(filter((None).__ne__, topics))
-#        print(topics)
+        
+        # Put the created files into data file lists
         if (test_or_training == 0):
             if type(topics) == list:
                 self.topic_list.extend(topics)
@@ -1873,6 +1920,7 @@ class Application():
             if type(topics) == list:
                 for i in topics:
                     self.user_drop_down_select_folder_list.insert(tk.END, i)
+        
         else:
             if type(topics) == list:
                 self.topic_list_test.extend(topics)
@@ -1884,9 +1932,9 @@ class Application():
         
         
         
-        time.sleep(4)
+
         
-        
+        # Create the features asynchronously
         if(test_or_training == 0):
             feature_list = self.feature_list
         else:
@@ -1900,14 +1948,16 @@ class Application():
                                                                         max_df_value] for i in training_folders_tmp])
             features = pool_async.get()
         
-#        loop = asyncio.get_event_loop()
-#        future = asyncio.ensure_future(create_feature_vectors(training_folders_tmp, feature_list, dataset_dir))
-#        features = loop.run_until_complete(future)
+
         
         
+        # If None value is found then it will eliminate 
+        # this value in the list
         if None in features:
             features = list(filter((None).__ne__, features))
-            
+        
+        # The created feature files are listed into feature files 
+        # lists
         if(test_or_training == 0):
             if type(features) == list:    
                 self.feature_list.extend(features)
@@ -1928,16 +1978,14 @@ class Application():
                     self.drop_down_list_word_vector_list_test.insert(tk.END, i)
         print("Feature extraction completed!!")
         
-        time.sleep(2)
+
         sys.stdout = sys.__stdout__
         
         # Asynchrously retrieve the probability p(word|concept) from
         # Probase
         def create_concept_word_lists(training_folders_tmp, concept_list, dataset_dir):
             concept_vec = [] #Move out just in case...
-#            for i in training_folders_tmp:
-#                concept_vec.append(create_concept_matrix_async(i, concept_list, dataset_dir))
-            
+
             with Pool(cpu_count()-1) as p:
                 pool_async = p.starmap_async(create_concept_matrix_async, [[i, concept_list, dataset_dir,top_concept_limit,smooth_value] for i in training_folders_tmp])
                 concept_vec = pool_async.get()
@@ -1949,12 +1997,12 @@ class Application():
         else:
             concept_list = self.concept_list_test
 
-
+        # Accumulate the created concept data names. 
         concepts = create_concept_word_lists(training_folders_tmp, concept_list, dataset_dir)
         
+        # Remove None value in list value
         if None in concepts:
             concepts = list(filter((None).__ne__, concepts))
-        
         
         if(test_or_training == 0):
             if type(concepts) == list:    
@@ -1978,26 +2026,32 @@ class Application():
             if type(concepts) == list:
                 for i in concepts:
                     self.drop_down_concept_prob_vector_list_test.insert(tk.END, i)
+        
         print("Concept graph retrieval completed!!")
         self.result_screen.configure(state='normal')
         self.result_screen.insert(tk.END, buffer.getvalue())
         self.result_screen.configure(state='disabled')
 
-        
+    # Asynchronous CLDA model creation
     def asynchronous_CLDA_model_generation(self, dataset_dir, result_num):
         
+        # If the value is invalid, then 
+        # it will halt the process
         topic_num = self.retrieve_topic_num()
         if(topic_num == None):
             return
-            
+        # If the value is invalid, then 
+        # it will halt the process    
         max_iter = self.retrieve_max_iter()
         if(max_iter == None):
             return
-        
+        # If the value is invalid, then 
+        # it will halt the process
         alpha = self.retrieve_alpha()
         if(alpha == None):
             return
-        
+        # If the value is invalid, then 
+        # it will halt the process
         beta = self.retrieve_beta()
         if(beta == None):
             return
@@ -2012,8 +2066,8 @@ class Application():
             return results
         
         results = concurrent()
-        # Create CLDA object asynchronically.
         
+        # Create CLDA object asynchronically.
         for i in results:
             line = i[1].getvalue()
             if line != "":
@@ -2037,26 +2091,30 @@ class Application():
 
     def asynchronous_LDA_model_generation(self, dataset_dir, result_num):
         
+        # If the value is invalid, then 
+        # it will halt the process
         topic_num = self.retrieve_topic_num()
         if(topic_num == None):
             return
-
+        # If the value is invalid, then 
+        # it will halt the process
         max_iter = self.retrieve_max_iter()
         if(max_iter == None):
             return
-        
+        # If the value is invalid, then 
+        # it will halt the process
         alpha = self.retrieve_alpha()
         if(alpha == None):
             return
-        
+        # If the value is invalid, then 
+        # it will halt the process
         beta = self.retrieve_beta()
         if(beta == None):
             return
         
         
         def concurrent():
-        #        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
-            
+
             fm = Asynchrous_LDA
             
             results = fm.asynchronous_LDA_creation(fm, dataset_dir, topic_num, max_iter, alpha, beta)
