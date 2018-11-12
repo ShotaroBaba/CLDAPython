@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Sep  1 22:07:34 2018
-
 @author: Shotaro Baba
 """
 import datetime
@@ -21,12 +19,13 @@ try:
 except ImportError:
     from io import StringIO
 
+
 from multiprocessing import cpu_count
 from multiprocessing import Pool
 
-#Setting default values
-dataset_dir = "../../CLDA_data_training"
-dataset_test = "../../CLDA_data_testing"
+# Setting default values
+dataset_dir = "../../data_training"
+dataset_test = "../../data_testing"
 score_result_dir = "../../score_result"
 score_result_dataframe_suffix = "_CLDA_score.csv"
 score_result_txt_suffix = "_CLDA_score.txt"
@@ -47,6 +46,11 @@ converted_xml_suffix = "_conv.txt"
 all_score_suffix = "_all_score.csv"
 all_score_precision_etc_suffix_LDA = "_LDA_precision_recall_top.csv"
 all_score_precision_etc_suffix_CLDA = "_CLDA_precision_recall_top.csv"
+suffix_for_testing_csv = "._test_baseline.csv"
+suffix_for_testing_txt = "._test_baseline.csv"
+
+# LDA suffix test pickle
+LDA_suffix_test_pickle = "_LDA_test.pkl"
 default_ngram = 1
 
 
@@ -70,19 +74,15 @@ with open(stop_word_folder + '/' + stop_word_smart_txt , "r", encoding='utf8') a
     for line in f:
         smart_stopwords.append(line.strip('\n'))
 
-# This will be run asynchronously to reduce
-# The time to calculate...
-        
 
 
-
-
+from tkinter.filedialog import asksaveasfilename
 import tkinter as tk
 import gc
 import os
 import main_window
-dataset_training = "../../CLDA_data_training"
-dataset_testing = "../../CLDA_data_testing"
+dataset_training = "../../data_training"
+dataset_testing = "../../data_testing"
 
 from nltk import wordpunct_tokenize, WordNetLemmatizer, sent_tokenize, pos_tag
 from nltk.corpus import stopwords, wordnet
@@ -90,22 +90,80 @@ from string import punctuation
 from nltk.util import ngrams 
 # initialize constants
 lemmatizer = WordNetLemmatizer()
+
+
+if not os.path.isdir(score_result_dir):
+    os.makedirs(score_result_dir)
+
 def define_sw():
     
     # Use default english stopword     
     return set(stopwords.words('english') + smart_stopwords)
 
 
+#################################
+##### Testing purpose
+#################################
+
+#def LDA_test_doc_topic_prob(LDA_test, feature_names, top_rank):
+##        test = test_LDA_test.components_
+#    topic_words = {}
+##        prob_words = {}
+#    topic_words_prob = {}
+#    vocab = feature_names
+#    probability = LDA_test.components_ / LDA_test.components_.sum(axis=1)[:, np.newaxis]
+#    for topic, comp in enumerate(LDA_test.components_):
+#        # for the n-dimensional array "arr":
+#        # argsort() returns a ranked n-dimensional array of arr, call it "ranked_array"
+#        # which contains the indices that would sort arr in a descending fashion
+#        # for the ith element in ranked_array, ranked_array[i] represents the index of the
+#        # element in arr that should be at the ith index in ranked_array
+#        # ex. arr = [3,7,1,0,3,6]
+#        # np.argsort(arr) -> [3, 2, 0, 4, 5, 1]
+#        # word_idx contains the indices in "topic" of the top num_top_words most relevant
+#        # to a given topic ... it is sorted ascending to begin with and then reversed (desc. now) 
+#        
+#        word_idx = np.argsort(comp)[::-1][:top_rank]
+#        normalization = sum([probability[topic][i] for i in word_idx])
+#        
+#        topic_words[topic] = ["{}: {}".format(vocab[i], probability[topic][i]) for i in word_idx]
+#        topic_words_prob[topic] = [(vocab[i], probability[topic][i]/normalization) for i in word_idx]
+##        for topic, words in topic_words.items():
+##            print('Topic: {}'.format(topic))
+##            print('\n'.join(words))
+#    return topic_words_prob.items()
+
+#################################
+##### Testing purpose
+#################################
+
+### The class for displaying popup message
+def popupmsg_enter_file_name():
+    root_msg = tk.Tk()
+    root_msg.title("Warning")
+    root_msg.geometry("300x100")
+    label = tk.Label(root_msg, text = "Please enter the string")
+    label.pack(padx = 10, pady = 10)
+    
+    button = tk.Button(root_msg, text = "OK", command = root_msg.destroy)
+    
+    button.pack(padx = 10, pady = 10)
+    
+    root_msg.mainloop()
+#    del root_msg
+
+
+# The class of CLDA evaluation screen 
 class CLDA_evaluation_screen(object):
     
+    # Initialise the screen 
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("CLDA Evaluation")
         
         
         self.menubar = tk.Menu(self.root)
-        self.menubar.add_command(label="Quit", command=None)
-        self.menubar.add_command(label="Help", command=None)
+        self.menubar.add_command(label="Quit", command=self.root.destroy)
         
         self.root.config(menu=self.menubar)
         
@@ -116,6 +174,7 @@ class CLDA_evaluation_screen(object):
         
         self.root.mainloop()
     
+    # Showing the initial input values first
     def input_the_value_first(self):
         self.ranking_number_word_textbox.insert(tk.END, "{}".format(default_rank_word))
         self.ranking_number_concept_textbox.insert(tk.END, "{}".format(default_rank_concept))
@@ -126,6 +185,7 @@ class CLDA_evaluation_screen(object):
         self.LDA_selection_word_ranking_box.insert(tk.END, "{}".format(default_ranking_show_value))
 #        self.
     
+    # Going to the start menu
     def start_menu(self):
         self.main_frame = tk.Frame(self.root)
         self.main_frame.pack()
@@ -222,11 +282,11 @@ class CLDA_evaluation_screen(object):
         self.CLDA_selection_word_ranking_box.pack(side = tk.RIGHT)
         
         
-        self.CLDA_selection_concept_ranking_button = tk.Button(self.CLDA_selection_and_preference, text = "Concept Ranking\nEvaluation")
+        self.CLDA_selection_concept_ranking_button = tk.Button(self.CLDA_selection_and_preference, text = "Concept ranking\nevaluation")
         self.CLDA_selection_concept_ranking_button.grid(row = 3)
         self.CLDA_selection_concept_ranking_button['command'] = self.show_CLDA_ranking
         
-        self.CLDA_selection_word_ranking_button = tk.Button(self.CLDA_selection_and_preference, text = "Word Ranking\nEvaluation")
+        self.CLDA_selection_word_ranking_button = tk.Button(self.CLDA_selection_and_preference, text = "Word ranking\nevaluation")
         self.CLDA_selection_word_ranking_button.grid(row = 4)
         self.CLDA_selection_word_ranking_button['command'] = self.show_word_under_concept
         
@@ -234,9 +294,6 @@ class CLDA_evaluation_screen(object):
         self.CLDA_topic_probability_button.grid(row = 5)
         self.CLDA_topic_probability_button['command']  = self.show_topic_ranking_CLDA
         
-        
-#        self.CLDA_accuracy_calculation_button = tk.Button(self.CLDA_selection_and_preference, text = "Calculate CLDA accuracy")
-#        self.CLDA_accuracy_calculation_button.grid(row = 4)
         
         
         ##########################################
@@ -253,7 +310,7 @@ class CLDA_evaluation_screen(object):
         
         
         
-        self.LDA_selection_label = tk.Label(self.LDA_selection_and_preference, text = "LDA selection")
+        self.LDA_selection_label = tk.Label(self.LDA_selection_and_preference, text = "LDA Selection")
         self.LDA_selection_label.grid(row = 0)
         
         #######################################
@@ -275,14 +332,14 @@ class CLDA_evaluation_screen(object):
         self.LDA_word_ranking_input_frame = tk.Frame(self.LDA_selection_and_preference)
         self.LDA_word_ranking_input_frame.grid(row = 2)
         
-        self.LDA_selection_word_ranking_label = tk.Label(self.LDA_word_ranking_input_frame, text = "Enter Word\nfor Ranking\nfor LDA:")
+        self.LDA_selection_word_ranking_label = tk.Label(self.LDA_word_ranking_input_frame, text = "Enter word\nfor ranking\nfor LDA:")
         self.LDA_selection_word_ranking_label.pack(side = tk.LEFT)
         
         self.LDA_selection_word_ranking_box = tk.Entry(self.LDA_word_ranking_input_frame)
         self.LDA_selection_word_ranking_box.pack(side = tk.RIGHT)
         
         
-        self.LDA_selection_word_ranking_button = tk.Button(self.LDA_selection_and_preference, text = "Word Ranking\nEvaluation")
+        self.LDA_selection_word_ranking_button = tk.Button(self.LDA_selection_and_preference, text = "Word ranking\nevaluation")
         self.LDA_selection_word_ranking_button.grid(row = 3)
         self.LDA_selection_word_ranking_button['command']  = self.show_LDA_ranking
         
@@ -292,9 +349,7 @@ class CLDA_evaluation_screen(object):
         self.LDA_topic_probability_button.grid(row = 5)
         self.LDA_topic_probability_button['command']  = self.show_topic_ranking_LDA
         
-        
-#        self.LDA_accuracy_calculation_button = tk.Button(self.LDA_selection_and_preference, text = "Calculate LDA Accuracy")
-#        self.LDA_accuracy_calculation_button.grid(row = 4)
+    
         
         self.LDA_selection_listbox['yscrollcommand'] = \
         self.LDA_selection_listbox_scroll.set
@@ -319,6 +374,10 @@ class CLDA_evaluation_screen(object):
         self.CLDA_evaluation_button = tk.Button(self.button_word_ranking_frame, text = "Eval CLDA")
         self.CLDA_evaluation_button.pack()
         self.CLDA_evaluation_button['command'] = self.asynchronous_CLDA_evaluation
+        
+#        self.result_save_selection = tk.Button(self.button_word_ranking_frame, text = "Save result")
+#        self.result_save_selection.pack()
+#        self.CLDA_evaluation_button['command'] = None
         
         self.ranking_label_box_frame = tk.Frame(self.button_word_ranking_frame)
         self.ranking_label_box_frame.pack()
@@ -347,24 +406,24 @@ class CLDA_evaluation_screen(object):
         self.max_ngram_entry = tk.Entry(self.ranking_label_box_frame)
         self.max_ngram_entry.grid(row = 4, column = 1)
         
-        self.threshold_label = tk.Label(self.ranking_label_box_frame, text = "threshold (positive value): ")
+        self.threshold_label = tk.Label(self.ranking_label_box_frame, text = "Threshold (positive value): ")
         self.threshold_label.grid(row = 5, column = 0)
         
         self.threshold_entry = tk.Entry(self.ranking_label_box_frame)
         self.threshold_entry.grid(row = 5, column = 1)
         
-        self.ranking_result_file_name_label = tk.Label(self.ranking_label_box_frame, text = "File name to store the result: ")
-        self.ranking_result_file_name_label.grid(row = 6, column=0)
-        
-        self.ranking_result_file_name_textbox = tk.Entry(self.ranking_label_box_frame)
-        self.ranking_result_file_name_textbox.grid(row = 6, column=1)
+#        self.ranking_result_file_name_label = tk.Label(self.ranking_label_box_frame, text = "File name to store the result: ")
+#        self.ranking_result_file_name_label.grid(row = 6, column=0)
+#        
+#        self.ranking_result_file_name_textbox = tk.Entry(self.ranking_label_box_frame)
+#        self.ranking_result_file_name_textbox.grid(row = 6, column=1)
         
         '''
         ##########################################################
         #### Result selection section
         ##########################################################
         '''
-        self.evaluation_result_list_frame = tk.LabelFrame(self.button_word_ranking_result_frame, relief = tk.RAISED, borderwidth = 1, text = "Evaluaiton result list")
+        self.evaluation_result_list_frame = tk.LabelFrame(self.button_word_ranking_result_frame, relief = tk.RAISED, borderwidth = 1, text = "Evaluation Result List")
         self.evaluation_result_list_frame.pack(side = tk.RIGHT, padx = 10, ipadx = 10, ipady = 10)
         
         self.result_selection_list = tk.Frame(self.evaluation_result_list_frame)
@@ -405,14 +464,18 @@ class CLDA_evaluation_screen(object):
         self.change_to_model_creation = tk.Button(self.bottom_button_frame, text = "Return to model creation")
         self.change_to_model_creation.pack()
         self.change_to_model_creation['command'] = self.move_to_model_creation
+    
         
-        
-        
-        '''
-        ##########################################################
-        ####LDA button
-        ##########################################################
-        '''
+    '''
+    ##########################################################
+    ##########################################################
+    ##########################################################
+    ### Retrieve the parameters from input
+    ##########################################################
+    ##########################################################
+    ##########################################################
+    '''
+    
     # The method for retireving the limit of 
     # top words probablities from either CLDA or LDA over
     # either concept or topic
@@ -457,7 +520,7 @@ class CLDA_evaluation_screen(object):
                     self.result_screen_text.configure(state='disabled')
                     return
                 self.result_screen_text.configure(state='normal')
-                self.result_screen_text.insert(tk.END, "\nThe input min top rank concept num.\ value {} is used".format(user_input_val))
+                self.result_screen_text.insert(tk.END, "\nThe input min top rank concept num. value {} is used".format(user_input_val))
                 self.result_screen_text.configure(state='disabled')
                 return user_input_val
         except ValueError:
@@ -545,6 +608,74 @@ class CLDA_evaluation_screen(object):
             self.result_screen_text.configure(state='normal')
             self.result_screen_text.insert(tk.END, "\nError: The input max iter. is invalid.")
             self.result_screen_text.configure(state='disabled')
+    '''
+    ##########################################################
+    ##########################################################
+    ##########################################################
+    ### End of retrieve the parameters from input
+    ##########################################################
+    ##########################################################
+    ##########################################################
+    '''
+
+
+
+    # Save the results in user selected folder and 
+    # the directory...
+    # If the directory and store is not selected...
+    # then the results will be stored in default 
+    # results folders
+    def _save_results(self, score_data_frame, all_score_data, result_str, result_log, 
+                     score_result_dataframe_suffix, 
+                        score_result_txt_suffix, 
+                        score_result_log_suffix,
+                        all_score_precision_etc_suffix):
+        # Extract the file name
+        raw_file_name = ""
+        while True:
+            raw_file_name = asksaveasfilename(title='Please set your result file name')
+            if(raw_file_name == ""):
+                popupmsg_enter_file_name()
+            else:
+                break
+        # Extract the file name
+        file_name = os.path.basename(raw_file_name)
+        
+        # Extract the folder name
+        dir_name = os.path.dirname(raw_file_name)
+        
+        # Choosing the file name for storing result data       
+        storing_result_name_data = dir_name + '/' + file_name + score_result_dataframe_suffix
+        
+        # Choosing the result name for sotring result data
+        storing_result_name_text = dir_name + '/' + file_name + score_result_txt_suffix
+        
+        # Making the log file name
+        log_txt_name = dir_name + '/' + file_name + score_result_log_suffix
+        
+        # Making the score file name
+        all_score_file_name = dir_name + '/' + file_name + all_score_precision_etc_suffix
+        
+        # The score data is saved as csv file
+        score_data_frame.to_csv(storing_result_name_data,
+                              index=False, encoding='utf-8',
+                              quoting=csv.QUOTE_ALL)
+        
+        # The score data is store as the csv
+        all_score_data.to_csv(all_score_file_name,
+                              index=False, encoding='utf-8',
+                              quoting=csv.QUOTE_ALL)
+        
+        # The score data is stored
+        with open(storing_result_name_text, 'w') as f:
+            f.write(result_str)
+        
+        # The log file is stored in the 
+        # text files
+        with open(log_txt_name, 'w') as f:
+            f.write(result_log)
+        
+        return file_name
     
     # Move to main window 
     # and destroy the current object
@@ -557,6 +688,7 @@ class CLDA_evaluation_screen(object):
         del self
         
         # Conduct garbage collection after deleting the object 
+        # to make free space
         gc.collect()
         
         # Going to main window
@@ -565,10 +697,13 @@ class CLDA_evaluation_screen(object):
     # Show word probability ranking over 
     # topics
     def show_LDA_ranking(self):
+        
+        # The output 
         def output():
             sys.stdout = buffer = StringIO()
             ranking_value = default_ranking_show_value
             
+            # Retrieve the name of LDA from LDA listbox
             try:
                 topic_name = self.LDA_selection_listbox.get(self.LDA_selection_listbox.curselection())
             except:
@@ -577,9 +712,10 @@ class CLDA_evaluation_screen(object):
                 return buffer
             
             rank_temp = self.LDA_selection_word_ranking_box.get()
-            print(self.LDA_selection_word_ranking_box.get())
+#            print(self.LDA_selection_word_ranking_box.get())
             
-            
+            # Retrieve teh ranking values from 
+            # LDA selection word ranking box
             try:
                 ranking_value = int(rank_temp)
                 if(ranking_value < 1):
@@ -590,11 +726,16 @@ class CLDA_evaluation_screen(object):
                 print("Cannot convert the value.")
                 print("Default value {} is used.".format(ranking_value))
             
-            # Download the topic name
+            # Reading the LDA pickle file to read
             topic_name = self.LDA_selection_listbox.get(self.LDA_selection_listbox.curselection())
             
+            print("*"*10)
+            print(topic_name)
+            print("*"*10)
+            # The suffix is removed 
             topic_name = topic_name[:-len(LDA_suffix_pickle)]
-                        
+            
+            # The data will be read by the LDA
             with open(dataset_dir + '/' + topic_name + LDA_suffix_pickle, "rb") as f:
                 test_LDA = pickle.load(f)
                 
@@ -615,7 +756,7 @@ class CLDA_evaluation_screen(object):
         def output():
             sys.stdout = buffer = StringIO()
             
-            
+            # Extract the selected LDA name from the listbox
             try:
                 topic_name = self.LDA_selection_listbox.get(self.LDA_selection_listbox.curselection())
             except:
@@ -623,11 +764,17 @@ class CLDA_evaluation_screen(object):
                 sys.stdout = sys.__stdout__
                 return buffer
             
+            print("*"*10)
+            print(topic_name)
+            print("*"*10)
+            # Topic name extraction
             topic_name = topic_name[:-len(LDA_suffix_pickle)]
-          
+            
+            # Load the data of LDA
             with open(dataset_dir + '/' + topic_name + LDA_suffix_pickle, "rb") as f:
                 test_LDA = pickle.load(f)  
-                
+            
+            # Show the topic model average probablity 
             test_LDA.show_doc_topic_average_prob()
             
             
@@ -641,16 +788,22 @@ class CLDA_evaluation_screen(object):
     
     # Show average topic probabilities
     def show_topic_ranking_CLDA(self):
+        
         def output():
             sys.stdout = buffer = StringIO()
             
-            
+            # The selected topic model in the listbox is read 
             try:
                 topic_name = self.CLDA_selection_listbox.get(self.CLDA_selection_listbox.curselection())
             except:
                 print("CLDA is not selected")
                 sys.stdout = sys.__stdout__
                 return buffer
+            
+            
+            print("*"*10)
+            print(topic_name)
+            print("*"*10)
             
             topic_name = topic_name[:-len(CLDA_suffix_pickle)]
           
@@ -668,13 +821,14 @@ class CLDA_evaluation_screen(object):
         self.result_screen_text.insert(tk.END, output_buffer.getvalue())
         self.result_screen_text.configure(state='disabled')
     
-    # Show CLDA topic 
+    # Show CLDA topic ranking 
     def show_CLDA_ranking(self):
         def output():
             
             sys.stdout = buffer = StringIO()
             ranking_value = default_ranking_show_value
             
+            # The selected topic model in the listbox is read 
             try:
                 topic_name = self.CLDA_selection_listbox.get(self.CLDA_selection_listbox.curselection())
             except:
@@ -685,6 +839,8 @@ class CLDA_evaluation_screen(object):
             
             rank_temp = self.CLDA_selection_word_ranking_box.get()
             
+            # The ranking values are retrieved from the 
+            # ranking values
             try:
                 ranking_value = int(rank_temp)
                 if(ranking_value < 1):
@@ -695,8 +851,10 @@ class CLDA_evaluation_screen(object):
                 print("Cannot convert the value.")
                 print("Default value {} is used.".format(ranking_value))
             
-            topic_name = topic_name[:-len(CLDA_suffix_pickle)]
+            print("*"*10)
             print(topic_name)
+            print("*"*10)
+            topic_name = topic_name[:-len(CLDA_suffix_pickle)]
                 
             with open(dataset_dir + '/' + topic_name + CLDA_suffix_pickle, "rb") as f:
                 test_CLDA = pickle.load(f)
@@ -718,10 +876,13 @@ class CLDA_evaluation_screen(object):
         # show_word_concept_prob
         def output():
             
+            # Monitoring & taking the standard output 
+            # from buffer
             sys.stdout = buffer = StringIO()
             
             ranking_value = default_ranking_show_value
             
+            # Make the selection of the topic of CLDA
             try:
                 topic_name = self.CLDA_selection_listbox.get(self.CLDA_selection_listbox.curselection())
             except:
@@ -731,6 +892,7 @@ class CLDA_evaluation_screen(object):
 
             rank_temp = self.CLDA_selection_word_ranking_box.get()
             
+            # Try to extract the values in the string 
             try:
                 ranking_value = int(rank_temp)
                 if(ranking_value < 1):
@@ -741,12 +903,14 @@ class CLDA_evaluation_screen(object):
                 print("Cannot convert the value.")
                 print("Default value {} is used.".format(ranking_value))
             
-            
+            # Extract the topic name from the file
             topic_name = self.CLDA_selection_listbox.get(self.CLDA_selection_listbox.curselection())
-            
-            
-            topic_name = topic_name[:-len(CLDA_suffix_pickle)]
+            print("*"*10)
             print(topic_name)
+            print("*"*10)
+            # Extract only topic name
+            topic_name = topic_name[:-len(CLDA_suffix_pickle)]
+            
             with open(dataset_dir + '/' + topic_name + concept_prob_suffix_json, "r") as f:
                 test_concept_prob = json.load(f)
                     
@@ -769,9 +933,12 @@ class CLDA_evaluation_screen(object):
         self.result_screen_text.delete("1.0",tk.END)
         self.result_screen_text.configure(state='disabled')
     
-    # Lists CLDA files
+    # List all files generated during 
+    # the process
     def listing_all_model_and_result(self):
         files_tmp = []
+        
+        # Initalise all the contents of the listboxes
         self.CLDA_selection_listbox.delete(0,tk.END)
         self.LDA_selection_listbox.delete(0,tk.END)
         self.result_selection_listbox.delete(0,tk.END)
@@ -781,18 +948,22 @@ class CLDA_evaluation_screen(object):
         
         self.LDA_list = [x for x in files_tmp if x.endswith("_LDA.pkl")]
         
+        # Put all generated LDA models
         for i in self.LDA_list:
             self.LDA_selection_listbox.insert(tk.END, i)
 
         self.CLDA_list = [x for x in files_tmp if x.endswith("_CLDA.pkl")]
         
+        # Put all generated CLDA models
         for i in self.CLDA_list:
             self.CLDA_selection_listbox.insert(tk.END, i)
         
         files_tmp = []
         for dirpath, dirs, files in os.walk(score_result_dir):
             files_tmp.extend(files)
-        
+         
+        # Put all the results files into 
+        # Listbox 
         self.result_list = [x for x in files_tmp if x.endswith(all_score_precision_etc_suffix_CLDA) or x.endswith(all_score_precision_etc_suffix_LDA)]
         
         for i in self.result_list:
@@ -873,16 +1044,13 @@ class CLDA_evaluation_screen(object):
             return results
         # Generate score
         score_buffers_alpha_beta = concurrent2()
-            # Return processed result
+        # Return processed result
         score_result_total = []
         result_log = ""
+        
+        # The score results are stored in the score log files
         for score_i, buffer_str, alpha, beta in score_buffers_alpha_beta:
             score_result_total.extend(score_i)
-#            self.result_screen_text.configure(state='normal')
-#            self.result_screen_text.insert(tk.END, "\nalpha: {}".format(alpha))
-#            self.result_screen_text.insert(tk.END, "\nbeta: {}".format(beta))
-#            self.result_screen_text.insert(tk.END, buffer_str.getvalue())
-#            self.result_screen_text.configure(state='disabled')
             result_log += "\nalpha: {}".format(alpha) + "\nbeta: {}".format(beta) + buffer_str.getvalue()
 #        print(score_result_total)  
         
@@ -923,7 +1091,7 @@ class CLDA_evaluation_screen(object):
             self.result_screen_text.insert(tk.END, "\nError: max_ngram < min_ngram is not accepted")
             self.result_screen_text.configure(state='disabled')
             return
-#        score_list = []
+        
         files_test = []
         
         for dirpath, dirs, files in os.walk(dataset_test):
@@ -932,7 +1100,7 @@ class CLDA_evaluation_screen(object):
 
         # Tokenize all data in test dataset
         def concurrent1():
-        #        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
+
             
             fm = Asynchronous_CLDA_evaluation_class(rank_word = top_word_number)
             
@@ -941,13 +1109,10 @@ class CLDA_evaluation_screen(object):
             return results
         
         testing_dict = concurrent1()
-#        for testing_file_head in test_head:
-#            testing_dict[testing_file_head] = pd.read_csv(dataset_test + '/' + testing_file_head + file_name_df_suffix_csv,
-#                                          encoding='utf-8', sep=',', error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
-#            testing_dict[testing_file_head]['Text'] = testing_dict[testing_file_head]['Text'].apply(lambda x: cab_tokenizer(x))
+
         # Evaluate all LDA model performances 
         def concurrent2():
-        #        files_list_for_modelling_CLDA = sorted(list(set([os.path.splitext(x)[0] for x in files if x.endswith('.csv')])))
+
             
             fm = Asynchronous_CLDA_evaluation_class(rank_word = top_word_number)
             
@@ -956,13 +1121,16 @@ class CLDA_evaluation_screen(object):
             return results
         
         score_buffers_alpha_beta = concurrent2()
-            # Return processed result
+        # Return processed result
         score_result_total = []
         result_log = ""
-        for score_i, buffer_str, alpha, beta in score_buffers_alpha_beta:
+        
+        for score_i, buffer_str, alpha, beta in score_buffers_alpha_beta: #score_i_test
             score_result_total.extend(score_i)
+            
+            
             result_log += "\nalpha: {}".format(alpha) + "\nbeta: {}".format(beta) + buffer_str.getvalue()
-#        print(score_result_total)  
+
         
         # Generate score
         self._generate_score(score_result_total,result_log, 
@@ -971,6 +1139,7 @@ class CLDA_evaluation_screen(object):
                              LDA_score_result_txt_suffix, 
                              LDA_score_result_log_suffix, all_score_precision_etc_suffix_LDA)
         
+#        
     # Calculate the score from the
     # obtained result
     def _generate_score(self, score_result_total,
@@ -982,59 +1151,22 @@ class CLDA_evaluation_screen(object):
                         all_score_precision_etc_suffix = all_score_precision_etc_suffix_CLDA):
         ts = time.time()
         
-#        all_score_dir  = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + all_score_suffix
+
         # Turn the score_result_total into data frame
         score_data_frame = pd.DataFrame(score_result_total, columns = ['File_name', 'Training_topic', 'Testing_topic', 'Score', 'Label', 'alpha', 'beta'])
         
-#        score_data_frame = pd.read_csv("C:/Users/n9648852/OneDrive - Queensland University of Technology/Smester2_2018/IFN702/Assignment2and3/Project/score_result/20180918_205559_CLDA_score.csv",
-#                                       encoding='utf-8',
-#                              quoting=csv.QUOTE_ALL)
-#        
-#        score_data_frame.to_csv(all_score_dir,
-#                              index=False, encoding='utf-8',
-#                              quoting=csv.QUOTE_ALL)
+
         
         # Obtain file name from entrybox
-        file_name_for_result = self.ranking_result_file_name_textbox.get()
-        storing_result_name_data = ""
-        storing_result_name_text = ""
-        log_txt_name = ""
+#        file_name_for_result = self.ranking_result_file_name_textbox.get()
         all_score_data_list = []
         
-        # If the file name is invalid, then 
-        # the file name is replaced by timestamp
-        if(any([x in file_name_for_result for x in illegal_file_characters]) ):
-            self.result_screen_text.configure(state='normal')
-            self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]) + '\n')
-            self.result_screen_text.insert(tk.END, "Filename is invalid or not input, the time_stamp is used for storing file.")
-            self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]))
-            self.result_screen_text.configure(state='disabled')
-            
-            storing_result_name_data = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_dataframe_suffix
-            storing_result_name_text = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_txt_suffix
-            log_txt_name = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_log_suffix
-            all_score_file_name = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + all_score_precision_etc_suffix
-        # If the file name is empty, then 
-        # the file name is replaced by timestamp
-        elif(file_name_for_result == ""):
-            storing_result_name_data = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_dataframe_suffix
-            storing_result_name_text = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_txt_suffix
-            log_txt_name = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_log_suffix
-            all_score_file_name = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + all_score_precision_etc_suffix
-        # If the file name is valid, then 
-        # the file name is used
-        else:
-            storing_result_name_data = score_result_dir + '/' + file_name_for_result + score_result_dataframe_suffix
         
-            storing_result_name_text = score_result_dir + '/' + file_name_for_result + score_result_txt_suffix
-            log_txt_name = score_result_dir + '/' + file_name_for_result + score_result_log_suffix
-            all_score_file_name = score_result_dir + '/' + file_name_for_result + all_score_precision_etc_suffix
+        
         
         # Counting TP, FN, TN and FP 
-        Total_TP_count  = pd.Series(np.where((score_data_frame['Score'] > threshold) & (score_data_frame['Label'] == 1), True, False)).sum()
+        Total_TP_count = pd.Series(np.where((score_data_frame['Score'] > threshold) & (score_data_frame['Label'] == 1), True, False)).sum()
         Total_FN_count = pd.Series(np.where((score_data_frame['Score'] <= threshold) & (score_data_frame['Label'] == 1), True, False)).sum()
-        
-        
         Total_TN_count = pd.Series(np.where((score_data_frame['Score'] <= threshold) & (score_data_frame['Label'] == 0), True, False)).sum()
         Total_FP_count = pd.Series(np.where((score_data_frame['Score'] > threshold) & (score_data_frame['Label'] == 0), True, False)).sum()
         
@@ -1043,12 +1175,6 @@ class CLDA_evaluation_screen(object):
         recall = Total_TP_count / (Total_TP_count + Total_FN_count)
         
         Total_F1_value = 2 * (precision * recall) / (precision + recall)
-        
-        # The score data is saved as csv file
-        score_data_frame.to_csv(storing_result_name_data,
-                              index=False, encoding='utf-8',
-                              quoting=csv.QUOTE_ALL)
-        
         
         local_result_str = ""
         
@@ -1071,21 +1197,9 @@ class CLDA_evaluation_screen(object):
             local_recall = local_TP_count / (local_TP_count + local_FN_count)
             local_F1_value = 2 * (local_precision * local_recall) / (local_precision + local_recall)
             
+            top_10_rank_precision = score_data_frame_local.head(top_10_rank)['Label'].sum() / float(top_10_rank)
+            top_20_rank_precision = score_data_frame_local.head(top_20_rank)['Label'].sum() / float(top_20_rank)
             
-            
-#            with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-#                print(score_data_frame_local.to_string(index=False))
-            
-            top_10_rank_score_frame = score_data_frame_local.head(top_10_rank)
-            top_10_rank_score_TP = pd.Series(np.where((top_10_rank_score_frame['Score'] > threshold) & (top_10_rank_score_frame['Label'] == 1), True, False)).sum()
-            top_10_rank_score_FP = pd.Series(np.where((top_10_rank_score_frame['Score'] > threshold) & (top_10_rank_score_frame['Label'] == 0), True, False)).sum()
-            top_10_rank_precision = top_10_rank_score_TP / (top_10_rank_score_TP + top_10_rank_score_FP)
-            
-            top_20_rank_score_frame = score_data_frame_local.head(top_20_rank)
-            top_20_rank_score_TP = pd.Series(np.where((top_20_rank_score_frame['Score'] > threshold) & (top_20_rank_score_frame['Label'] == 1), True, False)).sum()
-            top_20_rank_score_FP = pd.Series(np.where((top_20_rank_score_frame['Score'] > threshold) & (top_20_rank_score_frame['Label'] == 0), True, False)).sum()
-            
-            top_20_rank_precision = top_20_rank_score_TP / (top_20_rank_score_TP + top_20_rank_score_FP)
             local_result_str += "Topic {}: Precision: {}, Recall: {}\n".format(i, local_precision, local_recall) + \
             "F1 value: {}\n".format(local_F1_value) + \
             "Trup Positive: {}, False Positive: {}\n".format(local_TP_count, local_FP_count) + \
@@ -1097,13 +1211,68 @@ class CLDA_evaluation_screen(object):
         all_score_data_list.append(("Total", precision,
                                     recall,
                                     Total_F1_value,
-                                    sum([x[4] for x in all_score_data_list])/len(all_score_data_list),
-                                    sum([x[5] for x in all_score_data_list])/len(all_score_data_list), "None", "None", threshold))
+                                    np.nansum([x[4] for x in all_score_data_list])/len(all_score_data_list),
+                                    np.nansum([x[5] for x in all_score_data_list])/len(all_score_data_list), "None", "None", threshold))
         
         
+        #Storing all necessary data
+        storing_result_name_data = ""
+        storing_result_name_text = ""
+        log_txt_name = ""
         
         # Create all_score_data dataframe from all_score_data_list 
         all_score_data = pd.DataFrame(all_score_data_list, columns= ["Topic", "Precision", "Recall", "F1", "Top10", "Top20", "alpha", "beta", "threshold"])
+        
+        # Construct result string
+        result_str = "All average: Precision: {}, Recall: {}\n".format(precision, recall) + \
+            "F1 value: {}\n".format(Total_F1_value) + \
+            "Trup Positive: {}, False Positive: {}\n".format(Total_TP_count, Total_FP_count) + \
+            "Trup Negative: {}, False Negative: {}\n\n".format(Total_TN_count, Total_FN_count) + local_result_str
+        
+        file_name_for_result = self._save_results(score_data_frame, all_score_data, result_str, result_log,
+                   score_result_dataframe_suffix,
+                   score_result_txt_suffix,
+                   score_result_log_suffix,
+                   all_score_precision_etc_suffix)
+        
+        # If the file name is invalid, then 
+        # the file name is replaced by timestamp
+        if(any([x in file_name_for_result for x in illegal_file_characters]) ):
+            self.result_screen_text.configure(state='normal')
+            self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]) + '\n')
+            self.result_screen_text.insert(tk.END, "Filename is invalid or not input, the time_stamp is used for storing file.")
+            self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]))
+            self.result_screen_text.configure(state='disabled')
+            
+            storing_result_name_data = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_dataframe_suffix
+            storing_result_name_text = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_txt_suffix
+            log_txt_name = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_log_suffix
+            all_score_file_name = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + all_score_precision_etc_suffix
+            
+        # If the file name is empty, then 
+        # the file name is replaced by timestamp
+        elif(file_name_for_result == ""):
+            storing_result_name_data = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_dataframe_suffix
+            storing_result_name_text = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_txt_suffix
+            log_txt_name = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + score_result_log_suffix
+            all_score_file_name = score_result_dir + '/' + datetime.datetime.fromtimestamp(ts).strftime('%Y%m%d_%H%M%S') + all_score_precision_etc_suffix
+        
+        # If the file name is valid, then 
+        # the file name is used
+        else:
+            storing_result_name_data = score_result_dir + '/' + file_name_for_result + score_result_dataframe_suffix
+        
+            storing_result_name_text = score_result_dir + '/' + file_name_for_result + score_result_txt_suffix
+            log_txt_name = score_result_dir + '/' + file_name_for_result + score_result_log_suffix
+            all_score_file_name = score_result_dir + '/' + file_name_for_result + all_score_precision_etc_suffix
+            
+        
+        # The score data is saved as csv file
+        score_data_frame.to_csv(storing_result_name_data,
+                              index=False, encoding='utf-8',
+                              quoting=csv.QUOTE_ALL)
+        
+        
         
         # Input the all scores of models 
         sys.stdout = dataframe_buffer = StringIO()
@@ -1122,20 +1291,21 @@ class CLDA_evaluation_screen(object):
                               index=False, encoding='utf-8',
                               quoting=csv.QUOTE_ALL)
         
+            
+        
+        # Storing the results containing the 
+        # results values 
         with open(storing_result_name_text, 'w') as f:
-            result_str = "All average: Precision: {}, Recall: {}\n".format(precision, recall) + \
-            "F1 value: {}\n".format(Total_F1_value) + \
-            "Trup Positive: {}, False Positive: {}\n".format(Total_TP_count, Total_FP_count) + \
-            "Trup Negative: {}, False Negative: {}\n\n".format(Total_TN_count, Total_FN_count) + local_result_str
-#            self.result_screen_text.configure(state='normal')
-#            self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]) + '\n')
-#            self.result_screen_text.insert(tk.END, result_str)
-#            self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]))
-#            self.result_screen_text.configure(state='disabled')
             f.write(result_str)
         
+        # Write down the log of results in the 
+        # string 
         with open(log_txt_name, 'w') as f:
             f.write(result_log)
+        
+        # Save files into a certain folders
+        # and 
+
         
         self.listing_all_model_and_result()
     
@@ -1146,14 +1316,12 @@ class CLDA_evaluation_screen(object):
         self.result_screen_text.configure(state='disabled')
     
     def display_all_scores_in_file(self):
-#        tk.tkFileDialog.askopenfilename(initialdir = "/",title = "Select file",filetypes = (("jpeg files","*.jpg"),("all files","*.*")))
-#         ,filetypes = (("Score file","*.csv"))
-#        file_name = tk.filedialog.askopenfilename(title = "Select file")
+
         
         try:
             file_name = self.result_selection_listbox.get(self.result_selection_listbox.curselection())
         except:
-            self.insert_result_string("The result is not selected.")
+            self.insert_result_string("\nThe result is not selected.")
             return
         
         file_name = score_result_dir + '/' + file_name
@@ -1161,21 +1329,12 @@ class CLDA_evaluation_screen(object):
         score_data_frame = pd.read_csv(file_name,
                                        encoding='utf-8',
                                        quoting=csv.QUOTE_ALL)
-#        print(file_name)
         try:
-#                result_str = "Topic {}: Precision: {}, Recall: {}\n".format(score_data_frame.iloc[i,0], score_data_frame.iloc[i,1], score_data_frame.iloc[i,2]) + \
-#                "F1 value: {}\n".format(score_data_frame.iloc[i,3]) + \
-#                "Top 10 retrieval rate: {}, Top 20 retrieval rate: {}\n".format(score_data_frame.iloc[i,4], score_data_frame.iloc[i,5])
-#                self.result_screen_text.configure(state='normal')
-#                self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]) + '\n')
-#                self.result_screen_text.insert(tk.END, result_str)
-#                self.result_screen_text.insert(tk.END, "".join(['*' for m in range(asterisk_len)]) + '\n\n')
-#                self.result_screen_text.configure(state='disabled')
+
             sys.stdout = score_data_buffer = StringIO()
             with pd.option_context('display.max_rows', None, 'display.max_columns', None):
                 print(score_data_frame.to_string(index = False))
             sys.stdout = sys.__stdout__
-#            print(score_data_buffer.getvalue())
             self.insert_result_string(score_data_buffer.getvalue())
         except IndexError  or pd.errors.ParserError:
             self.result_screen_text.configure(state='normal')
@@ -1186,13 +1345,11 @@ class CLDA_evaluation_screen(object):
             self.result_screen_text.insert(tk.END, "The selected model with the topic does not exist.")
             self.result_screen_text.configure(state='disabled')
             
-            
+# Asynchronous CLDA evaluation class
+# This class also includes LDA evaluation 
+# classes
 class Asynchronous_CLDA_evaluation_class():
-    from nltk import wordpunct_tokenize, WordNetLemmatizer, sent_tokenize, pos_tag
-    from nltk.corpus import stopwords, wordnet
-    from string import punctuation
-    from nltk.util import ngrams 
-    import gc
+
     
     def __init__(self, rank_concept = default_rank_concept, rank_word = default_rank_word):
         self.rank_concept = rank_concept
@@ -1277,7 +1434,6 @@ class Asynchronous_CLDA_evaluation_class():
         
         testing_file_head = [x[:-len(file_name_df_suffix_csv)] for x in files_test if x.endswith(file_name_df_suffix_csv) and 
                        training_head_number == ''.join(filter(str.isdigit, x))][0]
-#        test_head = [x[:-len(file_name_df_suffix_csv)] for x in files_test if x.endswith(file_name_df_suffix_csv)]
           
         print("".join(['*' for m in range(asterisk_len)]))
         print("Training_topic: {}".format(training_file_head))
@@ -1297,14 +1453,11 @@ class Asynchronous_CLDA_evaluation_class():
         # Calculate the average of topic probabilities 
         doc_topic = test_CLDA.nmz.sum(axis = 0) + test_CLDA.alpha
         doc_topic /= np.sum(doc_topic)
-        topic_concept = test_CLDA.show_and_construct_normalized_concept_topic_ranking(self.rank_concept)
+        topic_concept = test_CLDA.construct_normalized_concept_topic_ranking(self.rank_concept)
         word_under_concept = test_CLDA.construct_word_concept_prob_under_concept(test_concept_prob, self.rank_word)
-    #        test_file_data = pd.read_csv(data_dir + '/' + test_name + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
-    #                            error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
+
         alpha = test_CLDA.alpha
         beta = test_CLDA.beta
-    #      vector_analysis = generate_vector_for_analysis()
-        
     
         print("".join(['*' for m in range(asterisk_len)]))
         print("Test topic: {}".format(testing_file_head))
@@ -1326,7 +1479,7 @@ class Asynchronous_CLDA_evaluation_class():
                     for word, word_prob in [(x[0], x[2]) for x in word_under_concept if x[1] == concept]:
                         if word in test_files_feature_name:
                             score += topic_prob * concept_prob * word_prob
-                            found_topic_concept_word.append((topic_num, concept, word))
+                            found_topic_concept_word.append((topic_num, concept, concept_prob,  word, word_prob))
             
             # All results are printed and 
             # its standard output will be stored in buffer            
@@ -1369,9 +1522,6 @@ class Asynchronous_CLDA_evaluation_class():
         # Walk down the files to search for
         # files to geenrate model
         training_head = [x[:-len(file_name_df_suffix_csv)] for x in files_training if x.endswith(file_name_df_suffix_csv)]
-#        sys.stdout = sys.__stdout__
-#        print(training_head)
-#        
         # Core use
         # Asynchronically create the LDA object
         with Pool(cpu_count()-1) as p:
@@ -1414,7 +1564,6 @@ class Asynchronous_CLDA_evaluation_class():
         alpha = test_LDA.alpha
         beta = test_LDA.beta
         
-        # 
         test_file_data = testing_dict[testing_file_head]
         testing_head_number = ''.join(filter(str.isdigit, testing_file_head))
         print("".join(['*' for m in range(asterisk_len)]))
@@ -1430,7 +1579,7 @@ class Asynchronous_CLDA_evaluation_class():
                 for word, word_prob in [(x[1], x[2]) for x in word_topic_prob if x[0] == topic_num]:
                     if word in test_files_feature_name:
                         score += topic_prob * word_prob
-                        found_word.append((topic_num, word))
+                        found_word.append((topic_num, topic_prob, word, word_prob))
             print('File name: "{}", Training_Topic {}, Test_topic {}, Score: {}, Label: {}, Found topic and word: {}'.format(test_file_data.iloc[i]['File'],
                   training_head_number,
                   testing_head_number,
@@ -1438,12 +1587,16 @@ class Asynchronous_CLDA_evaluation_class():
             score_list.append((test_file_data.iloc[i]['File'], training_head_number, testing_head_number, score, test_file_data.iloc[i]['label'], alpha, beta))
             
         print("".join(['*' for m in range(asterisk_len)]))
-        print("".join(['*' for m in range(asterisk_len)]))    
+        print("".join(['*' for m in range(asterisk_len)]))  
+        
+    
         sys.stdout = sys.__stdout__
         
-        return (score_list, buffer, alpha, beta)
+        # It has testing functions, currently!
+        # Score list test is used for the testing purpose!
+        return (score_list, buffer, alpha, beta) #score_list_test)
     
-    #Tokenizing string in the document
+    # Tokenizing string in the document
     def tokenization_test(self, testing_file_head, min_ngram, max_ngram):
         wn.ensure_loaded()
         

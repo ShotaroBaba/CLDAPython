@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Aug 24 21:45:47 2018
-
 @author: Shotaro Baba
 """
 # Reading all necessary packages
@@ -37,7 +35,7 @@ from multiprocessing import cpu_count
 from multiprocessing import Pool
 # from multiprocessing import Process
 
-
+#from sklearn.decomposition import LatentDirichletAllocation
 import nltk
 from nltk import wordpunct_tokenize, WordNetLemmatizer, sent_tokenize, pos_tag
 from nltk.corpus import stopwords, wordnet
@@ -49,11 +47,10 @@ import concurrent.futures
 import requests
 
 lemmatizer = WordNetLemmatizer()
-
 # Create default values
 # for experiment
-dataset_dir = "../../CLDA_data_training"
-dataset_test = "../../CLDA_data_testing"
+dataset_dir = "../../data_training"
+dataset_test = "../../data_testing"
 concept_prob_suffix_json = "_c_prob.json"
 concept_name_suffix_txt = "_c_name.txt"
 feature_matrix_suffix_csv = "_f_mat.csv"
@@ -61,6 +58,7 @@ feature_name_suffix_txt = "_f_name.txt"
 file_name_df_suffix_csv = "_data.csv"
 CLDA_suffix_pickle = "_CLDA.pkl"
 LDA_suffix_pickle = "_LDA.pkl"
+LDA_suffix_test_pickle = "_LDA_test.pkl"
 label_text_suffix = ".txt"
 
 converted_xml_suffix = "_conv.txt"
@@ -90,10 +88,8 @@ default_beta = 0.1
 
 label_delim = " "
 delim = ","
-#K = 0
-#with open( "../../CLDA_data_testing" + '/' + "ForTest_c_prob.json", "r") as f:
-#    K = json.load(f)
-#
+
+
 # Download all necessary nltk download
 # components
 nltk.download('stopwords')
@@ -106,7 +102,8 @@ nltk.download('wordnet')
 
 
 gc.enable()
-core_use = 5
+
+
 
 ######################################################
 #######Define stop words here...
@@ -237,7 +234,6 @@ def read_test_files():
         
                 
         # Initialise 
-        
         for_test_purpose_data = for_test_purpose_data.append(pd.DataFrame([(os.path.basename((path_string)), result)], 
                                                                             columns=['File', 'Text']))
     
@@ -258,7 +254,6 @@ def create_feature_vector_async(file_string, feature_list, dataset_dir, ngram,  
         print(file_string)
         datum = pd.read_csv(dataset_dir + '/' + file_string + file_name_df_suffix_csv, encoding='utf-8', sep=',', 
                     error_bad_lines = False, quotechar="\"",quoting=csv.QUOTE_ALL)
-        time.sleep(3)
         # Vectorise the document 
         vect = generate_vector(ngram, min_df, max_df)
         vectorized_data, feature_names = vectorize(vect, datum)
@@ -279,95 +274,99 @@ def create_feature_vector_async(file_string, feature_list, dataset_dir, ngram,  
 # Used for lighten the burden of the calculation
 def create_concept_matrix_async(file_string, concept_list, dataset_dir, K = default_K, smooth = default_smooth):
         
-        async def retrieve_word_concept_data(feature_names):
-            with concurrent.futures.ThreadPoolExecutor(max_workers=150) as executor:
-                collection_of_results = []
-                with requests.Session() as s:
-                    loop = asyncio.get_event_loop()
-                    futures = [
-                        loop.run_in_executor(
-                            executor, 
-                            s.get, 
-                            'https://concept.research.microsoft.com/api/Concept/ScoreByTypi?instance=' +
-                            i.replace(' ', '+') + 
-                            '&topK=' + str(K) + # This K will later be adjustable in later stage...
-                            '&smooth=' + str(smooth) # The value is smoothen by the given value
-                        )
-                        for i in feature_names
-                    ]
-                    for response in await asyncio.gather(*futures):
-                        collection_of_results.append(response.json())
-                
-                    return collection_of_results
+    async def retrieve_word_concept_data(feature_names):
+        with concurrent.futures.ThreadPoolExecutor(max_workers=150) as executor:
+            collection_of_results = []
+            with requests.Session() as s:
+                loop = asyncio.get_event_loop()
+                futures = [
+                    loop.run_in_executor(
+                        executor, 
+                        s.get, 
+                        'https://concept.research.microsoft.com/api/Concept/ScoreByTypi?instance=' +
+                        i.replace(' ', '+') + 
+                        '&topK=' + str(K) + # This K will later be adjustable in later stage...
+                        '&smooth=' + str(smooth) # The value is smoothen by the given value
+                    )
+                    for i in feature_names
+                ]
+                for response in await asyncio.gather(*futures):
+                    collection_of_results.append(response.json())
+            
+                return collection_of_results
+    
+    file_string = os.path.splitext(os.path.basename(file_string))[0]
+    # Check whether the test subject exists or not
+    if any(file_string in substring for substring in concept_list):
+        # Feature already exists
+        print("Feature {} already exists".format(file_string + concept_prob_suffix_json))
+    else:
+        p_e_c  = {}
+
+        feature_names = []                    
+        with open(dataset_dir + '/' + file_string + feature_name_suffix_txt, "r") as f:
+            for line in f:
+                feature_names.append(line.strip('\n'))
         
-        file_string = os.path.splitext(os.path.basename(file_string))[0]
-        # Check whether the test subject exists or not
-        if any(file_string in substring for substring in concept_list):
-            # Feature already exists
-            print("Feature {} already exists".format(file_string + concept_prob_suffix_json))
-        else:
-            p_e_c  = {}
+        
+        #Sort the feature names just in case...
+        feature_names = sorted(feature_names)
+        '''
+        # Retrieve the tenth rankings of the words
+        # K needed to be adjustable so that the
+        # Researcher can find the characteristics of
+        # all values!
+        '''
+        loop = asyncio.get_event_loop()
+        future = asyncio.ensure_future(retrieve_word_concept_data(feature_names))
+        results = loop.run_until_complete(future)
+        
+        # temporary
+        for idx, i  in enumerate(feature_names):
 
-            feature_names = []                    
-            with open(dataset_dir + '/' + file_string + feature_name_suffix_txt, "r") as f:
-                for line in f:
-                    feature_names.append(line.strip('\n'))
-            
-            
-            #Sort the feature names just in case...
-            feature_names = sorted(feature_names)
-            '''
-            # Retrieve the tenth rankings of the words
-            # K needed to be adjustable so that the
-            # Researcher can find the characteristics of
-            # all values!
-            '''
-            loop = asyncio.get_event_loop()
-            future = asyncio.ensure_future(retrieve_word_concept_data(feature_names))
-            results = loop.run_until_complete(future)
-            
-            # temporary
-            for idx, i  in enumerate(feature_names):
+            p_e_c[i] = results[int(idx)]
+        
+        # List up the concept names
+        
+        l = [list(i.keys()) for i in list(p_e_c.values())]
+        concept_names = sorted(list(set(itertools.chain.from_iterable(l))))
+        
+        #    concept_sets[len(concept_sets)-1]
+        # Put the atom concept if there are no concepts in the words
+        
+        
+        # Adding atomic elements
+        for i in feature_names:
+            #if there are no concepts in the words, then...
+            if p_e_c[i] == {}:
+                
+                # Append the words with no related concpets
+                # as the atomic concepts
+                concept_names.append(i)
+                
+        # Sorting the concept_names after adding feature names
+        concept_names = sorted(concept_names)
 
-                p_e_c[i] = results[int(idx)]
-            
-            # List up the concept names
-            
-            l = [list(i.keys()) for i in list(p_e_c.values())]
-            concept_names = sorted(list(set(itertools.chain.from_iterable(l))))
-            
-            #    concept_sets[len(concept_sets)-1]
-            # Put the atom concept if there are no concepts in the words
-            
-            
-            # Adding atomic elements
-            for i in feature_names:
-                #if there are no concepts in the words, then...
-                if p_e_c[i] == {}:
-                    
-                    # Append the words with no related concpets
-                    # as the atomic concepts
-                    concept_names.append(i)
-                    
-            # Sorting the concept_names after adding feature names
-            concept_names = sorted(concept_names)
-
-            # Save p(e|c) as json file
-            with open(dataset_dir + '/' + file_string + concept_prob_suffix_json, "w") as f:
-                json.dump(p_e_c, f, indent = "\t")
-            
-            # Save concept_names as text file
-            with open(dataset_dir + '/' + file_string + concept_name_suffix_txt, "w") as f:
-                for i in concept_names:
-                    f.write("{}\n".format(i))
-                    
-            
-            return file_string + concept_prob_suffix_json
+        # Save p(e|c) as json file
+        with open(dataset_dir + '/' + file_string + concept_prob_suffix_json, "w") as f:
+            json.dump(p_e_c, f, indent = "\t")
+        
+        # Save concept_names as text file
+        with open(dataset_dir + '/' + file_string + concept_name_suffix_txt, "w") as f:
+            for i in concept_names:
+                f.write("{}\n".format(i))
+                
+        
+        return file_string + concept_prob_suffix_json
 
 
 class Application():
     
-        
+    '''
+    ##############################################################################
+    ### Initialise all the values first
+    ##############################################################################
+    '''    
     def __init__(self):
         
         #Generate main frame
@@ -475,7 +474,7 @@ class Application():
         self.frame_for_folder_selection = tk.Frame(self.main_listbox_and_result)
         self.frame_for_folder_selection.pack(side = tk.LEFT)
         
-        self.user_drop_down_select_folder_label = tk.Label(self.frame_for_folder_selection , text = "Folder (Topic)\nSelection")
+        self.user_drop_down_select_folder_label = tk.Label(self.frame_for_folder_selection , text = "Created\nTraining Data")
         self.user_drop_down_select_folder_label.pack()
         
         self.frame_for_drop_down_menu_folder = tk.Frame(self.frame_for_folder_selection)
@@ -568,12 +567,7 @@ class Application():
         self.drop_down_list_word_vector_bar['command'] = \
         self.drop_down_list_word_vector_list.yview
         
-        '''
-        #######################################
-        ####Word vector generation part end
-        #######################################
-        '''
-        
+
         '''
         #######################################
         ####Concept word probabilities creation part
@@ -710,67 +704,7 @@ class Application():
         
 
         
-        '''
-        #######################################
-        ####Feature vector extraction
-        #######################################
-        '''
-        
-#        self.word_vector_generation_list_frame_test = tk.Frame(self.main_listbox_and_result_test)
-#        self.word_vector_generation_list_frame_test.pack(side = tk.LEFT, anchor = tk.N)
-#        
-#        self.drop_down_list_word_vector_label_test = tk.Label(self.word_vector_generation_list_frame_test,
-#                                                         text = "Word Vector\nCreated List (Test)")
-#        self.drop_down_list_word_vector_label_test.pack()
-#        
-#        self.drop_down_list_word_vector_frame_test = tk.Frame(self.word_vector_generation_list_frame_test)
-#        self.drop_down_list_word_vector_frame_test.pack()
-#        
-#        self.drop_down_list_word_vector_list_test = tk.Listbox(self.drop_down_list_word_vector_frame_test,
-#                                                          exportselection = 0)
-#        
-#        self.drop_down_list_word_vector_list_test.pack(side = tk.LEFT, fill = 'y')
-#        
-#        self.drop_down_list_word_vector_bar_test = tk.Scrollbar(self.drop_down_list_word_vector_frame_test, orient = "vertical")
-#        self.drop_down_list_word_vector_bar_test.pack(side = tk.RIGHT, fill = 'y')
-#        
-#        self.drop_down_list_word_vector_list_test['yscrollcommand'] = \
-#        self.drop_down_list_word_vector_bar_test.set
-#        
-#        self.drop_down_list_word_vector_bar_test['command'] = \
-#        self.drop_down_list_word_vector_list_test.yview
-    
-        
-        '''
-        #######################################
-        ####Concpet-word vector extraction
-        #######################################
-        '''
-#        
-#        self.concept_prob_generation_list_frame_test = tk.Frame(self.main_listbox_and_result_test)
-#        self.concept_prob_generation_list_frame_test.pack(side = tk.LEFT, anchor = tk.N)
-#        
-#        self.drop_down_concept_prob_vector_label_test = tk.Label(self.concept_prob_generation_list_frame_test,
-#                                                         text = "Concept Prob\nCreated List (Test)")
-#        self.drop_down_concept_prob_vector_label_test.pack()
-#        
-#        self.drop_down_concept_prob_vector_frame_test = tk.Frame(self.concept_prob_generation_list_frame_test)
-#        self.drop_down_concept_prob_vector_frame_test.pack()
-#        
-#        self.drop_down_concept_prob_vector_list_test = tk.Listbox(self.drop_down_concept_prob_vector_frame_test,
-#                                                          exportselection = 0)
-#        
-#        self.drop_down_concept_prob_vector_list_test.pack(side = tk.LEFT, fill = 'y')
-#        
-#        self.drop_down_concept_prob_vector_bar_test = tk.Scrollbar(self.drop_down_concept_prob_vector_frame_test, orient = "vertical")
-#        self.drop_down_concept_prob_vector_bar_test.pack(side = tk.RIGHT, fill = 'y')
-#        
-#        self.drop_down_concept_prob_vector_list_test['yscrollcommand'] = \
-#        self.drop_down_concept_prob_vector_bar_test.set
-#        
-#        self.drop_down_concept_prob_vector_bar_test['command'] = \
-#        self.drop_down_concept_prob_vector_list_test.yview
-        
+
         
         '''
         ################################################################################
@@ -796,25 +730,25 @@ class Application():
         self.smooth_text = tk.Entry(self.values_to_input)
         self.smooth_text.grid(row =0, column = 3)
         
-        self.ngram_label = tk.Label(self.values_to_input, text = "min_ngram value (positive integer): ")
+        self.ngram_label = tk.Label(self.values_to_input, text = "Min_ngram value (positive integer): ")
         self.ngram_label.grid(row = 1, column = 0)
         
         self.ngram_text = tk.Entry(self.values_to_input)
         self.ngram_text.grid(row = 1, column = 1)
         
-        self.ngram_max_label = tk.Label(self.values_to_input, text = "max_ngram value (positive integer): ")
+        self.ngram_max_label = tk.Label(self.values_to_input, text = "Max_ngram value (positive integer): ")
         self.ngram_max_label.grid(row = 1, column = 2)
         
         self.ngram_max_text = tk.Entry(self.values_to_input)
         self.ngram_max_text.grid(row = 1, column = 3)
         
-        self.min_df_label = tk.Label(self.values_to_input, text = "min doc freq. (float): ")
+        self.min_df_label = tk.Label(self.values_to_input, text = "Min doc freq. (float): ")
         self.min_df_label.grid(row = 2, column = 0)
         
         self.min_df_text = tk.Entry(self.values_to_input)
         self.min_df_text.grid(row = 2, column = 1)
         
-        self.max_df_label = tk.Label(self.values_to_input, text = "max doc freq. (float): ")
+        self.max_df_label = tk.Label(self.values_to_input, text = "Max doc freq. (float): ")
         self.max_df_label.grid(row = 2, column = 2)
         
         self.max_df_text = tk.Entry(self.values_to_input)
@@ -833,126 +767,20 @@ class Application():
         self.max_iter_text.grid(row = 3, column = 3)
         
         
-        self.alpha_label = tk.Label(self.values_to_input, text = "alpha (positive float): ")
+        self.alpha_label = tk.Label(self.values_to_input, text = "Alpha (positive float): ")
         self.alpha_label.grid(row = 4, column = 0)
         
         self.alpha_text = tk.Entry(self.values_to_input)
         self.alpha_text.grid(row = 4, column = 1)
         
-        self.beta_label = tk.Label(self.values_to_input, text = "beta (positive float): ")
+        self.beta_label = tk.Label(self.values_to_input, text = "Beta (positive float): ")
         self.beta_label.grid(row = 4, column = 2)
         
         self.beta_text = tk.Entry(self.values_to_input)
         self.beta_text.grid(row = 4, column = 3)
         
         
-        
-        '''
-        #######################################
-        ###Training data generation button
-        #######################################
-        '''
-        
-#        self.button_for_training = tk.Frame(self.button_groups)
-#        self.button_for_training.pack(side = tk.LEFT)        
-#        
-#        self.user_drop_down_select_folder_buttom = tk.Button(self.button_for_training , text = "Select Folder\n(Training)")
-#        self.user_drop_down_select_folder_buttom.pack()
-#        self.user_drop_down_select_folder_buttom['command'] = self.select_folder_and_extract_xml
-#        
-#        self.user_drop_down_select_folder_button_create_vector = tk.Button(self.button_for_training ,
-#                                                                           text = "Create Feature\nVector(s) (Training)")
-#        self.user_drop_down_select_folder_button_create_vector.pack()
-#        self.user_drop_down_select_folder_button_create_vector['command'] = self.create_feature_vector
-#        
-#        self.user_drop_down_select_folder_button_create_concept_prob = tk.Button(self.button_for_training,
-#                                                                           text = "Create Concept\nProb(s) (Training)")
-#        self.user_drop_down_select_folder_button_create_concept_prob.pack()
-#        self.user_drop_down_select_folder_button_create_concept_prob['command'] = self.create_concept_matrix
-#        
-#        self.exit_button = tk.Button(self.root, text = 'quit')
-        
-        '''
-        #######################################
-        ###Testing data generation button
-        #######################################
-        '''
-        
-#        self.button_for_test = tk.Frame(self.button_groups)
-#        self.button_for_test.pack(side = tk.LEFT)        
-#        
-#        self.user_drop_down_select_folder_buttom_test = tk.Button(self.button_for_test , text = "Select Folder\n(Tesing)")
-#        self.user_drop_down_select_folder_buttom_test.pack()
-#        self.user_drop_down_select_folder_buttom_test['command'] = self.select_folder_and_extract_xml_test
-#        
-#        self.user_drop_down_select_folder_button_create_vector_test = tk.Button(self.button_for_test ,
-#                                                                           text = "Create Feature\nVector(s) (Tesing)")
-#        self.user_drop_down_select_folder_button_create_vector_test.pack()
-#        self.user_drop_down_select_folder_button_create_vector_test['command'] = self.create_feature_vector_test
-#        
-#        self.user_drop_down_select_folder_button_create_concept_prob_test = tk.Button(self.button_for_test,
-#                                                                           text = "Create Concept\nProb(s) (Tesing)")
-#        self.user_drop_down_select_folder_button_create_concept_prob_test.pack()
-#        self.user_drop_down_select_folder_button_create_concept_prob_test['command'] = self.create_concept_matrix_test
-#        
-        '''
-        #######################################
-        ####Show the list of pre-existed CLDA model
-        #######################################
-        '''
-#        self.CLDA_generation_list_frame_test = tk.Frame(self.main_listbox_and_result_test)
-#        self.CLDA_generation_list_frame_test.pack(side = tk.LEFT, anchor = tk.N)
-#        
-#        self.drop_down_CLDA_label_test = tk.Label(self.CLDA_generation_list_frame_test,
-#                                                         text = "CLDA\nCreated List (Test)")
-#        self.drop_down_CLDA_label_test.pack()
-#        
-#        self.drop_down_CLDA_frame_test = tk.Frame(self.CLDA_generation_list_frame_test)
-#        self.drop_down_CLDA_frame_test.pack()
-#        
-#        self.drop_down_CLDA_list_test = tk.Listbox(self.drop_down_CLDA_frame_test,
-#                                                          exportselection = 0)
-#        
-#        self.drop_down_CLDA_list_test.pack(side = tk.LEFT, fill = 'y')
-#        
-#        self.drop_down_CLDA_bar_test = tk.Scrollbar(self.drop_down_CLDA_frame_test, orient = "vertical")
-#        self.drop_down_CLDA_bar_test.pack(side = tk.RIGHT, fill = 'y')
-#        
-#        self.drop_down_CLDA_list_test['yscrollcommand'] = \
-#        self.drop_down_CLDA_bar_test.set
-#        
-#        self.drop_down_CLDA_bar_test['command'] = \
-#        self.drop_down_CLDA_list_test.yview
-#        
-        '''
-        #########################################
-        ####Show the list of pre-existed LDA model
-        #########################################
-        '''
-#        self.LDA_generation_list_frame_test = tk.Frame(self.main_listbox_and_result_test)
-#        self.LDA_generation_list_frame_test.pack(side = tk.LEFT, anchor = tk.N)
-#        
-#        self.drop_down_LDA_label_test = tk.Label(self.LDA_generation_list_frame_test,
-#                                                         text = "LDA\nCreated List (Test)")
-#        self.drop_down_LDA_label_test.pack()
-#        
-#        self.drop_down_LDA_frame_test = tk.Frame(self.LDA_generation_list_frame_test)
-#        self.drop_down_LDA_frame_test.pack()
-#        
-#        self.drop_down_LDA_list_test = tk.Listbox(self.drop_down_LDA_frame_test,
-#                                                          exportselection = 0)
-#        
-#        self.drop_down_LDA_list_test.pack(side = tk.LEFT, fill = 'y')
-#        
-#        self.drop_down_LDA_bar_test = tk.Scrollbar(self.drop_down_LDA_frame_test, orient = "vertical")
-#        self.drop_down_LDA_bar_test.pack(side = tk.RIGHT, fill = 'y')
-#        
-#        self.drop_down_LDA_list_test['yscrollcommand'] = \
-#        self.drop_down_LDA_bar_test.set
-#        
-#        self.drop_down_LDA_bar_test['command'] = \
-#        self.drop_down_LDA_list_test.yview
-        
+
         
         
         '''
@@ -960,16 +788,11 @@ class Application():
         ###Buttons
         ##########################################
         '''
-#       
+   
         
         # This is test purpose only
         self.buttons_frame = tk.Frame(self.root)
-        self.buttons_frame.pack()
-#        self.func_test = tk.Button(self.root, text = 'Function test')
-#        
-#        self.func_test.pack(side = tk.BOTTOM)
-#        self.func_test['command'] = self.test_all
-#        
+        self.buttons_frame.pack() 
         
         # Training button
         self.training_button = tk.Button(self.buttons_frame, text = 'training_data_creation_xml')
@@ -987,17 +810,17 @@ class Application():
         
         
         
-        self.test_button = tk.Button(self.buttons_frame, text = 'test_data_creation_txt')
-        self.test_button.grid(row = 1, column = 0)
-        self.test_button['command'] =partial(self.asynchronous_data_retrieval_test, 
-                        self.select_folder_and_extract_txt_async_test, '.txt', dataset_test)
+
         
         self.training_button_txt_test = tk.Button(self.buttons_frame, text = 'test_data_creation_xml')
-        self.training_button_txt_test.grid(row = 1, column = 1)
+        self.training_button_txt_test.grid(row = 1, column = 0)
         self.training_button_txt_test['command'] = partial(self.asynchronous_data_retrieval_test, 
                                      self.select_folder_and_extract_xml_async_test, '.xml', dataset_test)
         
-        
+        self.test_button = tk.Button(self.buttons_frame, text = 'test_data_creation_txt')
+        self.test_button.grid(row = 1, column = 1)
+        self.test_button['command'] =partial(self.asynchronous_data_retrieval_test, 
+                        self.select_folder_and_extract_txt_async_test, '.txt', dataset_test)
 #        
         self.LDA_button = tk.Button(self.buttons_frame, text = 'LDA_model_creation (training)')
         
@@ -1041,6 +864,8 @@ class Application():
     #######################################################
     ########## Value input part
     #######################################################
+    
+    # Retrieve top concept value from input
     def retrieve_top_concept(self):
         
         try:
@@ -1068,6 +893,7 @@ class Application():
             self.result_screen.configure(state='disabled')
             return
     
+    # Retrive minimum ngram from input
     def retrieve_ngram_min(self):
         try:
             if(self.ngram_text.get() == ""):
@@ -1094,6 +920,7 @@ class Application():
             self.result_screen.configure(state='disabled')
             return
     
+    # Retrive maximum ngram from input
     def retrieve_ngram_max(self):
         try:
             if(self.ngram_max_text.get() == ""):
@@ -1120,6 +947,7 @@ class Application():
             self.result_screen.configure(state='disabled')
             return
     
+    # Retrive the smooth value for concpets in input 
     def retrieve_smooth_value(self):
         try:
             if(self.smooth_text.get() == ""):
@@ -1140,6 +968,7 @@ class Application():
             self.result_screen.configure(state='disabled')
             return
     
+    # Retrieve the maximum document frequency
     def retrieve_max_df(self):
         try:
             if(self.max_df_text.get() == ""):
@@ -1164,6 +993,7 @@ class Application():
             self.result_screen.insert(tk.END, "\nError: The input max doc. freq. is invalid.")
             self.result_screen.configure(state='disabled')
     
+    # Retrieve the minimum document frequency
     def retrieve_min_df(self):
         try:
             if(self.min_df_text.get() == ""):
@@ -1179,7 +1009,7 @@ class Application():
                     self.result_screen.configure(state='disabled')
                     return
                 self.result_screen.configure(state='normal')
-                self.result_screen.insert(tk.END, "\nThe input min doc. freq. value {} is used".format(user_input_val))
+                self.result_screen.insert(tk.END, "\nThe input min doc. freq. value {} is used\n".format(user_input_val))
                 self.result_screen.configure(state='disabled')
                 return user_input_val
         
@@ -1188,7 +1018,8 @@ class Application():
             self.result_screen.insert(tk.END, "\nError: The input min doc. freq. is invalid.")
             self.result_screen.configure(state='disabled')
             return
-   
+        
+    # Retrieve the number of topic from input
     def retrieve_topic_num(self):
         try:
             if(self.topic_num_text.get() == ""):
@@ -1214,6 +1045,7 @@ class Application():
             self.result_screen.insert(tk.END, "\nError: The input topic num. is invalid.")
             self.result_screen.configure(state='disabled')
             return 
+    # Retrieve maximum iteration value from input 
     def retrieve_max_iter(self):
         try:
             if(self.max_iter_text.get() == ""):
@@ -1240,7 +1072,7 @@ class Application():
             self.result_screen.configure(state='disabled')
 
             return
-        
+    # Retrieve alpha value from input 
     def retrieve_alpha(self):
         try:
             if(self.alpha_text.get() == ""):
@@ -1268,7 +1100,7 @@ class Application():
 
             return
         
-        
+    # Retrieve beta value from input
     def retrieve_beta(self):
         try:
             if(self.beta_text.get() == ""):
@@ -1295,59 +1127,60 @@ class Application():
             self.result_screen.configure(state='disabled')
 
             return
+        
     # Testing the function of all functions
-    def test_all(self):
-        top_concept_limit = self.retrieve_top_concept()
-        if (top_concept_limit == None):
-            return
-        print(top_concept_limit)
-        ngram_num = self.retrieve_ngram_min()
-        if (ngram_num == None):
-            return
-        print(ngram_num)
-        
-        
-        smooth_value = self.retrieve_smooth_value()
-        if (smooth_value == None):
-            return
-        print(smooth_value)
-        max_df_value = self.retrieve_max_df()
-        if (max_df_value == None):
-            return
-        print(max_df_value)
-        min_df_value = self.retrieve_min_df()
-        if (min_df_value == None):
-            return
-        print(min_df_value)
-        
-        if(max_df_value <= min_df_value):
-            self.result_screen.configure(state='normal')
-            self.result_screen.insert(tk.END, "\nError: max_df <= min_df is not accepted")
-            self.result_screen.configure(state='disabled')
-            print("Error")
-            return
-        
-        topic_num = self.retrieve_topic_num()
-        if(topic_num == None):
-            return
-            
-        print(topic_num)
-        
-        
-        max_iter = self.retrieve_max_iter()
-        if(max_iter == None):
-            return
-        print(max_iter)
-        
-        alpha = self.retrieve_alpha()
-        if(alpha == None):
-            return
-        print(alpha)
-        beta = self.retrieve_beta()
-        if(beta == None):
-            return
-        print(beta)
-        
+#    def test_all(self):
+#        top_concept_limit = self.retrieve_top_concept()
+#        if (top_concept_limit == None):
+#            return
+#        print(top_concept_limit)
+#        ngram_num = self.retrieve_ngram_min()
+#        if (ngram_num == None):
+#            return
+#        print(ngram_num)
+#        
+#        
+#        smooth_value = self.retrieve_smooth_value()
+#        if (smooth_value == None):
+#            return
+#        print(smooth_value)
+#        max_df_value = self.retrieve_max_df()
+#        if (max_df_value == None):
+#            return
+#        print(max_df_value)
+#        min_df_value = self.retrieve_min_df()
+#        if (min_df_value == None):
+#            return
+#        print(min_df_value)
+#        
+#        if(max_df_value <= min_df_value):
+#            self.result_screen.configure(state='normal')
+#            self.result_screen.insert(tk.END, "\nError: max_df <= min_df is not accepted")
+#            self.result_screen.configure(state='disabled')
+#            print("Error")
+#            return
+#        
+#        topic_num = self.retrieve_topic_num()
+#        if(topic_num == None):
+#            return
+#            
+#        print(topic_num)
+#        
+#        
+#        max_iter = self.retrieve_max_iter()
+#        if(max_iter == None):
+#            return
+#        print(max_iter)
+#        
+#        alpha = self.retrieve_alpha()
+#        if(alpha == None):
+#            return
+#        print(alpha)
+#        beta = self.retrieve_beta()
+#        if(beta == None):
+#            return
+#        print(beta)
+#        
     # Change to CLDA evaluation screen
     # and destroy the current object
     def move_to_CLDA_evaluation(self):
@@ -1372,9 +1205,9 @@ class Application():
         files_tmp_test = []
         for dirpath, dirs, files in os.walk(dataset_dir):
             files_tmp.extend(files)
-#        print(files_tmp)
-            # only retrieve the files_tmp which end with .csv
-            # Initialise the topic list
+        # print(files_tmp)
+        # only retrieve the files_tmp which end with .csv
+        # Initialise the topic list
         self.topic_list = [x for x in files_tmp if x.endswith(file_name_df_suffix_csv)]
         for i in self.topic_list:
             self.user_drop_down_select_folder_list.insert(tk.END, i)
@@ -1437,7 +1270,7 @@ class Application():
     
         # Remove the files other than xml files
         training_path = [x for x in training_path if x.endswith('xml')]
-        print(training_path)
+#        print(training_path)
         topic_name = os.path.basename(folder_directory)
         
         # Create the folder
@@ -1477,8 +1310,7 @@ class Application():
             # 
             for_test_purpose_data = for_test_purpose_data.append(pd.DataFrame([(name_of_the_file, 
                                                                                topic_name,
-                                                                               result)], 
-            columns=['File','Topic', 'Text']))
+                                                                               result)],columns=['File','Topic', 'Text']))
 
             # Write the xml results as files    
             with open(topic_folder + '/' + path_to_file[:-len('.xml')] + converted_xml_suffix, "w") as f:
@@ -1519,7 +1351,7 @@ class Application():
             
         # Remove the files other than xml files
         training_path = [x for x in training_path if x.endswith('.txt') and not x.startswith('._')]
-#        print(training_path)
+        
         topic_name = os.path.basename(folder_directory)
        
         # For all files in training folder....
@@ -1658,14 +1490,10 @@ class Application():
 #        print(training_path)
         topic_name = os.path.basename(folder_directory)
         
-        # Create the folder
-        # if there is no directory storing the generated txt files
-        if not os.path.isdir(dataset_dir):
-                os.makedirs(dataset_dir)
+
                 
         conv_folder = dataset_dir + '/' + converted_folder
-        if not os.path.isdir(conv_folder):
-            os.makedirs(conv_folder)
+
             
         topic_folder = conv_folder + '/' + topic_name 
         if not os.path.isdir(topic_folder):
@@ -1682,11 +1510,12 @@ class Application():
                         delimiter = label_delim,
                         quoting=csv.QUOTE_ALL, names = [''.join(filter(str.isdigit, name_of_the_label_text)), 'File', 'label'])
         
-        
+        # Sort the label data by file name
         label_data = label_data.sort_values(by = ['File'])
-#        dataframe_ = pd.DataFrame([], columns=['File','Topic', 'Text'])
+        # Listing the label data
         labelling = list(label_data['label'])
-#        labelling = list(label_data['0'])
+        
+        # Testing purpose data
         for_test_purpose_data = []
         for path_to_file in training_path:
             path_string = os.path.basename(os.path.normpath(path_to_file)) 
@@ -1705,13 +1534,19 @@ class Application():
             
             name_of_the_file = (os.path.basename(path_string))            
             
+            # Append the name of file, topic name and results
             for_test_purpose_data.append((name_of_the_file, topic_name,result))
             
             
             # Write the xml results as files    
             with open(topic_folder + '/' + path_to_file[:-len('.xml')] + converted_xml_suffix, "w") as f:
                 f.write(result)
-        
+            
+            # Create the folder
+            # if there is no directory storing the generated txt files
+            if not os.path.isdir(dataset_dir):
+                    os.makedirs(dataset_dir)
+                    
         # for_test_purpose_data.loc[:, 'label'] = label_data['label']
         a,b,c = zip(*for_test_purpose_data)
         
@@ -1727,8 +1562,10 @@ class Application():
             
             return topic_name + file_name_df_suffix_csv
     
-    
+    # Asynchronically retrieve the test data
     def asynchronous_data_retrieval_test(self, fobj, file_type, dataset_dir):
+        
+        # Retrieve standard output as the buffer
         sys.stdout = buffer = StringIO()
         # Select the testing folder
         train_folder_selection = askdirectory(title = "Select folder containing test collections")
@@ -1742,6 +1579,11 @@ class Application():
         for dirpath, dirs, files in os.walk(train_folder_selection):
             if len([x for x in files if x.endswith(file_type)]) != 0:
                 training_folders_tmp.append(dirpath)
+                
+        
+        conv_folder = dataset_dir + '/' + converted_folder
+        if not os.path.isdir(conv_folder):
+            os.makedirs(conv_folder)
         
         # Retireve the file data
         async def retrieve_file_data(training_folders_tmp, topic_list):
@@ -1767,6 +1609,7 @@ class Application():
         
         topic_list = self.topic_list_test    
         
+        # Asynchronous gain the event loop
         loop = asyncio.get_event_loop()
         future = asyncio.ensure_future(retrieve_file_data(training_folders_tmp, topic_list))
         topics = loop.run_until_complete(future)  
@@ -1797,6 +1640,7 @@ class Application():
     
     def asynchronous_topic_concept_retrieval(self, fobj, file_type, dataset_dir, test_or_training):
         sys.stdout = buffer = StringIO()
+        final_str = ""
         
         train_folder_selection = askdirectory(title = "Select folder containing training collections")
         #train_folder_selection = "C:/Users/n9648852/Desktop/R8-Dataset/Dataset/R8/Testing"
@@ -1905,7 +1749,7 @@ class Application():
         loop = asyncio.get_event_loop()
         future = asyncio.ensure_future(retrieve_file_data(training_folders_tmp, topic_list))
         topics = loop.run_until_complete(future)
-        print("Data extraction completed!")
+        print("\n\nData extraction completed!")
         
         # Eliminate the None values in the list
         if None in topics:
@@ -1930,6 +1774,9 @@ class Application():
                 for i in topics:
                     self.user_drop_down_select_folder_list_test.insert(tk.END, i)
         
+        print("Training data creation completed.")
+#        for k in self.topic_list:
+#            print(k)
         
         
 
@@ -1976,11 +1823,14 @@ class Application():
             if type(features) == list:
                 for i in features:
                     self.drop_down_list_word_vector_list_test.insert(tk.END, i)
-        print("Feature extraction completed!!")
-        
-
+                    
+        print("Feature extraction completed!.")
+#        print("Feature extraction completed list:")
+#        for k in self.feature_list:
+#            print(k)        
+                
         sys.stdout = sys.__stdout__
-        
+        final_str += buffer.getvalue()
         # Asynchrously retrieve the probability p(word|concept) from
         # Probase
         def create_concept_word_lists(training_folders_tmp, concept_list, dataset_dir):
@@ -2027,9 +1877,16 @@ class Application():
                 for i in concepts:
                     self.drop_down_concept_prob_vector_list_test.insert(tk.END, i)
         
-        print("Concept graph retrieval completed!!")
+        sys.stdout = buffer = StringIO()
+        print("Concept graph retrieval completed.")
+        sys.stdout = sys.__stdout__
+        final_str += buffer.getvalue()
+#        print("Concept retrieval completed list:")
+#        for k in self.concept_list:
+#            print(k)    
+        
         self.result_screen.configure(state='normal')
-        self.result_screen.insert(tk.END, buffer.getvalue())
+        self.result_screen.insert(tk.END, final_str)
         self.result_screen.configure(state='disabled')
 
     # Asynchronous CLDA model creation
@@ -2187,7 +2044,7 @@ class Asynchrous_CLDA(object):
         
         # Load the matrix data from a csv file
         with open(self.dataset_dir + '/' + i + feature_matrix_suffix_csv, "r") as f:
-            feature_matrix = np.loadtxt(f, delimiter = delim)
+            feature_matrix = np.loadtxt(f, delimiter = delim).astype(np.float64)
         
         concept_dict, concept_names = (None, [])
         
@@ -2280,7 +2137,7 @@ class Asynchrous_LDA(object):
                 feature_names.append(line.strip('\n'))
         # Load the matrix data from a csv file
         with open(dataset_dir + '/' + i + feature_matrix_suffix_csv, "r") as f:
-            feature_matrix = np.loadtxt(f, delimiter = delim)
+            feature_matrix = np.loadtxt(f, delimiter = delim).astype(np.float64)
         
 
         
@@ -2299,6 +2156,14 @@ class Asynchrous_LDA(object):
             
         sys.stdout = buffer = StringIO()    
         print("CLDA model {}: complete!".format(i))
+        
+        # Testing purpose
+#        model = LatentDirichletAllocation(n_components = topic_num, doc_topic_prior = alpha, topic_word_prior = beta, max_iter = max_iter).fit(feature_matrix)
+#        
+#        # Save fitted LDA model
+#        with open(dataset_dir + '/' + i + LDA_suffix_test_pickle, "wb") as f:
+#            pickle.dump(model, f)
+#        
         # Sleep just in case...
 #        print("Model generation complete!: {}".format(dataset_dir + '/' + i + LDA_suffix_pickle))
         time.sleep(0.5)
@@ -2317,7 +2182,7 @@ class Asynchrous_LDA(object):
         # files to geenrate model
         for dirpath, dirs, files in os.walk(dataset_dir):
             if len([x for x in files if x.endswith(file_name_df_suffix_csv)]) != 0:
-                print(files)
+#                print(files)
                 files_tmp.extend(files) 
         
         # Very rough file detection....
@@ -2334,7 +2199,8 @@ class Asynchrous_LDA(object):
 
         
 def main():
-    #Run the main GUI application
+    
+    # Run the main GUI application
     Application()
 
 
